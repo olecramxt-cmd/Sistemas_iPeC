@@ -6,7 +6,6 @@ import pandas as pd
 import os
 import re
 from datetime import datetime
-from streamlit_gsheets import GSheetsConnection
 
 # CONFIGURAÇÃO ESTRITA DA PÁGINA
 st.set_page_config(page_title="SISTEMAS iPeC - Gestão", layout="wide")
@@ -224,7 +223,7 @@ def minerar_txt_ipec(arquivo_recurso):
     return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
 # Estabelecendo a conexão nativa com o banco Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
+conn = st.connection("sheets", type="shillelagh")
 dados_tabela = carregar_banco_dados_virtual(conn)
 
 # ==========================================
