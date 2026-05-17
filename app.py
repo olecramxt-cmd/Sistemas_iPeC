@@ -10,12 +10,12 @@ from datetime import datetime
 # CONFIGURAÇÃO ESTRITA DA PÁGINA
 st.set_page_config(page_title="SISTEMAS iPeC - Gestão", layout="wide")
 
-# Inicialização do controle de estado para mensagens persistentes
+# Inicialização do controle de estado para mensagens primitivas
 if "mensagem_sucesso" in st.session_state:
     st.success(st.session_state["mensagem_sucesso"])
     del st.session_state["mensagem_sucesso"]
 
-# Estrutura oficial de colunas solicitada com a inserção do campo PBF após Idade
+# Estrutura oficial de colunas solicitada
 COLUNAS_OFICIAIS = [
     "Id.", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
     "Mãe", "Pai", "Sexo", "Telefone", "E-mail(s)", "Endereço", "Bairro",
@@ -63,6 +63,7 @@ def calcular_idade_extenso(data_nasc_str):
 def carregar_banco_dados_virtual(conn):
     """Carrega o banco permanente direto do Google Sheets aplicando o recálculo imediato de idade por extenso."""
     try:
+        # Utiliza a conexão nativa de Sheets integrada do Streamlit
         df = conn.read(ttl="0d")
         df = df.fillna("")
         
@@ -120,7 +121,7 @@ def minerar_txt_ipec(arquivo_recurso):
         linha_limpa = linha.strip()
         
         if "Período de" in linha_limpa:
-            periodo_ensino_doc = inline_val = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
+            periodo_ensino_doc = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
             continue
         elif "Turma:" in linha_limpa:
             turma_doc = linha_limpa.split("Turma:")[-1].strip()
@@ -165,7 +166,7 @@ def minerar_txt_ipec(arquivo_recurso):
                     sex_text = match_sexo.group(1).replace("ResponsávOutro", "").replace("Responsáv", "").strip()
                     aluno_atual["Sexo"] = sex_text if sex_text != "" else "Não informado"
                 
-                if "Telefone" in inline_val if 'inline_val' in locals() else linha_limpa:
+                if "Telefone" in linha_limpa:
                     tel_text = linha_limpa.split("Telefone")[-1].replace(":", "").replace("-", "").strip()
                     aluno_atual["Telefone"] = tel_text if tel_text != "" else "Não informado"
                     
@@ -222,8 +223,8 @@ def minerar_txt_ipec(arquivo_recurso):
         return df_res[COLUNAS_OFICIAIS]
     return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
-# Estabelecendo a conexão nativa com o banco Google Sheets
-conn = st.connection("sheets", type="shillelagh")
+# Conexão nativa e integrada estável com o Google Sheets
+conn = st.connection("sheets", type="sheets")
 dados_tabela = carregar_banco_dados_virtual(conn)
 
 # ==========================================
@@ -349,7 +350,8 @@ if menu == "Pesquisar e Alterar Dados":
                     dados_tabela.at[idx, "Turma"] = alt_turma if alt_turma.strip() != "" else "Não informado"
                     dados_tabela.at[idx, "Transferência"] = entrada_transf
                     
-                    conn.update(data=dados_tabela, worksheet="Sheet1")
+                    # Salva utilizando o método nativo de atualização de Sheets
+                    conn.update(data=dados_tabela)
                     st.session_state["mensagem_sucesso"] = "A gravação foi concluída!"
                     st.rerun()
     else:
@@ -382,7 +384,7 @@ elif menu == "Importar Arquivos (.txt)":
             if st.button("🚀 Executar Carga Total"):
                 if metodo == "Substituir a base antiga completamente por este novo lote":
                     df_novo_lote["Id."] = range(1, len(df_novo_lote) + 1)
-                    conn.update(data=df_novo_lote, worksheet="Sheet1")
+                    conn.update(data=df_novo_lote)
                     st.success("🎉 O banco de dados virtual foi reiniciado. IMPORTAÇÃO CONCLUÍDA!")
                 else:
                     if not dados_tabela.empty:
@@ -405,7 +407,7 @@ elif menu == "Importar Arquivos (.txt)":
                         
                     df_consolidado["Id."] = range(1, len(df_consolidado) + 1)
                     df_consolidado = df_consolidado[COLUNAS_OFICIAIS]
-                    conn.update(data=df_consolidado, worksheet="Sheet1")
+                    conn.update(data=df_consolidado)
                     st.success(f"🚀 Base consolidada! Total: {len(df_consolidado)} registros fixos. IMPORTAÇÃO CONCLUÍDA!")
                 
-                st.invalidate_pages() if hasattr(st, "invalidate_pages") else st.rerun()
+                st.rerun()
