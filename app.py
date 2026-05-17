@@ -1,17 +1,20 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.01.09 - data: 17/05/26
+# Versão do código: v.01.10 - data: 17/05/26
 
 import streamlit as st
 import pandas as pd
 import os
 import re
 from datetime import datetime
+from streamlit_gsheets import GSheetsConnection
 
 # CONFIGURAÇÃO ESTRITA DA PÁGINA
 st.set_page_config(page_title="SISTEMAS iPeC - Gestão", layout="wide")
 
-# Definição do Banco de Dados Virtual Consolidado
-BANCO_DADOS_VIRTUAL = "banco_dados_ipec.txt"
+# Inicialização do controle de estado para mensagens persistentes
+if "mensagem_sucesso" in st.session_state:
+    st.success(st.session_state["mensagem_sucesso"])
+    del st.session_state["mensagem_sucesso"]
 
 # Estrutura oficial de colunas solicitada com a inserção do campo PBF após Idade
 COLUNAS_OFICIAIS = [
@@ -58,35 +61,36 @@ def calcular_idade_extenso(data_nasc_str):
         pass
     return "Não informado"
 
-def carregar_banco_dados_virtual():
-    """Carrega o banco permanente aplicando o recálculo imediato de idade por extenso e tratando NaNs."""
-    if os.path.exists(BANCO_DADOS_VIRTUAL):
-        try:
-            df = pd.read_csv(BANCO_DADOS_VIRTUAL, sep=";", dtype=str, encoding="utf-8")
-            df = df.fillna("")
-            
-            if "Nascimento" in df.columns:
-                df["Idade"] = df["Nascimento"].apply(calcular_idade_extenso)
-            
-            for col in COLUNAS_OFICIAIS:
-                if col not in df.columns:
-                    if col == "PBF":
-                        df[col] = "Não"
-                    elif col == "Transferência":
-                        df[col] = ""
-                    else:
-                        df[col] = "Não informado"
-                else:
-                    if col == "PBF":
-                        df[col] = df[col].apply(lambda x: "Não" if str(x).strip() not in ["Sim", "Não"] else str(x).strip())
-                    elif col != "Transferência":
-                        df[col] = df[col].apply(lambda x: "Não informado" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
-                    else:
-                        df[col] = df[col].apply(lambda x: "" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
-            return df[COLUNAS_OFICIAIS]
-        except Exception:
+def carregar_banco_dados_virtual(conn):
+    """Carrega o banco permanente direto do Google Sheets aplicando o recálculo imediato de idade por extenso."""
+    try:
+        df = conn.read(ttl="0d")
+        df = df.fillna("")
+        
+        if df.empty:
             return pd.DataFrame(columns=COLUNAS_OFICIAIS)
-    return pd.DataFrame(columns=COLUNAS_OFICIAIS)
+            
+        if "Nascimento" in df.columns:
+            df["Idade"] = df["Nascimento"].apply(calcular_idade_extenso)
+        
+        for col in COLUNAS_OFICIAIS:
+            if col not in df.columns:
+                if col == "PBF":
+                    df[col] = "Não"
+                elif col == "Transferência":
+                    df[col] = ""
+                else:
+                    df[col] = "Não informado"
+            else:
+                if col == "PBF":
+                    df[col] = df[col].apply(lambda x: "Não" if str(x).strip() not in ["Sim", "Não"] else str(x).strip())
+                elif col != "Transferência":
+                    df[col] = df[col].apply(lambda x: "Não informado" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
+                else:
+                    df[col] = df[col].apply(lambda x: "" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
+        return df[COLUNAS_OFICIAIS]
+    except Exception:
+        return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
 def minerar_txt_ipec(arquivo_recurso):
     """Minerador analítico avançado de alta precisão posicional para o padrão de Unaí-MG."""
@@ -117,7 +121,7 @@ def minerar_txt_ipec(arquivo_recurso):
         linha_limpa = linha.strip()
         
         if "Período de" in linha_limpa:
-            periodo_ensino_doc = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
+            periodo_ensino_doc = inline_val = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
             continue
         elif "Turma:" in linha_limpa:
             turma_doc = linha_limpa.split("Turma:")[-1].strip()
@@ -128,7 +132,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 alunos_capturados.append(aluno_atual)
             
             aluno_atual = {col: "Não informado" for col in COLUNAS_OFICIAIS}
-            aluno_atual["PBF"] = "Não"  # Diretriz 2: Atualizado inicialmente com a opção "Não"
+            aluno_atual["PBF"] = "Não"
             aluno_atual["Transferência"] = "" 
             
             match_aluno = re.search(r"Alun(.*?)(?:Nascimen|$)", linha_limpa)
@@ -162,7 +166,7 @@ def minerar_txt_ipec(arquivo_recurso):
                     sex_text = match_sexo.group(1).replace("ResponsávOutro", "").replace("Responsáv", "").strip()
                     aluno_atual["Sexo"] = sex_text if sex_text != "" else "Não informado"
                 
-                if "Telefone" in linha_limpa:
+                if "Telefone" in inline_val if 'inline_val' in locals() else linha_limpa:
                     tel_text = linha_limpa.split("Telefone")[-1].replace(":", "").replace("-", "").strip()
                     aluno_atual["Telefone"] = tel_text if tel_text != "" else "Não informado"
                     
@@ -217,10 +221,11 @@ def minerar_txt_ipec(arquivo_recurso):
                 else:
                     df_res[col] = df_res[col].apply(lambda x: "" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
         return df_res[COLUNAS_OFICIAIS]
-    return pd.DataFrame(columns=COLUNCOES_OFICIAIS) if 'COLUNCOES_OFICIAIS' in locals() else pd.DataFrame(columns=COLUNAS_OFICIAIS)
+    return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
-# Inicialização constante dos dados permanentes
-dados_tabela = carregar_banco_dados_virtual()
+# Estabelecendo a conexão nativa com o banco Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
+dados_tabela = carregar_banco_dados_virtual(conn)
 
 # ==========================================
 # PAINEL LATERAL
@@ -234,15 +239,10 @@ st.sidebar.title("🧭 Navegação")
 menu = st.sidebar.radio("Escolha a operação:", ["Pesquisar e Alterar Dados", "Importar Arquivos (.txt)"])
 
 # ==========================================
-# MENU 1: CONSULTA COM MULTIFILTROS ORDENADOS E EDIÇÃO
+# MENU 1: CONSULTA COM MULTIFILTROS E EDIÇÃO
 # ==========================================
 if menu == "Pesquisar e Alterar Dados":
     st.markdown("### 🔍 Painel Avançado de Gestão Relacional")
-    
-    # Exibe a mensagem persistente de confirmação se ela estiver ativa no estado da sessão
-    if "mensagem_sucesso" in st.session_state:
-        st.success(st.session_state["mensagem_sucesso"])
-        del st.session_state["mensagem_sucesso"]
     
     if not dados_tabela.empty:
         st.success(f"Banco de dados ativo com {len(dados_tabela)} registros.")
@@ -259,9 +259,8 @@ if menu == "Pesquisar e Alterar Dados":
             f_cid = st.text_input("Filtrar por AEE/CID:")
             f_bairro = st.text_input("Filtrar por Bairro:")
             f_status = st.text_input("Filtrar por Status:")
-            f_pbf = st.text_input("Filtrar por PBF (Sim/Não):") # Filtro PBF incluído no painel de buscas
+            f_pbf = st.text_input("Filtrar por PBF (Sim/Não):")
 
-        # Aplicação encadeada dos filtros estritamente sequenciados
         df_exibicao = dados_tabela.copy()
         if f_aluno: df_exibicao = df_exibicao[df_exibicao["Aluno"].astype(str).str.contains(f_aluno, case=False)]
         if f_mae: df_exibicao = df_exibicao[df_exibicao["Mãe"].astype(str).str.contains(f_mae, case=False)]
@@ -288,11 +287,8 @@ if menu == "Pesquisar e Alterar Dados":
                 alt_aluno = st.text_input("Nome do Aluno:", value=str(dados_tabela.at[idx, "Aluno"]))
                 alt_nasc = st.text_input("Nascimento (dd/mm/aaaa):", value=str(dados_tabela.at[idx, "Nascimento"]))
                 st.text(f"Idade Calculada: {dados_tabela.at[idx, 'Idade']}")
-                
-                # Campo PBF inserido estruturalmente após Idade / Idade Calculada
                 pbf_atual = dados_tabela.at[idx, "PBF"] if dados_tabela.at[idx, "PBF"] in ["Sim", "Não"] else "Não"
                 alt_pbf = st.selectbox("PBF (Programa Bolsa Família):", ["Sim", "Não"], index=["Sim", "Não"].index(pbf_atual))
-                
                 alt_nat = st.text_input("Naturalidade:", value=str(dados_tabela.at[idx, "Naturalidade"]))
                 alt_nac = st.text_input("Nacionalidade:", value=str(dados_tabela.at[idx, "Nacionalidade"]))
                 turno_atual = dados_tabela.at[idx, "Turno"] if dados_tabela.at[idx, "Turno"] in ["Matutino", "Vespertino", "Noturno", "Não informado"] else "Não informado"
@@ -319,14 +315,12 @@ if menu == "Pesquisar e Alterar Dados":
                 alt_per = st.text_input("Período de Ensino:", value=str(dados_tabela.at[idx, "Período de Ensino"]))
                 alt_turma = st.text_input("Turma:", value=str(dados_tabela.at[idx, "Turma"]))
                 val_transf = str(dados_tabela.at[idx, "Transferência"]).strip()
-                if val_transf in ["nan", "NaN", "None", "nan "]:
-                    val_transf = ""
+                if val_transf in ["nan", "NaN", "None", "nan "]: val_transf = ""
                 alt_transf = st.text_input("Data de Transferência (dd/mm/aaaa):", value=val_transf, max_chars=10)
             
             if st.button("💾 Gravar Alterações Manuais na Ficha"):
                 entrada_transf = str(alt_transf).strip()
-                if entrada_transf in ["", "nan", "NaN", "None"]:
-                    entrada_transf = ""
+                if entrada_transf in ["", "nan", "NaN", "None"]: entrada_transf = ""
                 
                 if entrada_transf != "" and not re.match(r"^\d{2}/\d{2}/\d{4}$", entrada_transf):
                     st.error("❌ Erro: O campo Transferência aceita apenas dados vazios ou no formato estrito dd/mm/aaaa!")
@@ -356,9 +350,7 @@ if menu == "Pesquisar e Alterar Dados":
                     dados_tabela.at[idx, "Turma"] = alt_turma if alt_turma.strip() != "" else "Não informado"
                     dados_tabela.at[idx, "Transferência"] = entrada_transf
                     
-                    dados_tabela.to_csv(BANCO_DADOS_VIRTUAL, sep=";", index=False, encoding="utf-8")
-                    
-                    # Fixa a mensagem de forma destacada no estado da sessão antes do rerun
+                    conn.update(data=dados_tabela, worksheet="Sheet1")
                     st.session_state["mensagem_sucesso"] = "A gravação foi concluída!"
                     st.rerun()
     else:
@@ -376,12 +368,10 @@ elif menu == "Importar Arquivos (.txt)":
         lista_dfs = []
         for arquivo in arquivos_escolhidos:
             df_m = minerar_txt_ipec(arquivo)
-            if not df_m.empty:
-                lista_dfs.append(df_m)
+            if not df_m.empty: lista_dfs.append(df_m)
                 
         if lista_dfs:
             df_novo_lote = pd.concat(lista_dfs, ignore_index=True)
-            
             st.markdown("#### Pré-visualização do Lote Processado:")
             st.dataframe(df_novo_lote, use_container_width=True, hide_index=True)
             
@@ -393,7 +383,7 @@ elif menu == "Importar Arquivos (.txt)":
             if st.button("🚀 Executar Carga Total"):
                 if metodo == "Substituir a base antiga completamente por este novo lote":
                     df_novo_lote["Id."] = range(1, len(df_novo_lote) + 1)
-                    df_novo_lote.to_csv(BANCO_DADOS_VIRTUAL, sep=";", index=False, encoding="utf-8")
+                    conn.update(data=df_novo_lote, worksheet="Sheet1")
                     st.success("🎉 O banco de dados virtual foi reiniciado. IMPORTAÇÃO CONCLUÍDA!")
                 else:
                     if not dados_tabela.empty:
@@ -416,7 +406,7 @@ elif menu == "Importar Arquivos (.txt)":
                         
                     df_consolidado["Id."] = range(1, len(df_consolidado) + 1)
                     df_consolidado = df_consolidado[COLUNAS_OFICIAIS]
-                    df_consolidado.to_csv(BANCO_DADOS_VIRTUAL, sep=";", index=False, encoding="utf-8")
+                    conn.update(data=df_consolidado, worksheet="Sheet1")
                     st.success(f"🚀 Base consolidada! Total: {len(df_consolidado)} registros fixos. IMPORTAÇÃO CONCLUÍDA!")
                 
                 st.invalidate_pages() if hasattr(st, "invalidate_pages") else st.rerun()
