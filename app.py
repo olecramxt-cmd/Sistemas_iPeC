@@ -60,13 +60,142 @@ def calcular_idade_extenso(data_nasc_str):
         pass
     return "Não informado"
 
+def minerar_txt_ipec(arquivo_recurso):
+    """Minerador analítico avançado de alta precisão posicional para o padrão de Unaí-MG."""
+    nome_arquivo = arquivo_recurso.name
+    
+    primeiro_char = re.search(r"^\d", nome_arquivo.strip())
+    turno_padrao = "Não informado"
+    if primeiro_char:
+        num = int(primeiro_char.group(0))
+        if num in [1, 2, 3, 4]:
+            turno_padrao = "Vespertino"
+        elif num in [5, 6, 7, 8, 9]:
+            turno_padrao = "Matutino"
+
+    try:
+        linhas = arquivo_recurso.read().decode("utf-8").splitlines()
+    except UnicodeDecodeError:
+        arquivo_recurso.seek(0)
+        linhas = arquivo_recurso.read().decode("cp1252").splitlines()
+
+    alunos_capturados = []
+    aluno_atual = {}
+    
+    periodo_ensino_doc = "Não informado"
+    turma_doc = "Não informado"
+    
+    for linha in linhas:
+        linha_limpa = linha.strip()
+        
+        if "Período de" in linha_limpa:
+            periodo_ensino_doc = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
+            continue
+        elif "Turma:" in linha_limpa:
+            turma_doc = linha_limpa.split("Turma:")[-1].strip()
+            continue
+            
+        if "Alun" in linha_limpa and "Nascimen" in linha_limpa:
+            if aluno_atual:
+                alunos_capturados.append(aluno_atual)
+            
+            aluno_atual = {col: "Não informado" for col in COLUNAS_OFICIAIS}
+            aluno_atual["PBF"] = "Não"
+            aluno_atual["Transferência"] = "" 
+            
+            match_aluno = re.search(r"Alun(.*?)(?:Nascimen|$)", linha_limpa)
+            match_nasc = re.search(r"Nascimen(.*)", linha_limpa)
+            
+            aluno_atual["Aluno"] = match_aluno.group(1).strip() if match_aluno else "Não informado"
+            aluno_atual["Nascimento"] = match_nasc.group(1).strip() if match_nasc else "Não informado"
+            aluno_atual["Idade"] = calcular_idade_extenso(aluno_atual["Nascimento"])
+            aluno_atual["Período de Ensino"] = periodo_ensino_doc
+            aluno_atual["Turma"] = turma_doc
+            aluno_atual["Turno"] = turno_padrao
+            aluno_atual["Status"] = "Ativo"
+            continue
+            
+        if aluno_atual:
+            if "Naturalida" in linha_limpa:
+                match_nat = re.search(r"Naturalida(.*?)(?:Nacionalid|$)", linha_limpa)
+                match_nac = re.search(r"Nacionalid(.*)", linha_limpa)
+                aluno_atual["Naturalidade"] = match_nat.group(1).strip() if match_nat else "Não informado"
+                aluno_atual["Nacionalidade"] = match_nac.group(1).strip() if match_nac else "Não informado"
+                
+            elif "Mãe:" in linha_limpa:
+                aluno_atual["Mãe"] = linha_limpa.split("Mãe:")[-1].strip()
+                
+            elif "Pai:" in linha_limpa:
+                aluno_atual["Pai"] = linha_limpa.split("Pai:")[-1].strip()
+                
+            elif "Sexo:" in linha_limpa:
+                match_sexo = re.search(r"Sexo:\s*(.*?)(?:Telefone|$)", linha_limpa, re.IGNORECASE)
+                if match_sexo:
+                    sex_text = match_sexo.group(1).replace("ResponsávOutro", "").replace("Responsáv", "").strip()
+                    aluno_atual["Sexo"] = sex_text if sex_text != "" else "Não informado"
+                
+                if "Telefone" in linha_limpa:
+                    tel_text = linha_limpa.split("Telefone")[-1].replace(":", "").replace("-", "").strip()
+                    aluno_atual["Telefone"] = tel_text if tel_text != "" else "Não informado"
+                    
+            elif "E-mail(s):" in linha_limpa:
+                em_text = inline_em = linha_limpa.split("E-mail(s):")[-1].strip()
+                aluno_atual["E-mail(s)"] = em_text if em_text != "" else "Não informado"
+                
+            elif "Endereço:" in linha_limpa:
+                end_limpo = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
+                aluno_atual["Endereço"] = end_limpo
+                partes_end = [p.strip() for p in end_limpo.split(",")]
+                if len(partes_end) > 1:
+                    aluno_atual["Bairro"] = partes_end[1].replace(" - MG", "").replace("UNAÍ", "").strip()
+                else:
+                    aluno_atual["Bairro"] = "Não informado"
+                    
+            elif "Cartão Cidadão:" in linha_limpa or "Cartão do SUS:" in linha_limpa or "CERTIDÃO" in inline_cert if 'inline_cert' in locals() else linha_limpa:
+                match_cc = re.search(r"Cartão Cidadão:\s*([\d]*)", linha_limpa)
+                match_sus = re.search(r"Cartão do SUS:\s*([\d\s]*)", linha_limpa)
+                match_cert = re.search(r"CERTIDÃO\s*(.*)", linha_limpa)
+                
+                if match_cc and match_cc.group(1).strip() != "":
+                    aluno_atual["Cartão Cidadão"] = match_cc.group(1).strip()
+                if match_sus and match_sus.group(1).strip() != "":
+                    aluno_atual["Cartão do SUS"] = match_sus.group(1).replace(" ", "").strip()
+                if match_cert:
+                    c_val = match_cert.group(1).replace(":", "").replace("-", "").strip()
+                    aluno_atual["CERTIDÃO"] = c_val if c_val != "" else "Não informado"
+                    
+            elif "CPF:" in linha_limpa:
+                cpf_text = linha_limpa.split("CPF:")[-1].strip()
+                aluno_atual["CPF"] = cpf_text if cpf_text != "" else "Não informado"
+
+    if aluno_atual:
+        alunos_capturados.append(aluno_atual)
+        
+    if alunos_capturados:
+        df_res = pd.DataFrame(alunos_capturados)
+        for col in COLUNAS_OFICIAIS:
+            if col not in df_res.columns:
+                if col == "PBF":
+                    df_res[col] = "Não"
+                elif col == "Transferência":
+                    df_res[col] = ""
+                else:
+                    df_res[col] = "Não informado"
+            else:
+                if col == "PBF":
+                    df_res[col] = df_res[col].apply(lambda x: "Não" if str(x).strip() not in ["Sim", "Não"] else str(x).strip())
+                elif col != "Transferência":
+                    df_res[col] = df_res[col].apply(lambda x: "Não informado" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
+                else:
+                    df_res[col] = df_res[col].apply(lambda x: "" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
+        return df_res[COLUNAS_OFICIAIS]
+    return pd.DataFrame(columns=COLUNAS_OFICIAIS)
+
 def carregar_banco_dados_virtual():
     """Carrega a base permanente direto do Google Sheets via extração CSV da URL pública."""
     try:
-        # Puxa a URL configurada nos Secrets de forma limpa
         url_original = st.secrets["connections"]["sheets"]["public_gsheets_url"]
         
-        # Converte a URL de visualização padrão do Google para o formato de exportação direta em CSV
         if "/edit" in url_original:
             url_csv = url_original.split("/edit")[0] + "/gviz/tq?tqx=out:csv"
         else:
@@ -97,11 +226,10 @@ def carregar_banco_dados_virtual():
                 else:
                     df[col] = df[col].apply(lambda x: "" if str(x).strip() in ["", "NaN", "nan", "None"] else str(x).strip())
         return df[COLUNAS_OFICIAIS]
-    except Exception as e:
-        # Se a planilha estiver vazia, retorna a estrutura oficial limpa
+    except Exception:
         return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
-# Ativação da carga do banco de dados estável
+# Ativação da carga do banco de dados
 dados_tabela = carregar_banco_dados_virtual()
 
 # ==========================================
@@ -150,10 +278,6 @@ if menu == "Pesquisar e Alterar Dados":
         if f_pbf: df_exibicao = df_exibicao[df_exibicao["PBF"].astype(str).str.contains(f_pbf, case=False)]
 
         st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
-        
-        st.markdown("---")
-        st.markdown("### 📝 Atualização de Ficha Individual (Pós-Importação)")
-        st.warning("⚠️ Nota técnica: Para esta versão estável, utilize a aba de importação em lote para consolidar a base.")
     else:
         st.info("O Banco de Dados Virtual está vazio no Google Sheets. Realize a importação em lote para alimentá-lo.")
 
@@ -178,8 +302,6 @@ elif menu == "Importar Arquivos (.txt)":
             
             if st.button("🚀 Executar Carga Total"):
                 df_novo_lote["Id."] = range(1, len(df_novo_lote) + 1)
-                
-                # Exibição do arquivo estruturado pronto para a planilha
-                st.success("🎉 Processamento concluído com sucesso!")
+                st.success("🎉 Processamento de mineração concluído com sucesso!")
                 st.dataframe(df_novo_lote[COLUNAS_OFICIAIS], use_container_width=True, hide_index=True)
-                st.info("Copie as linhas acima e cole na sua planilha do Drive para consolidar permanentemente.")
+                st.info("Pronto! Copie as linhas mineradas acima e alimente sua planilha do Drive para consolidação.")
