@@ -1,5 +1,5 @@
 # © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.05.00 - data: 19/07/26 - 07:33
+# Versão do código: v.06.00 - data: 19/07/26 - 08:17
 
 import streamlit as st
 import pandas as pd
@@ -95,25 +95,34 @@ def conectar_planilha():
     return cliente.open_by_url(url_planilha).get_worksheet(0)
 
 def carregar_banco_dados_virtual():
-    """Carrega e higieniza a base permanente direto da nuvem via Gspread para total integridade."""
+    """Carrega a base permanente eliminando qualquer linha fantasma ou em branco da nuvem."""
     try:
         aba = conectar_planilha()
         dados = aba.get_all_records()
         if not dados:
             return pd.DataFrame(columns=COLUNAS_OFICIAIS)
-        df = pd.DataFrame(dados)
         
-        df["Id."] = range(1, len(df) + 1)
+        df_bruto = pd.DataFrame(dados)
         
-        if "Nascimento" in df.columns:
-            df["Idade"] = df["Nascimento"].apply(calcular_idade_extenso)
+        # FILTRO DE SEGURANÇA CRÍTICO: Descarta linhas onde o Aluno está vazio, nulo ou limpo apenas com espaços
+        if "Aluno" in df_bruto.columns:
+            df_bruto = df_bruto[df_bruto["Aluno"].astype(str).str.strip() != ""]
+            
+        if df_bruto.empty:
+            return pd.DataFrame(columns=COLUNAS_OFICIAIS)
+            
+        # Reatribui o ID sequencial matemático perfeito com base nas linhas válidas restantes
+        df_bruto["Id."] = range(1, len(df_bruto) + 1)
+        
+        if "Nascimento" in df_bruto.columns:
+            df_bruto["Idade"] = df_bruto["Nascimento"].apply(calcular_idade_extenso)
             
         for col in COLUNAS_OFICIAIS:
-            if col not in df.columns:
-                df[col] = "Não informado" if col != "PBF" else "Não"
+            if col not in df_bruto.columns:
+                df_bruto[col] = "Não informado" if col != "PBF" else "Não"
             else:
-                df[col] = df[col].astype(str).str.strip().replace(["", "NaN", "nan", "None"], "Não informado")
-        return df[COLUNAS_OFICIAIS]
+                df_bruto[col] = df_bruto[col].astype(str).str.strip().replace(["", "NaN", "nan", "None"], "Não informado")
+        return df_bruto[COLUNAS_OFICIAIS]
     except Exception:
         return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
@@ -308,9 +317,9 @@ if menu == "Pesquisar e Alterar Dados":
                     st.session_state["dados_banco"] = carregar_banco_dados_virtual()
                     st.rerun()
                 except Exception as err:
-                    st.error(f"Erro ao salvar alteração: {err}")
+                    st.error(f"Erro ao salvar alteration: {err}")
     else:
-        st.info("Banco de dados indisponível no Google Sheets.")
+        st.info("Banco de dados vázio ou redefinido. Acesse a aba de importação para inserir novos lotes.")
 
 # ==========================================
 # MENU 2: IMPORTAÇÃO E GESTÃO DE DUPLICIDADE
@@ -336,6 +345,11 @@ elif menu == "Importar Arquivos (.txt)":
             for idx, row in df_novo_lote.iterrows():
                 nome_aluno = str(row["Aluno"]).strip()
                 nome_mae = str(row["Mãe"]).strip()
+                
+                # Se o banco de dados estiver vazio, pula a checagem de duplicidade para este item
+                if df_db.empty:
+                    linhas_limpas_insercao.append(row.to_dict())
+                    continue
                 
                 duplicado = df_db[(df_db["Aluno"].str.strip().str.lower() == nome_aluno.lower()) & 
                                   (df_db["Mãe"].str.strip().str.lower() == nome_mae.lower())]
@@ -379,7 +393,10 @@ elif menu == "Importar Arquivos (.txt)":
                     aba_upload = conectar_planilha()
                     linhas_finais_append = []
                     
-                    proximo_id = len(aba_upload.get_all_values())
+                    # Identifica dinamicamente o número real de linhas preenchidas na nuvem
+                    valores_existentes = aba_upload.get_all_values()
+                    proximo_id = len(valores_existentes) if valores_existentes else 1
+                    
                     for item in linhas_limpas_insercao:
                         item["Id."] = proximo_id
                         item["Idade"] = calcular_idade_extenso(item["Nascimento"])
@@ -409,3 +426,4 @@ elif menu == "Importar Arquivos (.txt)":
                     st.rerun()
                 except Exception as e_upload:
                     st.error(f"Erro crítico no envio do lote: {e_upload}")
+                    
