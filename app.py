@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.08.00 - data: 19/07/26 - 09:30
+# Versão do código: v.09.00 - data: 19/07/26 - 09:46
 
 import streamlit as st
 import pandas as pd
@@ -271,7 +271,7 @@ else:
     # NIVELES DE MENU DE ACORDO COM O PERFIL
     opcoes_menu = ["📊 Painel de Controle de Conformidade e Indicadores de Alunos"]
     if st.session_state["perfil_usuario"] == "Total":
-        opcoes_menu.append("📥 Módulo de Processamento em Lote e Unificação de Matrículas")
+        opcoes_menu.append("📥 Importação de Dados")
     
     opcoes_menu.extend(["📈 Relatórios", "👁️ Programa Miguilim", "📚 Programa Biblioteca"])
     if st.session_state["perfil_usuario"] == "Total":
@@ -317,19 +317,141 @@ if st.session_state["autenticado"]:
             else:
                 aluno_sel = st.selectbox("Escolha o aluno para Modificar:", [""] + list(df_db_global["Aluno"].unique()))
                 if aluno_sel:
-                    st.info(f"Modo de Edição Ativo para: {aluno_sel}")
-                    if st.button("💾 Atualizar Registro (Simulado)"):
-                        st.success("Alteração gravada!")
+                    idx_registro = df_db_global[df_db_global["Aluno"] == aluno_sel].index[0]
+                    linha_dados = df_db_global.loc[idx_registro].to_dict()
+                    linha_planilha = int(linha_dados["Id."]) + 1 
+                    
+                    st.info(f"Modificando o registro posicionado na linha {linha_planilha} da planilha.")
+                    form_cols = st.columns(3)
+                    novos_dados = {"Id.": linha_dados["Id."]}
+                    
+                    campos_espalhados = [c for c in COLUNAS_OFICIAIS if c not in ["Id.", "Idade"]]
+                    for i, campo in enumerate(campos_espalhados):
+                        with form_cols[i % 3]:
+                            val_atual = str(linha_dados.get(campo, "Não informado"))
+                            if campo == "PBF":
+                                novos_dados[campo] = st.selectbox("PBF:", ["Não", "Sim"], index=0 if val_atual == "Não" else 1)
+                            elif campo == "Status":
+                                novos_dados[campo] = st.selectbox("Status:", ["Ativo", "Inativo", "Pendente"], index=0 if val_atual == "Ativo" else 1)
+                            elif campo == "Sexo":
+                                novos_dados[campo] = st.selectbox("Sexo:", ["Masculino", "Feminino", "Não informado"], index=0 if "Masc" in val_atual else 1 if "Fem" in val_atual else 2)
+                            else:
+                                novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual)
+                    
+                    novos_dados["Idade"] = calcular_idade_extenso(novos_dados["Nascimento"])
+                    
+                    if st.button("💾 Atualizar Registro na Planilha"):
+                        try:
+                            doc_w = conectar_planilha()
+                            aba_w = doc_w.get_worksheet(0)
+                            valores_alinhados = [str(novos_dados.get(c, "")) for c in COLUNAS_OFICIAIS]
+                            aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Modificou os dados do aluno {aluno_sel}.")
+                            st.success("🎉 Alteração gravada direto na nuvem com sucesso!")
+                            st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                            st.rerun()
+                        except Exception as err:
+                            st.error(f"Erro ao salvar: {err}")
 
-    # 2. PROCESSAMENTO EM LOTE (Acesso restrito ao perfil Total)
-    elif menu_principal == "📥 Módulo de Processamento em Lote e Unificação de Matrículas":
-        st.markdown("### 📥 Módulo de Processamento em Lote e Unificação de Matrículas")
+    # 2. IMPORTAÇÃO DE DADOS (Acesso restrito ao perfil Total)
+    elif menu_principal == "📥 Importação de Dados":
+        st.markdown("### 📥 Importação de Dados")
         sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
         
         if sub_lote == "Importar Arquivo .TXT":
-            arquivos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
-            if arquivos:
-                st.info("Arquivos carregados prontos para validação de integridade.")
+            arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
+            if arquivos_escolhidos:
+                lista_dfs = []
+                for arquivo in arquivos_escolhidos:
+                    df_m = minerar_txt_ipec(arquivo)
+                    if not df_m.empty: lista_dfs.append(df_m)
+                        
+                if lista_dfs:
+                    df_novo_lote = pd.concat(lista_dfs, ignore_index=True)
+                    conflitos_detectados, linhas_limpas_insercao = [], []
+                    
+                    for idx, row in df_novo_lote.iterrows():
+                        nome_aluno = str(row["Aluno"]).strip()
+                        nome_mae = str(row["Mãe"]).strip()
+                        
+                        if df_db_global.empty:
+                            linhas_limpas_insercao.append(row.to_dict())
+                            continue
+                        
+                        duplicado = df_db_global[(df_db_global["Aluno"].str.strip().str.lower() == nome_aluno.lower()) & 
+                                                 (df_db_global["Mãe"].str.strip().str.lower() == nome_mae.lower())]
+                        
+                        if not duplicado.empty:
+                            conflitos_detectados.append({
+                                "atual": duplicado.iloc[0].to_dict(),
+                                "novo": row.to_dict(),
+                                "linha_planilha": int(duplicado.iloc[0]["Id."]) + 1
+                            })
+                        else:
+                            linhas_limpas_insercao.append(row.to_dict())
+                    
+                    decisoes_conflito = {}
+                    if conflitos_detectados:
+                        st.markdown("### ⚠️ Conflito de Duplicidade Detectado!")
+                        st.warning(f"O sistema identificou {len(conflitos_detectados)} alunos que já existem na planilha.")
+                        
+                        for idx, c in enumerate(conflitos_detectados):
+                            st.markdown(f"**Aluno:** {c['novo']['Aluno']} | **Mãe:** {c['novo']['Mãe']}")
+                            col_c = st.columns(2)
+                            with col_c[0]:
+                                st.caption("Dados Atuais na Planilha:")
+                                st.json({"Nasc": c["atual"]["Nascimento"], "Turma": c["atual"]["Turma"], "Turno": c["atual"]["Turno"]})
+                            with col_c[1]:
+                                st.caption("Dados Novos do Arquivo TXT:")
+                                st.json({"Nasc": c["novo"]["Nascimento"], "Turma": c["novo"]["Turma"], "Turno": c["novo"]["Turno"]})
+                            
+                            escolha = st.radio(f"Ação para {c['novo']['Aluno']}:", 
+                                               ["Manter o registro anterior da planilha", "Substituir e sobrepor com os novos dados"], 
+                                               key=f"conf_{idx}")
+                            decisoes_conflito[idx] = escolha
+                            st.markdown("---")
+
+                    if linhas_limpas_insercao:
+                        st.markdown("#### Registros Novos Livres de Duplicidade:")
+                        st.dataframe(pd.DataFrame(linhas_limpas_insercao)[COLUNAS_OFICIAIS], use_container_width=True, hide_index=True)
+
+                    if st.button("🚀 Executar Carga Total e Resolver Conflitos"):
+                        try:
+                            doc_u = conectar_planilha()
+                            aba_upload = doc_u.get_worksheet(0)
+                            linhas_finais_append = []
+                            valores_existentes = aba_upload.get_all_values()
+                            proximo_id = len(valores_existentes) if valores_existentes else 1
+                            
+                            for item in linhas_limpas_insercao:
+                                item["Id."] = proximo_id
+                                item["Idade"] = calcular_idade_extenso(item["Nascimento"])
+                                item["Telefone"] = formatar_telefone(item["Telefone"])
+                                valores = [str(item.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
+                                linhas_finais_append.append(valores)
+                                proximo_id += 1
+                                
+                            if linhas_finais_append:
+                                aba_upload.append_rows(linhas_finais_append)
+                            
+                            linhas_sobrepostas = 0
+                            for idx, c in enumerate(conflitos_detectados):
+                                if decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados":
+                                    dados_novos = c["novo"]
+                                    dados_novos["Id."] = c["atual"]["Id."]
+                                    dados_novos["Idade"] = calcular_idade_extenso(dados_novos["Nascimento"])
+                                    dados_novos["Telefone"] = formatar_telefone(dados_novos["Telefone"])
+                                    valores_update = [str(dados_novos.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
+                                    l_alvo = c["linha_planilha"]
+                                    aba_upload.update(range_name=f"A{l_alvo}:Y{l_alvo}", values=[valores_update])
+                                    linhas_sobrepostas += 1
+                            
+                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Importou lote .txt: {len(linhas_finais_append)} inseridos, {linhas_sobrepostas} sobrepostos.")
+                            st.success("🎉 Processamento executado com sucesso!")
+                            st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                            st.rerun()
+                        except Exception as e_upload:
+                            st.error(f"Erro crítico no envio: {e_upload}")
 
     # 3. RELATÓRIOS
     elif menu_principal == "📈 Relatórios":
@@ -354,6 +476,12 @@ if st.session_state["autenticado"]:
         st.markdown("### 🛠️ Painel de Suporte e Auditoria de Infraestrutura")
         sub_suporte = st.sidebar.radio("Sub-menu:", ["Manual do Sistema", "Logs de Auditoria em Tempo Real"])
         if sub_suporte == "Logs de Auditoria em Tempo Real":
-            st.info("Carregando aba 'log_auditoria_ipec' diretamente da nuvem...")
+            try:
+                doc_s = conectar_planilha()
+                aba_log_s = doc_s.worksheet("log_auditoria_ipec")
+                df_logs = pd.DataFrame(aba_log_s.get_all_records())
+                st.dataframe(df_logs, use_container_width=True)
+            except Exception:
+                st.error("Aba de logs ainda não possui registros inseridos.")
 else:
     st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
