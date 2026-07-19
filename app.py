@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.15.00 - data: 19/07/26 - 10:55
+# Versão do código: v.15.01 - data: 19/07/26 - 10:56
 
 import streamlit as st
 import pandas as pd
@@ -16,12 +16,15 @@ st.set_page_config(
     layout="wide"
 )
 
-# ESTILIZAÇÃO ESTRUTURAL E FLUÍDICA
+# ESTILIZAÇÃO ESTRUTURAL E FLUÍDICA CORRIGIDA (CONTRASTE DE TEXTO)
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0f2b5c 0%, #1e4b8f 50%, #f7c325 100%);
-            color: #ffffff;
+            color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+            color: #ffffff !important;
         }
         .user-card {
             text-align: center;
@@ -42,36 +45,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# [Funções utilitárias mantidas idênticas para estabilidade]
+# [Funções utilitárias e de banco de dados mantidas]
 def obter_horario_unai(): return datetime.utcnow() - timedelta(hours=3)
-def validar_cpf(cpf_str):
-    cpf = "".join(re.findall(r"\d", str(cpf_str)))
-    if len(cpf) != 11 or cpf == cpf[0] * 11: return False
-    for i in range(9, 11):
-        soma = sum(int(cpf[num]) * ((i + 1) - num) for num in range(i))
-        digito = ((soma * 10) % 11) % 10
-        if digito != int(cpf[i]): return False
-    return True
-
-def formatar_telefone(tel_str):
-    nums = "".join(re.findall(r"\d", str(tel_str)))
-    if not nums: return "Não informado"
-    if len(nums) == 11: return f"({nums[:2]}) {nums[2:3]}.{nums[3:7]}-{nums[7:]}"
-    elif len(nums) == 10: return f"({nums[:2]}) {nums[2:6]}-{nums[6:]}"
-    return str(tel_str)
-
-def calcular_idade_extenso(data_nasc_str):
-    if not data_nasc_str or pd.isna(data_nasc_str): return "Não informado"
-    try:
-        match = re.search(r"(\d{2})/(\d{2})/(\d{4})", str(data_nasc_str))
-        if match:
-            dia, mes, ano = map(int, match.groups())
-            data_nasc = datetime(ano, mes, dia).date()
-            hoje = obter_horario_unai().date()
-            anos = hoje.year - data_nasc.year
-            return f"{anos} anos"
-    except: pass
-    return "Não informado"
 
 def conectar_planilha():
     escopos = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -79,28 +54,37 @@ def conectar_planilha():
     cliente = gspread.authorize(credenciais)
     return cliente.open_by_url(st.secrets["connections"]["sheets"]["public_gsheets_url"])
 
-def registrar_log_auditoria(usuario, perfil, acao):
+def gerenciar_autenticacao(user_input, pass_input):
     try:
         doc = conectar_planilha()
-        aba_log = doc.worksheet("log_auditoria_ipec")
-        aba_log.append_row([obter_horario_unai().strftime("%d/%m/%Y, %H:%M"), usuario, perfil, acao])
+        aba_cred = doc.worksheet("credenciais_ipec")
+        registros = aba_cred.get_all_records()
+        for r in registros:
+            if str(r["Usuario"]).strip() == user_input.strip() and str(r["Senha"]).strip() == pass_input.strip():
+                return {"Perfil": str(r["Perfil"]).strip(), "Foto": str(r.get("Foto", "")).strip()}
     except: pass
+    return None
 
-# [LÓGICA DE LOGIN E SIDEBAR]
-if "autenticado" not in st.session_state: st.session_state.update({"autenticado": False, "foto_usuario": ""})
+# [LÓGICA DE LOGIN COM CONTRASTE]
+if "autenticado" not in st.session_state: st.session_state.update({"autenticado": False})
 
 if not st.session_state["autenticado"]:
     st.sidebar.title("🔐 Controle de Acesso")
-    input_user = st.sidebar.text_input("Usuário:")
-    input_pass = st.sidebar.text_input("Senha:", type="password")
+    input_user = st.sidebar.text_input("Usuário:", key="u_in")
+    input_pass = st.sidebar.text_input("Senha:", type="password", key="p_in")
     if st.sidebar.button("🚪 Efetuar Login"):
-        # Lógica de autenticação simplificada para o foco na foto
-        st.session_state.update({"autenticado": True, "email_usuario": input_user, "perfil_usuario": "Total", "foto_usuario": "https://raw.githubusercontent.com/SEU_USUARIO_GITHUB/NOME_DO_SEU_REPOSITORIO/main/foto-3x4-Marcelo.png"})
-        st.rerun()
+        dados_auth = gerenciar_autenticacao(input_user, input_pass)
+        if dados_auth:
+            st.session_state.update({"autenticado": True, "email_usuario": input_user, "perfil_usuario": dados_auth["Perfil"], "foto_usuario": dados_auth["Foto"]})
+            st.rerun()
+        else:
+            st.sidebar.error("Credenciais incorretas.")
 else:
-    # EXIBIÇÃO EM CASCATA VERTICAL ELEGANTE
     st.sidebar.markdown('<div class="user-card">', unsafe_allow_html=True)
-    st.sidebar.image(st.session_state['foto_usuario'], width=100)
+    if st.session_state['foto_usuario']:
+        st.sidebar.image(st.session_state['foto_usuario'], width=100)
+    else:
+        st.sidebar.markdown("<h1>👤</h1>", unsafe_allow_html=True)
     st.sidebar.markdown(f"### {st.session_state['email_usuario'].split('@')[0]}")
     st.sidebar.markdown(f"<span style='color:#f7c325;'>Perfil: {st.session_state['perfil_usuario']}</span>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
