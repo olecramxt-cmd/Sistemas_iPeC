@@ -1,5 +1,5 @@
 # © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.04.00 - data: 19/07/26 - 07:28
+# Versão do código: v.05.00 - data: 19/07/26 - 07:33
 
 import streamlit as st
 import pandas as pd
@@ -9,8 +9,12 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 
-# CONFIGURAÇÃO ESTRITA DA PÁGINA
-st.set_page_config(page_title="SISTEMAS iPeC - Gestão", layout="wide")
+# CONFIGURAÇÃO ESTRITA DA PÁGINA COM NOME E LOGO NA ABA DO NAVEGADOR
+st.set_page_config(
+    page_title="Sistemas de Gestão Escolar - iPeC", 
+    page_icon="Logo_inovador_iPeC_com_circuito-removebg-preview.png",
+    layout="wide"
+)
 
 # Estrutura oficial de colunas solicitada
 COLUNAS_OFICIAIS = [
@@ -178,7 +182,7 @@ def minerar_txt_ipec(arquivo_recurso):
             elif "E-mail(s):" in linha_limpa:
                 aluno_atual["E-mail(s)"] = linha_limpa.split("E-mail(s):")[-1].strip()
             elif "Endereço:" in linha_limpa:
-                end_limpo = inline_end = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
+                end_limpo = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
                 aluno_atual["Endereço"] = end_limpo
                 match_bairro = re.search(r"(?:Bairro|-,)\s*([^,.\n\-\*]+)", end_limpo, re.IGNORECASE)
                 if match_bairro:
@@ -227,7 +231,6 @@ def renderizar_alertas_seguranca(df_validar):
         cpf_atual = str(row.get("CPF", "")).strip()
         aluno_nome = row.get("Aluno", "Desconhecido")
         
-        # Validação exclusiva de ausência ou falha matemática estrutural do CPF
         if not cpf_atual or cpf_atual in ["Não informado", ""]:
             st.error(f"❌ **ALERTA DE CPF AUSENTE:** O Aluno(a) **{aluno_nome}** está sem CPF cadastrado no sistema!")
         elif not validar_cpf(cpf_atual):
