@@ -1,5 +1,5 @@
 # © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.03.00 - data: 19/07/26 - 06:45
+# Versão do código: v.03.10 - data: 19/07/26 - 07:14
 
 import streamlit as st
 import pandas as pd
@@ -40,13 +40,13 @@ def formatar_telefone(tel_str):
     nums = "".join(re.findall(r"\d", str(tel_str)))
     if not nums:
         return "Não informado"
-    if len(nums) == 11: # Celular com DDD
+    if len(nums) == 11: 
         return f"({nums[:2]}) {nums[2:3]}.{nums[3:7]}-{nums[7:]}"
-    elif len(nums) == 10: # Fixo com DDD
+    elif len(nums) == 10: 
         return f"({nums[:2]}) {nums[2:6]}-{nums[6:]}"
-    elif len(nums) == 9: # Celular sem DDD (assume 38)
+    elif len(nums) == 9: 
         return f"(38) {nums[:1]}.{nums[1:5]}-{nums[5:]}"
-    elif len(nums) == 8: # Fixo sem DDD (assume 38)
+    elif len(nums) == 8: 
         return f"(38) {nums[:4]}-{nums[4:]}"
     return str(tel_str)
 
@@ -99,7 +99,6 @@ def carregar_banco_dados_virtual():
             return pd.DataFrame(columns=COLUNAS_OFICIAIS)
         df = pd.DataFrame(dados)
         
-        # Garante a numeração correta do ID baseada na posição real da planilha (Linha = ID + 1)
         df["Id."] = range(1, len(df) + 1)
         
         if "Nascimento" in df.columns:
@@ -127,7 +126,7 @@ def minerar_txt_ipec(arquivo_recurso):
         linhas = arquivo_recurso.read().decode("utf-8").splitlines()
     except UnicodeDecodeError:
         arquivo_recurso.seek(0)
-        linhas = manuscript = arquivo_recurso.read().decode("cp1252").splitlines()
+        linhas = arquivo_recurso.read().decode("cp1252").splitlines()
 
     alunos_capturados = []
     aluno_atual = {}
@@ -181,7 +180,6 @@ def minerar_txt_ipec(arquivo_recurso):
             elif "Endereço:" in linha_limpa:
                 end_limpo = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
                 aluno_atual["Endereço"] = end_limpo
-                # Captura do Bairro isolando a partir da palavra chave ou de padrões literais após o número
                 match_bairro = re.search(r"(?:Bairro|-,)\s*([^,.\n\-\*]+)", end_limpo, re.IGNORECASE)
                 if match_bairro:
                     aluno_atual["Bairro"] = match_bairro.group(1).replace("- MG","").replace("UNAÍ","").strip()
@@ -208,10 +206,12 @@ if "dados_banco" not in st.session_state:
 # ==========================================
 # DESIGN INTERFACE: PAINEL LATERAL
 # ==========================================
+
+# RESOLUÇÃO DA LOGO: O código tenta renderizar localmente. Caso falhe, usa o fallback em texto estilizado para garantir que fique idêntico.
 try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception:
-    pass
+    st.sidebar.markdown("<h2 style='text-align: center; color: #0f54c6;'>🧬 SISTEMAS iPeC</h2>", unsafe_allow_html=True)
 
 st.sidebar.title("🔐 Controle de Acesso")
 usuario = st.sidebar.text_input("Usuário (E-mail):", placeholder="exemplo@ipec.com")
@@ -229,11 +229,9 @@ def renderizar_alertas_seguranca(df_validar):
         cpf_atual = str(row.get("CPF", "")).strip()
         aluno_nome = row.get("Aluno", "Desconhecido")
         
-        # Alerta de Transferência Ativa
         if str(row.get("Transferência", "")).strip() != "":
             st.error(f"🚨 **ALERTA DE TRANSFERÊNCIA ATIVA:** O Aluno(a) **{aluno_nome}** possui pendências de transferência registradas!")
             
-        # Alerta de CPF Inválido ou Ausente
         if not cpf_atual or cpf_atual in ["Não informado", ""]:
             st.error(f"❌ **ALERTA DE CPF AUSENTE:** O Aluno(a) **{aluno_nome}** está sem CPF cadastrado no sistema!")
         elif not validar_cpf(cpf_atual):
@@ -271,7 +269,6 @@ if menu == "Pesquisar e Alterar Dados":
 
         st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
         
-        # FORMULÁRIO DE EDIÇÃO DIRETA
         st.markdown("---")
         st.markdown("### 📝 Editor de Registro Direto na Nuvem")
         aluno_selecionado = st.selectbox("Escolha o aluno para Modificar:", [""] + list(df_atual["Aluno"].unique()))
@@ -279,11 +276,10 @@ if menu == "Pesquisar e Alterar Dados":
         if aluno_selecionado:
             idx_registro = df_atual[df_atual["Aluno"] == aluno_selecionado].index[0]
             linha_dados = df_atual.loc[idx_registro].to_dict()
-            linha_planilha = int(linha_dados["Id."]) + 1 # Linha correspondente no Google Sheets (Linha 1 são cabeçalhos)
+            linha_planilha = int(linha_dados["Id."]) + 1 
             
             st.info(f"Modificando o registro posicionado na linha {linha_planilha} da planilha.")
             
-            # Distribuição dos campos no formulário
             form_cols = st.columns(3)
             novos_dados = {}
             novos_dados["Id."] = linha_dados["Id."]
@@ -307,12 +303,8 @@ if menu == "Pesquisar e Alterar Dados":
             if st.button("💾 Atualizar Registro na Planilha"):
                 try:
                     aba_w = conectar_planilha()
-                    # Organiza os valores na ordem exata dos cabeçalhos estruturais
                     valores_alinhados = [str(novos_dados.get(c, "")) for c in COLUNAS_OFICIAIS]
-                    
-                    # Atualiza a linha inteira de uma vez
                     aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
-                    
                     st.success("🎉 Alteração gravada direto na nuvem com sucesso!")
                     st.session_state["dados_banco"] = carregar_banco_dados_virtual()
                     st.rerun()
@@ -339,7 +331,6 @@ elif menu == "Importar Arquivos (.txt)":
         if lista_dfs:
             df_novo_lote = pd.concat(lista_dfs, ignore_index=True)
             
-            # PROCESSO DE ANÁLISE DO FUNIL DE DUPLICIDADES
             conflitos_detectados = []
             linhas_limpas_insercao = []
             
@@ -347,7 +338,6 @@ elif menu == "Importar Arquivos (.txt)":
                 nome_aluno = str(row["Aluno"]).strip()
                 nome_mae = str(row["Mãe"]).strip()
                 
-                # Procura chave composta (Nome + Mãe) para evitar duplicidade na planilha
                 duplicado = df_db[(df_db["Aluno"].str.strip().str.lower() == nome_aluno.lower()) & 
                                   (df_db["Mãe"].str.strip().str.lower() == nome_mae.lower())]
                 
@@ -360,7 +350,6 @@ elif menu == "Importar Arquivos (.txt)":
                 else:
                     linhas_limpas_insercao.append(row.to_dict())
             
-            # INTERFACE DO FUNIL DE DECISÃO SE HOUVER REGISTROS DUPLICADOS
             decisoes_conflito = {}
             if conflitos_detectados:
                 st.markdown("### ⚠️ Conflito de Duplicidade Detectado!")
@@ -382,7 +371,6 @@ elif menu == "Importar Arquivos (.txt)":
                     decisoes_conflito[idx] = escolha
                     st.markdown("---")
 
-            # PRÉ-VISUALIZAÇÃO DE REGISTROS NOVOS E SEGUROS
             if linhas_limpas_insercao:
                 st.markdown("#### Registros Novos Livres de Duplicidade:")
                 st.dataframe(pd.DataFrame(linhas_limpas_insercao)[COLUNAS_OFICIAIS], use_container_width=True, hide_index=True)
@@ -392,7 +380,6 @@ elif menu == "Importar Arquivos (.txt)":
                     aba_upload = conectar_planilha()
                     linhas_finais_append = []
                     
-                    # 1. Processa Linhas Livres de Conflito
                     proximo_id = len(aba_upload.get_all_values())
                     for item in linhas_limpas_insercao:
                         item["Id."] = proximo_id
@@ -402,13 +389,13 @@ elif menu == "Importar Arquivos (.txt)":
                         linhas_finais_append.append(valores)
                         proximo_id += 1
                         
-                    if lines_to_add := linhas_finais_append:
-                        aba_upload.append_rows(lines_to_add)
+                    if linhas_finais_append:
+                        aba_upload.append_rows(linhas_finais_append)
                     
-                    # 2. Processa as Decisões dos Conflitos (Sobreposição ou Manutenção)
                     linhas_sobrepostas = 0
                     for idx, c in enumerate(conflitos_detectados):
-                        if decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados":
+                        ifamp = decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados"
+                        if ifamp:
                             dados_novos = c["novo"]
                             dados_novos["Id."] = c["atual"]["Id."]
                             dados_novos["Idade"] = calcular_idade_extenso(dados_novos["Nascimento"])
