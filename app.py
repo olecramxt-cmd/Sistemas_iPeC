@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.10.00 - data: 19/07/26 - 09:55
+# Versão do código: v.11.00 - data: 19/07/26 - 10:09
 
 import streamlit as st
 import pandas as pd
@@ -40,6 +40,27 @@ st.markdown("""
         div.stButton > button:first-child:hover {
             background-color: #f7c325;
             color: #0f2b5c;
+        }
+        .user-profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(247, 195, 37, 0.3);
+        }
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #f7c325;
+        }
+        .user-info {
+            display: flex;
+            flex-direction: column;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -147,15 +168,18 @@ def gerenciar_autenticacao(user_input, pass_input):
         try:
             aba_cred = doc.worksheet("credenciais_ipec")
         except gspread.WorksheetNotFound:
-            aba_cred = doc.add_worksheet(title="credenciais_ipec", rows="100", cols="3")
-            aba_cred.append_row(["Usuario", "Senha", "Perfil"])
-            aba_cred.append_row(["admin@ipec.com", "admin123", "Total"])
-            aba_cred.append_row(["operador@ipec.com", "ipec123", "Parcial"])
+            aba_cred = doc.add_worksheet(title="credenciais_ipec", rows="100", cols="4")
+            aba_cred.append_row(["Usuario", "Senha", "Perfil", "Foto"])
+            aba_cred.append_row(["admin@ipec.com", "admin123", "Total", ""])
+            aba_cred.append_row(["operador@ipec.com", "ipec123", "Parcial", ""])
         
         registros = aba_cred.get_all_records()
         for r in registros:
             if str(r["Usuario"]).strip() == user_input.strip() and str(r["Senha"]).strip() == pass_input.strip():
-                return str(r["Perfil"]).strip()
+                return {
+                    "Perfil": str(r["Perfil"]).strip(),
+                    "Foto": str(r.get("Foto", "")).strip()
+                }
     except Exception: pass
     return None
 
@@ -175,7 +199,7 @@ def minerar_txt_ipec(arquivo_recurso):
     alunos_capturados, aluno_atual = [], {}
     periodo_ensino_doc, turma_doc = "Não informado", "Não informado"
     
-    for linha in lines:
+    for linha in linhas:
         linha_limpa = linha.strip()
         if "Período de" in linha_limpa:
             periodo_ensino_doc = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
@@ -236,6 +260,7 @@ if "autenticado" not in st.session_state:
     st.session_state["autenticado"] = False
     st.session_state["perfil_usuario"] = None
     st.session_state["email_usuario"] = ""
+    st.session_state["foto_usuario"] = ""
 
 # INTERFACE: SIDEBAR DE CONTROLE DE ACESSO
 try:
@@ -247,18 +272,28 @@ if not st.session_state["autenticado"]:
     input_user = st.sidebar.text_input("Usuário (E-mail):", placeholder="exemplo@ipec.com")
     input_pass = st.sidebar.text_input("Senha:", type="password")
     if st.sidebar.button("🚪 Efetuar Login"):
-        perfil_detectado = gerenciar_autenticacao(input_user, input_pass)
-        if perfil_detectado:
+        dados_auth = gerenciar_autenticacao(input_user, input_pass)
+        if dados_auth:
             st.session_state["autenticado"] = True
-            st.session_state["perfil_usuario"] = perfil_detectado
+            st.session_state["perfil_usuario"] = dados_auth["Perfil"]
             st.session_state["email_usuario"] = input_user
-            registrar_log_auditoria(input_user, perfil_detectado, "Efetuou login com sucesso.")
+            st.session_state["foto_usuario"] = dados_auth["Foto"] if dados_auth["Foto"] else "https://www.w3schools.com/howto/img_avatar.png"
+            registrar_log_auditoria(input_user, dados_auth["Perfil"], "Efetuou login com sucesso.")
             st.rerun()
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    st.sidebar.markdown(f"👤 **Usuário:** {st.session_state['email_usuario']}")
-    st.sidebar.markdown(f"🔑 **Perfil:** {st.session_state['perfil_usuario']}")
+    # DESIGN DA FOTO REDONDA AO LADO DO NOME DO USUÁRIO LOGADO
+    st.sidebar.markdown(f"""
+        <div class="user-profile-container">
+            <img src="{st.session_state['foto_usuario']}" class="user-avatar" alt="Avatar">
+            <div class="user-info">
+                <span style="font-weight: bold; color: #ffffff;">{st.session_state['email_usuario'].split('@')[0]}</span>
+                <span style="font-size: 0.85em; color: #f7c325;">Perfil: {st.session_state['perfil_usuario']}</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
     if st.sidebar.button("🚪 Sair do Sistema"):
         registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Efetuou logout do sistema.")
         st.session_state["autenticado"] = False
@@ -268,7 +303,6 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.title("🧭 Menu Corporativo")
     
-    # NIVELES DE MENU DE ACORDO COM O PERFIL
     opcoes_menu = ["📊 Painel de Controle de Conformidade e Indicadores de Alunos"]
     if st.session_state["perfil_usuario"] == "Total":
         opcoes_menu.append("📥 Importação de Dados")
@@ -288,13 +322,31 @@ if st.session_state["autenticado"]:
     # 1. PAINEL DE CONFORMIDADE
     if menu_principal == "📊 Painel de Controle de Conformidade e Indicadores de Alunos":
         st.markdown("### 📊 Painel de Controle de Conformidade e Indicadores de Alunos")
-        sub_conformidade = st.sidebar.radio("Sub-menu:", ["Auditoria Cadastral", "Editor Direto na Nuvem"])
+        sub_conformidade = st.sidebar.radio("Sub-menu:", ["Auditoria Cadastral", "Atualização de Dados"])
         
+        # INICIALIZAÇÃO DE FILTROS PERSISTENTES NA SESSÃO PARA FUSÃO DE TELAS
+        if "f_aluno" not in st.session_state: st.session_state.f_aluno = ""
+        if "f_mae" not in st.session_state: st.session_state.f_mae = ""
+        if "f_turma" not in st.session_state: st.session_state.f_turma = ""
+        if "f_turno" not in st.session_state: st.session_state.f_turno = ""
+        if "f_status" not in st.session_state: st.session_state.f_status = ""
+        if "f_pbf" not in st.session_state: st.session_state.f_pbf = ""
+
+        # APLICAÇÃO DOS FILTROS SIMULTÂNEOS NA BASE GLOBAL
+        df_filtrado = df_db_global.copy()
+        if st.session_state.f_aluno: df_filtrado = df_filtrado[df_filtrado["Aluno"].str.contains(st.session_state.f_aluno, case=False)]
+        if st.session_state.f_mae: df_filtrado = df_filtrado[df_filtrado["Mãe"].str.contains(st.session_state.f_mae, case=False)]
+        if st.session_state.f_turma: df_filtrado = df_filtrado[df_filtrado["Turma"].str.contains(st.session_state.f_turma, case=False)]
+        if st.session_state.f_turno: df_filtrado = df_filtrado[df_filtrado["Turno"].str.contains(st.session_state.f_turno, case=False)]
+        if st.session_state.f_status: df_filtrado = df_filtrado[df_filtrado["Status"].str.contains(st.session_state.f_status, case=False)]
+        if st.session_state.f_pbf: df_filtrado = df_filtrado[df_filtrado["PBF"].str.contains(st.session_state.f_pbf, case=False)]
+
         if sub_conformidade == "Auditoria Cadastral":
             if not df_db_global.empty:
                 st.success(f"Banco de dados ativo com {len(df_db_global)} registros oficiais na nuvem.")
+                
                 # Validador de CPFs
-                for idx, row in df_db_global.iterrows():
+                for idx, row in df_filtrado.iterrows():
                     cpf_atual = str(row.get("CPF", "")).strip()
                     aluno_nome = row.get("Aluno", "Desconhecido")
                     if not cpf_atual or cpf_atual in ["Não informado", ""]:
@@ -302,35 +354,32 @@ if st.session_state["autenticado"]:
                     elif not validar_cpf(cpf_atual):
                         st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistente com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
                 
-                # REESTABELECIMENTO DOS 6 FILTROS SIMULTÂNEOS SOLICITADOS
                 st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
                 filtro_cols = st.columns(2)
                 with filtro_cols[0]:
-                    f_aluno = st.text_input("Filtrar por Aluno:")
-                    f_mae = st.text_input("Filtrar por Mãe:")
-                    f_turma = st.text_input("Filtrar por Turma:")
+                    st.session_state.f_aluno = st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno)
+                    st.session_state.f_mae = st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae)
+                    st.session_state.f_turma = st.text_input("Filtrar por Turma:", value=st.session_state.f_turma)
                 with filtro_cols[1]:
-                    f_turno = st.text_input("Filtrar por Turno:")
-                    f_status = st.text_input("Filtrar por Status:")
-                    f_pbf = st.text_input("Filtrar por PBF (Sim/Não):")
+                    st.session_state.f_turno = st.text_input("Filtrar por Turno:", value=st.session_state.f_turno)
+                    st.session_state.f_status = st.text_input("Filtrar por Status:", value=st.session_state.f_status)
+                    st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
-                df_exibicao = df_db_global.copy()
-                if f_aluno: df_exibicao = df_exibicao[df_exibicao["Aluno"].str.contains(f_aluno, case=False)]
-                if f_mae: df_exibicao = df_exibicao[df_exibicao["Mãe"].str.contains(f_mae, case=False)]
-                if f_turma: df_exibicao = df_exibicao[df_exibicao["Turma"].str.contains(f_turma, case=False)]
-                if f_turno: df_exibicao = df_exibicao[df_exibicao["Turno"].str.contains(f_turno, case=False)]
-                if f_status: df_exibicao = df_exibicao[df_exibicao["Status"].str.contains(f_status, case=False)]
-                if f_pbf: df_exibicao = df_exibicao[df_exibicao["PBF"].str.contains(f_pbf, case=False)]
-
-                st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
+                st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
             else:
                 st.info("Banco de dados vázio ou redefinido.")
                 
-        elif sub_conformidade == "Editor Direto na Nuvem":
+        elif sub_conformidade == "Atualização de Dados":
             if st.session_state["perfil_usuario"] != "Total":
-                st.warning("⚠️ Seu perfil possui apenas permissão de leitura. Edição bloqueada.")
+                st.warning("⚠️ Seu perfil possui apenas permissão de leitura. Atualização bloqueada.")
             else:
-                aluno_sel = st.selectbox("Escolha o aluno para Modificar:", [""] + list(df_db_global["Aluno"].unique()))
+                # O SELECOTOR DE ALUNOS AGORA EXIBE APENAS OS RESULTADOS DA PESQUISA ANTERIOR
+                lista_alunos_filtrados = [""] + list(df_filtrado["Aluno"].unique())
+                
+                st.markdown("#### 📝 Modificar Registro Pós-Pesquisa")
+                st.caption(f"Exibindo {len(lista_alunos_filtrados)-1} alunos correspondentes aos filtros aplicados na Auditoria.")
+                
+                aluno_sel = st.selectbox("Escolha o aluno para Atualizar:", lista_alunos_filtrados)
                 if aluno_sel:
                     idx_registro = df_db_global[df_db_global["Aluno"] == aluno_sel].index[0]
                     linha_dados = df_db_global.loc[idx_registro].to_dict()
@@ -371,9 +420,9 @@ if st.session_state["autenticado"]:
     # 2. IMPORTAÇÃO DE DADOS (Acesso restrito ao perfil Total)
     elif menu_principal == "📥 Importação de Dados":
         st.markdown("### 📥 Importação de Dados")
-        sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Archivo .TXT", "Visualizar Histórico de Envio"])
+        sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
         
-        if sub_lote == "Importar Archivo .TXT":
+        if sub_lote == "Importar Arquivo .TXT":
             arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
             if arquivos_escolhidos:
                 lista_dfs = []
