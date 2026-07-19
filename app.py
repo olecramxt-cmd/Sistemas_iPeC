@@ -1,11 +1,13 @@
-# © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.01.10 - data: 17/05/26
+# © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
+# Versão do código: v.02.00 - data: 19/07/26 - 06:06
 
 import streamlit as st
 import pandas as pd
 import os
 import re
 from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
 # CONFIGURAÇÃO ESTRITA DA PÁGINA
 st.set_page_config(page_title="SISTEMAS iPeC - Gestão", layout="wide")
@@ -22,6 +24,20 @@ COLUNAS_OFICIAIS = [
     "Cartão Cidadão", "Cartão do SUS", "CERTIDÃO", "CPF", "Período de Ensino",
     "Turma", "Turno", "Professor de Apoio Escolar - PAE", "Status", "Transferência"
 ]
+
+def conectar_planilha():
+    """Autentica na API do Google e retorna a aba de trabalho do Banco de Dados."""
+    escopos = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    # Carrega o dicionário TOML dos Secrets do Streamlit
+    credenciais_dict = st.secrets["gcp_service_account"]
+    credenciais = Credentials.from_service_account_info(credenciais_dict, scopes=escopos)
+    
+    cliente = gspread.authorize(credenciais)
+    url_planilha = st.secrets["connections"]["sheets"]["public_gsheets_url"]
+    return cliente.open_by_url(url_planilha).get_worksheet(0)
 
 def calcular_idade_extenso(data_nasc_str):
     """Calcula a idade no formato: 'X anos e Y meses' ou 'X anos' se for o dia exato."""
@@ -139,7 +155,7 @@ def minerar_txt_ipec(arquivo_recurso):
                     aluno_atual["Telefone"] = tel_text if tel_text != "" else "Não informado"
                     
             elif "E-mail(s):" in linha_limpa:
-                em_text = inline_em = linha_limpa.split("E-mail(s):")[-1].strip()
+                em_text = linha_limpa.split("E-mail(s):")[-1].strip()
                 aluno_atual["E-mail(s)"] = em_text if em_text != "" else "Não informado"
                 
             elif "Endereço:" in linha_limpa:
@@ -151,7 +167,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 else:
                     aluno_atual["Bairro"] = "Não informado"
                     
-            elif "Cartão Cidadão:" in linha_limpa or "Cartão do SUS:" in linha_limpa or "CERTIDÃO" in inline_cert if 'inline_cert' in locals() else linha_limpa:
+            elif "Cartão Cidadão:" in linha_limpa or "Cartão do SUS:" in linha_limpa:
                 match_cc = re.search(r"Cartão Cidadão:\s*([\d]*)", linha_limpa)
                 match_sus = re.search(r"Cartão do SUS:\s*([\d\s]*)", linha_limpa)
                 match_cert = re.search(r"CERTIDÃO\s*(.*)", linha_limpa)
@@ -165,7 +181,7 @@ def minerar_txt_ipec(arquivo_recurso):
                     aluno_atual["CERTIDÃO"] = c_val if c_val != "" else "Não informado"
                     
             elif "CPF:" in linha_limpa:
-                cpf_text = linha_limpa.split("CPF:")[-1].strip()
+                cpf_text = inline_cpf = linha_limpa.split("CPF:")[-1].strip()
                 aluno_atual["CPF"] = cpf_text if cpf_text != "" else "Não informado"
 
     if aluno_atual:
@@ -282,7 +298,7 @@ if menu == "Pesquisar e Alterar Dados":
         st.info("O Banco de Dados Virtual está vazio no Google Sheets. Realize a importação em lote para alimentá-lo.")
 
 # ==========================================
-# MENU 2: IMPORTAÇÃO EM LOTE
+# MENU 2: IMPORTAÇÃO EM LOTE E SINK DIRETO
 # ==========================================
 elif menu == "Importar Arquivos (.txt)":
     st.markdown("### 📥 Mapeador em Lote com Regra de Funil Dinâmica")
@@ -301,7 +317,32 @@ elif menu == "Importar Arquivos (.txt)":
             st.dataframe(df_novo_lote, use_container_width=True, hide_index=True)
             
             if st.button("🚀 Executar Carga Total"):
-                df_novo_lote["Id."] = range(1, len(df_novo_lote) + 1)
-                st.success("🎉 Processamento de mineração concluído com sucesso!")
-                st.dataframe(df_novo_lote[COLUNAS_OFICIAIS], use_container_width=True, hide_index=True)
-                st.info("Pronto! Copie as linhas mineradas acima e alimente sua planilha do Drive para consolidação.")
+                try:
+                    # Conecta dinamicamente ao Google Sheets via Conta de Serviço
+                    aba = conectar_planilha()
+                    
+                    # Identifica a próxima Id. com base nas linhas existentes na nuvem
+                    linhas_existentes = len(aba.get_all_values())
+                    proximo_id = linhas_existentes if linhas_existentes > 0 else 1
+                    
+                    # Prepara as listas de linhas para inserção em lote
+                    linhas_para_salvar = []
+                    for idx, row in df_novo_lote.iterrows():
+                        # Monta um dicionário temporário para garantir a ordenação exata das colunas
+                        row_dict = row.to_dict()
+                        row_dict["Id."] = proximo_id
+                        
+                        # Converte em lista linear alinhada com as COLUNAS_OFICIAIS
+                        linha_valores = [str(row_dict.get(col, "Não informado")) for col in COLUNAS_OFICIAIS]
+                        linhas_para_salvar.append(linha_valores)
+                        proximo_id += 1
+                    
+                    # Envia todo o lote de uma única vez para máxima eficiência
+                    aba.append_rows(linhas_para_salvar)
+                    
+                    st.success(f"🎉 Carga total executada! {len(linhas_para_salvar)} novos alunos gravados de forma direta no Banco de Dados iPeC!")
+                    st.dataframe(df_novo_lote, use_container_width=True, hide_index=True)
+                    
+                except Exception as error_msg:
+                    st.error(f"Falha operacional na gravação em nuvem: {error_msg}")
+                    st.info("As credenciais TOML ou permissões da planilha precisam ser verificadas.")
