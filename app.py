@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.13.00 - data: 19/07/26 - 10:41
+# Versão do código: v.14.00 - data: 19/07/26 - 10:43
 
 import streamlit as st
 import pandas as pd
@@ -41,10 +41,11 @@ st.markdown("""
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        .user-box-fixed {
+        .user-card-profile {
+            text-align: center;
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 12px;
-            border-radius: 8px;
+            padding: 15px;
+            border-radius: 10px;
             border: 1px solid rgba(247, 195, 37, 0.3);
             margin-bottom: 15px;
         }
@@ -231,7 +232,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 if match_bairro: aluno_atual["Bairro"] = match_bairro.group(1).replace("- MG","").replace("UNAÍ","").strip()
             elif "CPF:" in linha_limpa: aluno_atual["CPF"] = "".join(re.findall(r"[\d.-]", linha_limpa.split("CPF:")[-1]))
             elif "Cartão Cidadão:" in linha_limpa or "Cartão do SUS:" in linha_limpa or "CERTIDÃO" in linha_limpa:
-                match_cc = re.search(r"Cartão Cidadão:\s*([\d]*)", linha_limpa)
+                match_cc = re.search(r"Cartão Cidadão:\s*([\d]*)", inline_limpa)
                 match_sus = re.search(r"Cartão do SUS:\s*([\d\s]*)", linha_limpa)
                 match_cert = re.search(r"CERTIDÃO\s*(.*)", linha_limpa)
                 if match_cc and match_cc.group(1).strip(): aluno_atual["Cartão Cidadão"] = match_cc.group(1).strip()
@@ -272,19 +273,18 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # CORREÇÃO DA PROPORÇÃO DA FOTO USANDO COLUNAS NATIVAS E INTEGRALMENTE ALINHADAS
-    st.sidebar.markdown('<div class="user-box-fixed">', unsafe_allow_html=True)
-    c_img, c_txt = st.sidebar.columns([1, 2])
-    with c_img:
-        # Se for link quebrado do Drive ou vazio, usa o avatar padrão limpo
-        url_foto = st.session_state['foto_usuario']
-        if "drive.google.com" in url_foto:
-            st.markdown("👤") # Fallback elegante para travas do Drive
-        else:
-            st.image(url_foto, use_container_width=True)
-    with c_txt:
-        st.markdown(f"**{st.session_state['email_usuario'].split('@')[0]}**")
-        st.markdown(f"<span style='color:#f7c325; font-size:0.85em;'>Perfil: {st.session_state['perfil_usuario']}</span>", unsafe_allow_html=True)
+    # DESIGN INTEGRALMENTE NATIVO E CENTRALIZADO DO PERFIL DO USUÁRIO
+    st.sidebar.markdown('<div class="user-card-profile">', unsafe_allow_html=True)
+    
+    # Validação e Renderização Nativa para contornar bloqueios do Google Drive
+    url_foto = st.session_state['foto_usuario']
+    if "drive.google.com" in url_foto or not url_foto.strip():
+        st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
+    else:
+        st.sidebar.image(url_foto, width=80)
+        
+    st.sidebar.markdown(f"<h3 style='text-align:center; margin:5px 0 0 0;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<span style='color:#f7c325; font-size:0.9em;'>Perfil: {st.session_state['perfil_usuario']}</span>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if st.sidebar.button("🚪 Sair do Sistema"):
@@ -342,7 +342,7 @@ if st.session_state["autenticado"]:
                     if not cpf_atual or cpf_atual in ["Não informado", ""]:
                         st.error(f"❌ **ALERTA DE CPF AUSENTE:** O Aluno(a) **{aluno_nome}** está sem CPF cadastrado!")
                     elif not validar_cpf(cpf_atual):
-                        st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistent com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistente com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
                 
                 st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
                 filtro_cols = st.columns(2)
