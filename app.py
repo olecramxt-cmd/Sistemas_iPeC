@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.12.00 - data: 19/07/26 - 10:20
+# Versão do código: v.13.00 - data: 19/07/26 - 10:41
 
 import streamlit as st
 import pandas as pd
@@ -41,26 +41,12 @@ st.markdown("""
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        .user-profile-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
+        .user-box-fixed {
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             border: 1px solid rgba(247, 195, 37, 0.3);
-        }
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #f7c325;
-        }
-        .user-info {
-            display: flex;
-            flex-direction: column;
+            margin-bottom: 15px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -77,8 +63,6 @@ COLUNAS_OFICIAIS = [
 # UTILITÁRIOS DE VALIDAÇÃO E MÁSCARAS
 # ==========================================
 def obter_horario_unai():
-    """Retorna o horário correto ajustado para o fuso de Unaí-MG (UTC-3)."""
-    # Servidores Cloud rodam em UTC. Subtraímos 3 horas para alinhar com o horário oficial local.
     return datetime.utcnow() - timedelta(hours=3)
 
 def validar_cpf(cpf_str):
@@ -163,7 +147,6 @@ def registrar_log_auditoria(usuario, perfil, acao):
             aba_log = doc.add_worksheet(title="log_auditoria_ipec", rows="1000", cols="4")
             aba_log.append_row(["Data_Hora", "Usuario", "Perfil", "Acao"])
         
-        # Uso do horário real e corrigido de Unaí-MG
         data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
         aba_log.append_row([data_hora_atual, usuario, perfil, acao])
     except Exception: pass
@@ -289,15 +272,20 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    st.sidebar.markdown(f"""
-        <div class="user-profile-container">
-            <img src="{st.session_state['foto_usuario']}" class="user-avatar" alt="Avatar">
-            <div class="user-info">
-                <span style="font-weight: bold; color: #ffffff;">{st.session_state['email_usuario'].split('@')[0]}</span>
-                <span style="font-size: 0.85em; color: #f7c325;">Perfil: {st.session_state['perfil_usuario']}</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    # CORREÇÃO DA PROPORÇÃO DA FOTO USANDO COLUNAS NATIVAS E INTEGRALMENTE ALINHADAS
+    st.sidebar.markdown('<div class="user-box-fixed">', unsafe_allow_html=True)
+    c_img, c_txt = st.sidebar.columns([1, 2])
+    with c_img:
+        # Se for link quebrado do Drive ou vazio, usa o avatar padrão limpo
+        url_foto = st.session_state['foto_usuario']
+        if "drive.google.com" in url_foto:
+            st.markdown("👤") # Fallback elegante para travas do Drive
+        else:
+            st.image(url_foto, use_container_width=True)
+    with c_txt:
+        st.markdown(f"**{st.session_state['email_usuario'].split('@')[0]}**")
+        st.markdown(f"<span style='color:#f7c325; font-size:0.85em;'>Perfil: {st.session_state['perfil_usuario']}</span>", unsafe_allow_html=True)
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if st.sidebar.button("🚪 Sair do Sistema"):
         registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Efetuou logout do sistema.")
@@ -354,7 +342,7 @@ if st.session_state["autenticado"]:
                     if not cpf_atual or cpf_atual in ["Não informado", ""]:
                         st.error(f"❌ **ALERTA DE CPF AUSENTE:** O Aluno(a) **{aluno_nome}** está sem CPF cadastrado!")
                     elif not validar_cpf(cpf_atual):
-                        st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistente com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistent com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
                 
                 st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
                 filtro_cols = st.columns(2)
@@ -375,7 +363,6 @@ if st.session_state["autenticado"]:
             if st.session_state["perfil_usuario"] != "Total":
                 st.warning("⚠️ Seu perfil possui apenas permissão de leitura. Atualização bloqueada.")
             else:
-                # SELETOR MAPEIA APENAS OS REGISTROS QUE SOBREVIVERAM AOS FILTROS
                 lista_mapeada = [""] + [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_filtrado.iterrows()]
                 
                 st.markdown("#### 📝 Modificar Registro Pós-Pesquisa")
@@ -383,10 +370,7 @@ if st.session_state["autenticado"]:
                 
                 opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
                 if opcao_escolhida:
-                    # Extração segura e estrita do ID numérico
                     id_selecionado = int(opcao_escolhida.split(" - ")[0])
-                    
-                    # Captura cirúrgica na base global usando o ID estrito (Elimina duplicidades)
                     linha_dados = df_db_global[df_db_global["Id."] == id_selecionado].iloc[0].to_dict()
                     linha_planilha = id_selecionado + 1 
                     
@@ -414,7 +398,6 @@ if st.session_state["autenticado"]:
                             doc_w = conectar_planilha()
                             aba_w = doc_w.get_worksheet(0)
                             valores_alinhados = [str(novos_dados.get(c, "")) for c in COLUNAS_OFICIAIS]
-                            # Gravação direta por cima da linha correspondente, sem dar append
                             aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
                             
                             registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou cadastro do aluno ID {id_selecionado}.")
@@ -502,7 +485,7 @@ if st.session_state["autenticado"]:
                                 linhas_finais_append.append(valores)
                                 proximo_id += 1
                                 
-                            if lines_finais_append:
+                            if linhas_finais_append:
                                 aba_upload.append_rows(linhas_finais_append)
                             
                             linhas_sobrepostas = 0
