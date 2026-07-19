@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.09.00 - data: 19/07/26 - 09:46
+# Versão do código: v.10.00 - data: 19/07/26 - 09:55
 
 import streamlit as st
 import pandas as pd
@@ -175,7 +175,7 @@ def minerar_txt_ipec(arquivo_recurso):
     alunos_capturados, aluno_atual = [], {}
     periodo_ensino_doc, turma_doc = "Não informado", "Não informado"
     
-    for linha in linhas:
+    for linha in lines:
         linha_limpa = linha.strip()
         if "Período de" in linha_limpa:
             periodo_ensino_doc = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
@@ -258,7 +258,7 @@ if not st.session_state["autenticado"]:
             st.sidebar.error("Credenciais incorretas.")
 else:
     st.sidebar.markdown(f"👤 **Usuário:** {st.session_state['email_usuario']}")
-    st.sidebar.markdown(f"🔑 **Perfil:** Nível {st.session_state['perfil_usuario']}")
+    st.sidebar.markdown(f"🔑 **Perfil:** {st.session_state['perfil_usuario']}")
     if st.sidebar.button("🚪 Sair do Sistema"):
         registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Efetuou logout do sistema.")
         st.session_state["autenticado"] = False
@@ -302,18 +302,33 @@ if st.session_state["autenticado"]:
                     elif not validar_cpf(cpf_atual):
                         st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistente com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
                 
-                # Filtros
+                # REESTABELECIMENTO DOS 6 FILTROS SIMULTÂNEOS SOLICITADOS
                 st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
-                f_aluno = st.text_input("Filtrar por Aluno:")
+                filtro_cols = st.columns(2)
+                with filtro_cols[0]:
+                    f_aluno = st.text_input("Filtrar por Aluno:")
+                    f_mae = st.text_input("Filtrar por Mãe:")
+                    f_turma = st.text_input("Filtrar por Turma:")
+                with filtro_cols[1]:
+                    f_turno = st.text_input("Filtrar por Turno:")
+                    f_status = st.text_input("Filtrar por Status:")
+                    f_pbf = st.text_input("Filtrar por PBF (Sim/Não):")
+
                 df_exibicao = df_db_global.copy()
                 if f_aluno: df_exibicao = df_exibicao[df_exibicao["Aluno"].str.contains(f_aluno, case=False)]
+                if f_mae: df_exibicao = df_exibicao[df_exibicao["Mãe"].str.contains(f_mae, case=False)]
+                if f_turma: df_exibicao = df_exibicao[df_exibicao["Turma"].str.contains(f_turma, case=False)]
+                if f_turno: df_exibicao = df_exibicao[df_exibicao["Turno"].str.contains(f_turno, case=False)]
+                if f_status: df_exibicao = df_exibicao[df_exibicao["Status"].str.contains(f_status, case=False)]
+                if f_pbf: df_exibicao = df_exibicao[df_exibicao["PBF"].str.contains(f_pbf, case=False)]
+
                 st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
             else:
                 st.info("Banco de dados vázio ou redefinido.")
                 
         elif sub_conformidade == "Editor Direto na Nuvem":
             if st.session_state["perfil_usuario"] != "Total":
-                st.warning("⚠️ Seu perfil (Parcial) possui apenas permissão de leitura. Edição bloqueada.")
+                st.warning("⚠️ Seu perfil possui apenas permissão de leitura. Edição bloqueada.")
             else:
                 aluno_sel = st.selectbox("Escolha o aluno para Modificar:", [""] + list(df_db_global["Aluno"].unique()))
                 if aluno_sel:
@@ -356,9 +371,9 @@ if st.session_state["autenticado"]:
     # 2. IMPORTAÇÃO DE DADOS (Acesso restrito ao perfil Total)
     elif menu_principal == "📥 Importação de Dados":
         st.markdown("### 📥 Importação de Dados")
-        sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
+        sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Archivo .TXT", "Visualizar Histórico de Envio"])
         
-        if sub_lote == "Importar Arquivo .TXT":
+        if sub_lote == "Importar Archivo .TXT":
             arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
             if arquivos_escolhidos:
                 lista_dfs = []
