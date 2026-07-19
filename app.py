@@ -1,5 +1,5 @@
 # © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.03.10 - data: 19/07/26 - 07:14
+# Versão do código: v.04.00 - data: 19/07/26 - 07:28
 
 import streamlit as st
 import pandas as pd
@@ -178,7 +178,7 @@ def minerar_txt_ipec(arquivo_recurso):
             elif "E-mail(s):" in linha_limpa:
                 aluno_atual["E-mail(s)"] = linha_limpa.split("E-mail(s):")[-1].strip()
             elif "Endereço:" in linha_limpa:
-                end_limpo = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
+                end_limpo = inline_end = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
                 aluno_atual["Endereço"] = end_limpo
                 match_bairro = re.search(r"(?:Bairro|-,)\s*([^,.\n\-\*]+)", end_limpo, re.IGNORECASE)
                 if match_bairro:
@@ -206,8 +206,6 @@ if "dados_banco" not in st.session_state:
 # ==========================================
 # DESIGN INTERFACE: PAINEL LATERAL
 # ==========================================
-
-# RESOLUÇÃO DA LOGO: O código tenta renderizar localmente. Caso falhe, usa o fallback em texto estilizado para garantir que fique idêntico.
 try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception:
@@ -222,23 +220,21 @@ st.sidebar.title("🧭 Navegação")
 menu = st.sidebar.radio("Escolha a operação:", ["Pesquisar e Alterar Dados", "Importar Arquivos (.txt)"])
 
 # ==========================================
-# CORES E TARJAS DE ALERTAS PARA TRANSFERÊNCIA / VALIDAR CPF
+# GESTÃO EXCLUSIVA DE ALERTAS DE CPF
 # ==========================================
 def renderizar_alertas_seguranca(df_validar):
     for idx, row in df_validar.iterrows():
         cpf_atual = str(row.get("CPF", "")).strip()
         aluno_nome = row.get("Aluno", "Desconhecido")
         
-        if str(row.get("Transferência", "")).strip() != "":
-            st.error(f"🚨 **ALERTA DE TRANSFERÊNCIA ATIVA:** O Aluno(a) **{aluno_nome}** possui pendências de transferência registradas!")
-            
+        # Validação exclusiva de ausência ou falha matemática estrutural do CPF
         if not cpf_atual or cpf_atual in ["Não informado", ""]:
             st.error(f"❌ **ALERTA DE CPF AUSENTE:** O Aluno(a) **{aluno_nome}** está sem CPF cadastrado no sistema!")
         elif not validar_cpf(cpf_atual):
-            st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA DE CPF CRÍTICO:</b> O CPF de <b>{aluno_nome}</b> ({cpf_atual}) está matematicamente INCORRETO ou INVÁLIDO!</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistente com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
 
 # ==========================================
-# MENU 1: CONSULTA COMPLETA E FORMULÁRIO DE ATUALIZAÇÃO DIRETA
+# MENU 1: CONSULTA COMPLETA E EDITORAÇÃO DIRETA
 # ==========================================
 if menu == "Pesquisar e Alterar Dados":
     st.markdown("### 🔍 Painel Avançado de Gestão Relacional")
@@ -314,7 +310,7 @@ if menu == "Pesquisar e Alterar Dados":
         st.info("Banco de dados indisponível no Google Sheets.")
 
 # ==========================================
-# MENU 2: IMPORTAÇÃO COM FUNIL INTELIGENTE DE DUPLICIDADE
+# MENU 2: IMPORTAÇÃO E GESTÃO DE DUPLICIDADE
 # ==========================================
 elif menu == "Importar Arquivos (.txt)":
     st.markdown("### 📥 Mapeador em Lote com Regra de Funil Dinâmica")
@@ -394,8 +390,7 @@ elif menu == "Importar Arquivos (.txt)":
                     
                     linhas_sobrepostas = 0
                     for idx, c in enumerate(conflitos_detectados):
-                        ifamp = decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados"
-                        if ifamp:
+                        if decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados":
                             dados_novos = c["novo"]
                             dados_novos["Id."] = c["atual"]["Id."]
                             dados_novos["Idade"] = calcular_idade_extenso(dados_novos["Nascimento"])
