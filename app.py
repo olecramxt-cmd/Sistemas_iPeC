@@ -1,11 +1,11 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.11.00 - data: 19/07/26 - 10:09
+# Versão do código: v.12.00 - data: 19/07/26 - 10:20
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -76,6 +76,11 @@ COLUNAS_OFICIAIS = [
 # ==========================================
 # UTILITÁRIOS DE VALIDAÇÃO E MÁSCARAS
 # ==========================================
+def obter_horario_unai():
+    """Retorna o horário correto ajustado para o fuso de Unaí-MG (UTC-3)."""
+    # Servidores Cloud rodam em UTC. Subtraímos 3 horas para alinhar com o horário oficial local.
+    return datetime.utcnow() - timedelta(hours=3)
+
 def validar_cpf(cpf_str):
     cpf = "".join(re.findall(r"\d", str(cpf_str)))
     if len(cpf) != 11 or cpf == cpf[0] * 11:
@@ -104,7 +109,7 @@ def calcular_idade_extenso(data_nasc_str):
         if match:
             dia, mes, ano = map(int, match.groups())
             data_nasc = datetime(ano, mes, dia).date()
-            hoje = datetime.now().date()
+            hoje = obter_horario_unai().date()
             anos = hoje.year - data_nasc.year
             meses = hoje.month - data_nasc.month
             if hoje.month < data_nasc.month or (hoje.month == data_nasc.month and hoje.day < data_nasc.day):
@@ -158,7 +163,8 @@ def registrar_log_auditoria(usuario, perfil, acao):
             aba_log = doc.add_worksheet(title="log_auditoria_ipec", rows="1000", cols="4")
             aba_log.append_row(["Data_Hora", "Usuario", "Perfil", "Acao"])
         
-        data_hora_atual = datetime.now().strftime("%d/%m/%Y, %H:%M")
+        # Uso do horário real e corrigido de Unaí-MG
+        data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
         aba_log.append_row([data_hora_atual, usuario, perfil, acao])
     except Exception: pass
 
@@ -283,7 +289,6 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN DA FOTO REDONDA AO LADO DO NOME DO USUÁRIO LOGADO
     st.sidebar.markdown(f"""
         <div class="user-profile-container">
             <img src="{st.session_state['foto_usuario']}" class="user-avatar" alt="Avatar">
@@ -324,7 +329,6 @@ if st.session_state["autenticado"]:
         st.markdown("### 📊 Painel de Controle de Conformidade e Indicadores de Alunos")
         sub_conformidade = st.sidebar.radio("Sub-menu:", ["Auditoria Cadastral", "Atualização de Dados"])
         
-        # INICIALIZAÇÃO DE FILTROS PERSISTENTES NA SESSÃO PARA FUSÃO DE TELAS
         if "f_aluno" not in st.session_state: st.session_state.f_aluno = ""
         if "f_mae" not in st.session_state: st.session_state.f_mae = ""
         if "f_turma" not in st.session_state: st.session_state.f_turma = ""
@@ -332,7 +336,6 @@ if st.session_state["autenticado"]:
         if "f_status" not in st.session_state: st.session_state.f_status = ""
         if "f_pbf" not in st.session_state: st.session_state.f_pbf = ""
 
-        # APLICAÇÃO DOS FILTROS SIMULTÂNEOS NA BASE GLOBAL
         df_filtrado = df_db_global.copy()
         if st.session_state.f_aluno: df_filtrado = df_filtrado[df_filtrado["Aluno"].str.contains(st.session_state.f_aluno, case=False)]
         if st.session_state.f_mae: df_filtrado = df_filtrado[df_filtrado["Mãe"].str.contains(st.session_state.f_mae, case=False)]
@@ -345,7 +348,6 @@ if st.session_state["autenticado"]:
             if not df_db_global.empty:
                 st.success(f"Banco de dados ativo com {len(df_db_global)} registros oficiais na nuvem.")
                 
-                # Validador de CPFs
                 for idx, row in df_filtrado.iterrows():
                     cpf_atual = str(row.get("CPF", "")).strip()
                     aluno_nome = row.get("Aluno", "Desconhecido")
@@ -373,21 +375,24 @@ if st.session_state["autenticado"]:
             if st.session_state["perfil_usuario"] != "Total":
                 st.warning("⚠️ Seu perfil possui apenas permissão de leitura. Atualização bloqueada.")
             else:
-                # O SELECOTOR DE ALUNOS AGORA EXIBE APENAS OS RESULTADOS DA PESQUISA ANTERIOR
-                lista_alunos_filtrados = [""] + list(df_filtrado["Aluno"].unique())
+                # SELETOR MAPEIA APENAS OS REGISTROS QUE SOBREVIVERAM AOS FILTROS
+                lista_mapeada = [""] + [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_filtrado.iterrows()]
                 
                 st.markdown("#### 📝 Modificar Registro Pós-Pesquisa")
-                st.caption(f"Exibindo {len(lista_alunos_filtrados)-1} alunos correspondentes aos filtros aplicados na Auditoria.")
+                st.caption(f"Exibindo {len(lista_mapeada)-1} registros localizados na filtragem da Auditoria.")
                 
-                aluno_sel = st.selectbox("Escolha o aluno para Atualizar:", lista_alunos_filtrados)
-                if aluno_sel:
-                    idx_registro = df_db_global[df_db_global["Aluno"] == aluno_sel].index[0]
-                    linha_dados = df_db_global.loc[idx_registro].to_dict()
-                    linha_planilha = int(linha_dados["Id."]) + 1 
+                opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
+                if opcao_escolhida:
+                    # Extração segura e estrita do ID numérico
+                    id_selecionado = int(opcao_escolhida.split(" - ")[0])
                     
-                    st.info(f"Modificando o registro posicionado na linha {linha_planilha} da planilha.")
+                    # Captura cirúrgica na base global usando o ID estrito (Elimina duplicidades)
+                    linha_dados = df_db_global[df_db_global["Id."] == id_selecionado].iloc[0].to_dict()
+                    linha_planilha = id_selecionado + 1 
+                    
+                    st.info(f"Modo de sobreposição estrito ativo para a linha {linha_planilha} da planilha.")
                     form_cols = st.columns(3)
-                    novos_dados = {"Id.": linha_dados["Id."]}
+                    novos_dados = {"Id.": id_selecionado}
                     
                     campos_espalhados = [c for c in COLUNAS_OFICIAIS if c not in ["Id.", "Idade"]]
                     for i, campo in enumerate(campos_espalhados):
@@ -404,14 +409,16 @@ if st.session_state["autenticado"]:
                     
                     novos_dados["Idade"] = calcular_idade_extenso(novos_dados["Nascimento"])
                     
-                    if st.button("💾 Atualizar Registro na Planilha"):
+                    if st.button("💾 Salvar Alterações na Planilha"):
                         try:
                             doc_w = conectar_planilha()
                             aba_w = doc_w.get_worksheet(0)
                             valores_alinhados = [str(novos_dados.get(c, "")) for c in COLUNAS_OFICIAIS]
+                            # Gravação direta por cima da linha correspondente, sem dar append
                             aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
-                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Modificou os dados do aluno {aluno_sel}.")
-                            st.success("🎉 Alteração gravada direto na nuvem com sucesso!")
+                            
+                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou cadastro do aluno ID {id_selecionado}.")
+                            st.success("🎉 Registro sobreposto com sucesso direto na nuvem!")
                             st.session_state["dados_banco"] = carregar_banco_dados_virtual()
                             st.rerun()
                         except Exception as err:
@@ -495,7 +502,7 @@ if st.session_state["autenticado"]:
                                 linhas_finais_append.append(valores)
                                 proximo_id += 1
                                 
-                            if linhas_finais_append:
+                            if lines_finais_append:
                                 aba_upload.append_rows(linhas_finais_append)
                             
                             linhas_sobrepostas = 0
