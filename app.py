@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.15.04 - data: 20/07/26 - 08:30
+# Versão do código: v.16.00 - data: 20/07/26 - 08:38
 
 import streamlit as st
 import pandas as pd
@@ -49,14 +49,26 @@ st.markdown("""
             border: 1px solid rgba(247, 195, 37, 0.3);
             margin-bottom: 15px;
         }
+        /* RODAPÉ DA LOGO FACIADO E COLADO LOGO ABAIXO */
         .sidebar-logo-footer {
             text-align: center;
-            font-size: 0.75em;
+            font-size: 0.72em;
             color: #ffffff;
-            margin-top: -10px;
+            margin-top: -15px;
             margin-bottom: 15px;
-            padding-bottom: 8px;
+            padding-bottom: 5px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            line-height: 1.3;
+        }
+        /* ESTILIZAÇÃO DA FOTO DE PERFIL BLINDADA CONTRA ALTA RESOLUÇÃO */
+        .profile-img-container {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #f7c325;
+            margin: 0 auto 5px auto;
+            display: block;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -235,7 +247,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 if "Telefone" in linha_limpa: aluno_atual["Telefone"] = formatar_telefone(linha_limpa.split("Telefone")[-1])
             elif "E-mail(s):" in linha_limpa: aluno_atual["E-mail(s)"] = linha_limpa.split("E-mail(s):")[-1].strip()
             elif "Endereço:" in linha_limpa:
-                end_limpo = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
+                end_limpo = linha_limpo.split("Endereço:")[-1].replace("*", "").strip()
                 aluno_atual["Endereço"] = end_limpo
                 match_bairro = re.search(r"(?:Bairro|-,)\s*([^,.\n\-\*]+)", end_limpo, re.IGNORECASE)
                 if match_bairro: aluno_atual["Bairro"] = match_bairro.group(1).replace("- MG","").replace("UNAÍ","").strip()
@@ -266,10 +278,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# RODAPÉ DA LOGO POSICIONADO IMEDIATAMENTE ABAIXO DA LOGO
+# RODAPÉ DA LOGO POSICIONADO E FACIADO IMEDIATAMENTE ABAIXO DA LOGO
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.15.04 de 20/07/2026<br>
+        Versão: v.16.00 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -290,15 +302,13 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN NATIVO DA FOTO DO PERFIL DO USUÁRIO
+    # DESIGN NATIVO DA FOTO DO PERFIL COM REDIMENSIONAMENTO HTML SEGURO PARA ALTA RESOLUÇÃO
     st.sidebar.markdown('<div class="user-card-profile">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
     if url_foto and "http" in url_foto:
-        try:
-            st.sidebar.image(url_foto, width=80)
-        except Exception:
-            st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
+        # Renderização via HTML puro para forçar a dimensão e evitar travamentos por alta definição
+        st.sidebar.markdown(f'<img src="{url_foto}" class="profile-img-container">', unsafe_allow_html=True)
     else:
         st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
         
@@ -368,7 +378,7 @@ if st.session_state["autenticado"]:
 
                 st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real / Validação ao Salvar)")
                 
-                # CORREÇÃO DA FUNÇÃO DE ESTILIZAÇÃO USANDO .map() COMPATÍVEL COM PANDAS MODERNO
+                # CORREÇÃO DEFINITIVA DA ESTILIZAÇÃO COMPATÍVEL COM PANDAS MODERNO
                 def destacar_cpf_inconsistente(val):
                     cpf_str = str(val).strip()
                     if not cpf_str or cpf_str in ["Não informado", ""] or not validar_cpf(cpf_str):
@@ -571,7 +581,7 @@ if st.session_state["autenticado"]:
         st.info(f"Módulo '{sub_biblioteca}' pronto para controle de leituras.")
 
     # 6. SUPORTE (Acesso restrito ao perfil Total)
-    elif menu_principal == "🛠️ Suporter":
+    elif menu_principal == "🛠️ Suporte":
         st.markdown("### 🛠️ Painel de Suporte e Auditoria de Infraestrutura")
         sub_suporte = st.sidebar.radio("Sub-menu:", ["Manual do Sistema", "Logs de Auditoria em Tempo Real"])
         if sub_suporte == "Logs de Auditoria em Tempo Real":
