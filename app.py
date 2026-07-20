@@ -1,12 +1,11 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.16.03 - data: 20/07/26 - 09:37
+# Versão do código: v.17.00 - data: 20/07/26 - 10:11
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import re
 from datetime import datetime, timedelta
-
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -17,16 +16,19 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO FLUÍDICA EM PROFUSÃO COM A LOGO (CSS OTIMIZADO PARA COMPACTAÇÃO)
+# COLORIZAÇÃO E ESTILIZAÇÃO FLUÍDICA EM PROFUSÃO COM A LOGO (CSS COMPACTO E ELEGANTE)
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0f2b5c 0%, #1e4b8f 50%, #f7c325 100%);
             color: #ffffff !important;
-            padding-top: 0.2rem;
+            padding-top: 0rem !important;
         }
         [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            margin-top: -25px !important;
         }
         .stRadio > div {
             background-color: rgba(255, 255, 255, 0.1);
@@ -46,7 +48,7 @@ st.markdown("""
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        /* RODAPÉ DA LOGO COLADO IMEDIATAMENTE ABAIXO */
+        /* RODAPÉ DA LOGO COLADO RENTE A ELA */
         .sidebar-logo-footer {
             text-align: center;
             font-size: 0.72em;
@@ -57,10 +59,10 @@ st.markdown("""
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             line-height: 1.2;
         }
-        /* BLOCO DE PERFIL COMPACTO E COLADO AOS ELEMENTOS */
+        /* BLOCO DE PERFIL COMPACTO, FACIADO E CENTRALIZADO */
         .profile-wrapper {
             text-align: center;
-            margin-top: -15px;
+            margin-top: -10px;
             margin-bottom: 5px;
         }
         .profile-img-container {
@@ -280,10 +282,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# RODAPÉ DA LOGO FACIADO E POSICIONADO BEM PERTO
+# RODAPÉ DA LOGO FACIADO E COLADO RENTE A ELA
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.16.03 de 20/07/2026<br>
+        Versão: v.17.00 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -304,7 +306,7 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN COMPACTO E APROXIMADO
+    # DESIGN COMPACTO E CENTRALIZADO DO PERFIL
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
@@ -313,8 +315,8 @@ else:
     else:
         st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
         
-    st.sidebar.markdown(f"<h3 style='text-align:center; margin: 0; padding: 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
-    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin: 0; padding: 0;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h3 style='text-align:center; margin:0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin-top:0;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if st.sidebar.button("🚪 Sair do Sistema"):
@@ -426,41 +428,44 @@ if st.session_state["autenticado"]:
                 opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
                 if opcao_escolhida:
                     id_selecionado = int(opcao_escolhida.split(" - ")[0])
-                    linha_dados = df_db_global[df_db_global["Id."] == id_selecionado].iloc[0].to_dict()
-                    linha_planilha = id_selecionado + 1 
-                    
-                    st.info(f"Modo de sobreposição estrito ativo para a linha {linha_planilha} da planilha.")
-                    form_cols = st.columns(3)
-                    novos_dados = {"Id.": id_selecionado}
-                    
-                    campos_espalhados = [c for c in COLUNAS_OFICIAIS if c not in ["Id.", "Idade"]]
-                    for i, campo in enumerate(campos_espalhados):
-                        with form_cols[i % 3]:
-                            val_atual = str(linha_dados.get(campo, "Não informado"))
-                            if campo == "PBF":
-                                novos_dados[campo] = st.selectbox("PBF:", ["Não", "Sim"], index=0 if val_atual == "Não" else 1)
-                            elif campo == "Status":
-                                novos_dados[campo] = st.selectbox("Status:", ["Ativo", "Inativo", "Pendente"], index=0 if val_atual == "Ativo" else 1)
-                            elif campo == "Sexo":
-                                novos_dados[campo] = st.selectbox("Sexo:", ["Masculino", "Feminino", "Não informado"], index=0 if "Masc" in val_atual else 1 if "Fem" in val_atual else 2)
-                            else:
-                                novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual)
-                    
-                    novos_dados["Idade"] = calcular_idade_extenso(novos_dados["Nascimento"])
-                    
-                    if st.button("💾 Salvar Alterações na Planilha"):
-                        try:
-                            doc_w = conectar_planilha()
-                            aba_w = doc_w.get_worksheet(0)
-                            valores_alinhados = [str(novos_dados.get(c, "")) for c in COLUNAS_OFICIAIS]
-                            aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
-                            
-                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou cadastro do aluno ID {id_selecionado}.")
-                            st.success("🎉 Registro sobreposto com sucesso direto na nuvem!")
-                            st.session_state["dados_banco"] = carregar_banco_dados_virtual()
-                            st.rerun()
-                        except Exception as err:
-                            st.error(f"Erro ao salvar: {err}")
+                    # CORREÇÃO DEFINITIVA DO INDEXERROR USANDO BUSCA SEGURA NO DATAFRAME GLOBAL
+                    match_busca = df_db_global[df_db_global["Id."] == id_selecionado]
+                    if not match_busca.empty:
+                        linha_dados = match_busca.iloc[0].to_dict()
+                        linha_planilha = id_selecionado + 1 
+                        
+                        st.info(f"Modo de sobreposição estrito ativo para a linha {linha_planilha} da planilha.")
+                        form_cols = st.columns(3)
+                        novos_dados = {"Id.": id_selecionado}
+                        
+                        campos_espalhados = [c for c in COLUNAS_OFICIAIS if c not in ["Id.", "Idade"]]
+                        for i, campo in enumerate(campos_espalhados):
+                            with form_cols[i % 3]:
+                                val_atual = str(linha_dados.get(campo, "Não informado"))
+                                if campo == "PBF":
+                                    novos_dados[campo] = st.selectbox("PBF:", ["Não", "Sim"], index=0 if val_atual == "Não" else 1)
+                                elif campo == "Status":
+                                    novos_dados[campo] = st.selectbox("Status:", ["Ativo", "Inativo", "Pendente"], index=0 if val_atual == "Ativo" else 1)
+                                elif campo == "Sexo":
+                                    novos_dados[campo] = st.selectbox("Sexo:", ["Masculino", "Feminino", "Não informado"], index=0 if "Masc" in val_atual else 1 if "Fem" in val_atual else 2)
+                                else:
+                                    novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual)
+                        
+                        novos_dados["Idade"] = calcular_idade_extenso(novos_dados["Nascimento"])
+                        
+                        if st.button("💾 Salvar Alterações na Planilha"):
+                            try:
+                                doc_w = conectar_planilha()
+                                aba_w = doc_w.get_worksheet(0)
+                                valores_alinhados = [str(novos_dados.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                                
+                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou cadastro do aluno ID {id_selecionado}.")
+                                st.success("🎉 Registro sobreposto com sucesso direto na nuvem!")
+                                st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                st.rerun()
+                            except Exception as err:
+                                st.error(f"Erro ao salvar: {err}")
 
     # 2. IMPORTAÇÃO DE DADOS (Acesso restrito ao perfil Total)
     elif menu_principal == "📥 Importação de Dados":
