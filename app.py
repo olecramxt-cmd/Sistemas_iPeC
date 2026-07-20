@@ -1,11 +1,12 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.03 - data: 20/07/26 - 13:21
+# Versão do código: v.17.04 - data: 20/07/26 - 13:28
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import re
 from datetime import datetime, timedelta
+import time
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -285,7 +286,7 @@ except Exception: pass
 # 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.03 de 20/07/2026<br>
+        Versão: v.17.04 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -400,12 +401,15 @@ if st.session_state["autenticado"]:
                             doc_w = conectar_planilha()
                             aba_w = doc_w.get_worksheet(0)
                             
-                            for idx, row_edit in df_editavel.iterrows():
-                                id_reg = row_edit["Id."]
-                                linha_planilha = int(id_reg) + 1
-                                row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
-                                valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
-                                aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                            # Otimização com intervalo de segurança (Sleep) para evitar Quota Exceeded (Erro 429)
+                            with st.spinner("Salvando alterações em lote na nuvem..."):
+                                for idx, row_edit in df_editavel.iterrows():
+                                    id_reg = row_edit["Id."]
+                                    linha_planilha = int(id_reg) + 1
+                                    row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
+                                    valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                    aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                                    time.sleep(0.4) # Pausa estratégica para respeitar os limites de requisição da API do Google
                             
                             registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Atualizou registros em lote via tabela interativa.")
                             st.success("🎉 Todas as alterações validadas e salvas direto na nuvem com sucesso!")
