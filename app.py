@@ -50,7 +50,7 @@ st.markdown("""
             text-align: center;
             font-size: 0.72em;
             color: #ffffff;
-            margin-top: -4px;
+            margin-top: -2px;
             margin-bottom: 5px;
             padding-bottom: 4px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
