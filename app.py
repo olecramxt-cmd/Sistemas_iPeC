@@ -64,12 +64,12 @@ st.markdown("""
             margin-bottom: 5px;
         }
         .profile-img-container {
-            width: 75px;
-            height: 75px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #f7c325;
-            margin: 0 auto 4px auto;
+            margin: 0 auto 1px auto;
             display: block;
         }
     </style>
