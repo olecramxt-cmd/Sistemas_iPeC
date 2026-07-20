@@ -60,8 +60,8 @@ st.markdown("""
         /* BLOCO DE PERFIL COMPACTO E COLADO AOS ELEMENTOS */
         .profile-wrapper {
             text-align: center;
-            margin-top: -1px;
-            margin-bottom: 8px;
+            margin-top: -15px;
+            margin-bottom: 5px;
         }
         .profile-img-container {
             width: 75px;
