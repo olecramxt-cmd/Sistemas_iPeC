@@ -313,8 +313,8 @@ else:
     else:
         st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
         
-    st.sidebar.markdown(f"<h3 style='text-align:center; margin:0px 0 0 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
-    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin-top:0px;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h3 style='text-align:center; margin: 0; padding: 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin: 0; padding: 0;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if st.sidebar.button("🚪 Sair do Sistema"):
