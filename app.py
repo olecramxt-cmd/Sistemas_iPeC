@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.00 - data: 20/07/26 - 10:11
+# Versão do código: v.17.01 - data: 20/07/26 - 10:17
 
 import streamlit as st
 import pandas as pd
@@ -16,7 +16,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO FLUÍDICA EM PROFUSÃO COM A LOGO (CSS COMPACTO E ELEGANTE)
+# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM SUAS CORREÇÕES MANUAIS DEFINITIVAS
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -27,8 +27,9 @@ st.markdown("""
         [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #ffffff !important;
         }
+        /* PUXA TODO O CONJUNTO DA BARRA LATERAL PARA O TOPO ABSOLUTO */
         [data-testid="stSidebar"] > div:first-child {
-            margin-top: -25px !important;
+            margin-top: -35px !important;
         }
         .stRadio > div {
             background-color: rgba(255, 255, 255, 0.1);
@@ -42,27 +43,26 @@ st.markdown("""
             border: 1px solid #f7c325;
             width: 100%;
             padding: 0.3rem;
-            margin-top: -5px;
         }
         div.stButton > button:first-child:hover {
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        /* RODAPÉ DA LOGO COLADO RENTE A ELA */
+        /* VERSÃO E COPYRIGHT COLADOS RENTE À LOGO */
         .sidebar-logo-footer {
             text-align: center;
             font-size: 0.72em;
             color: #ffffff;
-            margin-top: -35px;
+            margin-top: -40px;
             margin-bottom: 2px;
             padding-bottom: 2px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             line-height: 1.2;
         }
-        /* BLOCO DE PERFIL COMPACTO, FACIADO E CENTRALIZADO */
+        /* BLOCO DE PERFIL FACIADO, COMPACTO E CENTRALIZADO */
         .profile-wrapper {
             text-align: center;
-            margin-top: -10px;
+            margin-top: -5px;
             margin-bottom: 5px;
         }
         .profile-img-container {
@@ -71,7 +71,7 @@ st.markdown("""
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #f7c325;
-            margin: 0 auto 1px auto;
+            margin: 0 auto 2px auto;
             display: block;
         }
     </style>
@@ -282,10 +282,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# RODAPÉ DA LOGO FACIADO E COLADO RENTE A ELA
+# VERSÃO E COPYRIGHT COLADOS DIRETAMENTE ABAIXO DA LOGO
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.00 de 20/07/2026<br>
+        Versão: v.17.01 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -306,7 +306,7 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN COMPACTO E CENTRALIZADO DO PERFIL
+    # PERFIL CENTRALIZADO E FACIADO
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
@@ -426,9 +426,10 @@ if st.session_state["autenticado"]:
                 st.caption(f"Exibindo {len(lista_mapeada)-1} registros localizados na filtragem.")
                 
                 opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
-                if opcao_escolhida:
+                
+                # CORREÇÃO DEFINITIVA DO FORMULÁRIO DE ATUALIZAÇÃO (GARANTINDO A EXIBIÇÃO IMEDIATA)
+                if opcao_escolhida and opcao_escolhida.strip() != "":
                     id_selecionado = int(opcao_escolhida.split(" - ")[0])
-                    # CORREÇÃO DEFINITIVA DO INDEXERROR USANDO BUSCA SEGURA NO DATAFRAME GLOBAL
                     match_busca = df_db_global[df_db_global["Id."] == id_selecionado]
                     if not match_busca.empty:
                         linha_dados = match_busca.iloc[0].to_dict()
@@ -449,7 +450,7 @@ if st.session_state["autenticado"]:
                                 elif campo == "Sexo":
                                     novos_dados[campo] = st.selectbox("Sexo:", ["Masculino", "Feminino", "Não informado"], index=0 if "Masc" in val_atual else 1 if "Fem" in val_atual else 2)
                                 else:
-                                    novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual)
+                                    novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual, key=f"inp_{campo}")
                         
                         novos_dados["Idade"] = calcular_idade_extenso(novos_dados["Nascimento"])
                         
