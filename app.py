@@ -596,9 +596,14 @@ if st.session_state["autenticado"]:
         sub_relatorios = st.sidebar.radio("Sub-menu:", ["Ficha Individual (PDF)", "Estatísticas PBF e AEE/CID"])
         st.info(f"Sub-área '{sub_relatorios}' pronta para desenvolvimento de layouts.")
 
-    # ==========================================
-# 4. PROGRAMA MIGUILIM (Integrado ao Streamlit)
-# ==========================================
+# =====================================================================
+# Módulo de Triagem Visual - Programa Miguilim
+# SISTEMAS iPeC - Integração com Base de Dados e Automação de Resultados
+# © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
+# Versão: 1.0.1
+# Data: 20/07/2026
+# =====================================================================
+
 elif menu_principal == "👁️ Programa Miguilim":
     st.markdown("### 👁️ Programa Miguilim - Saúde Visual e Auditiva")
     sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
@@ -609,11 +614,9 @@ elif menu_principal == "👁️ Programa Miguilim":
         if df_db_global.empty:
             st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
         else:
-            # Seleção do aluno vindo do cadastro
             lista_alunos_miguilim = ["Selecione o Aluno..."] + [f"{r['Id.']} - {r['Aluno']} (Turma: {r.get('Turma', 'N/I)})" for _, r in df_db_global.iterrows()]
             aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", lista_alunos_miguilim)
             
-            # Inicializa dados padrão para preenchimento
             p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
             
             if aluno_escolhido_mig and aluno_escolhido_mig != "Selecione o Aluno...":
@@ -657,7 +660,6 @@ elif menu_principal == "👁️ Programa Miguilim":
                 with col_c1:
                     val_estrabismo = st.selectbox("Estrabismo:", ["Não", "Sim"])
                 with col_c2:
-                    # Traz do cadastro mas permite alteração manual
                     index_pbf = 1 if pbf_val.strip().lower() == "sim" else 0
                     val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Não", "Sim"], index=index_pbf)
                 
@@ -667,7 +669,6 @@ elif menu_principal == "👁️ Programa Miguilim":
                     if not val_aluno_nome or val_aluno_nome == "":
                         st.error("⚠️ O campo do Aluno é obrigatório para registrar a triagem.")
                     else:
-                        # Função interna de conversão para lógica de cálculo
                         def conv_v(txt):
                             if txt == "Sem percepção luminosa": return 0.0
                             try: return float(txt)
@@ -676,13 +677,11 @@ elif menu_principal == "👁️ Programa Miguilim":
                         d_s, e_s = conv_v(sem_dir), conv_v(sem_esq)
                         d_c, e_c = conv_v(com_dir), conv_v(com_esq)
                         
-                        # Regras de Negócio Definidas
                         tem_alteracao_geral = (d_s < 1.0 or e_s < 1.0 or d_c < 1.0 or e_c < 1.0 or val_estrabismo == "Sim")
                         tem_valor_critico = (d_s <= 0.6 or e_s <= 0.6 or d_c <= 0.6 or e_c <= 0.6)
                         tem_alteracao_moderada = ((d_s > 0.6 and d_s < 1.0) or (e_s > 0.6 and e_s < 1.0) or 
                                                   (d_c > 0.6 and d_c < 1.0) or (e_c > 0.6 and e_c < 1.0))
                         
-                        # Atribuição estrita do Resultado
                         if not tem_alteracao_geral:
                             status_resultado = "Sem alteração"
                         elif tem_valor_critico:
