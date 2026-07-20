@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.16.02 - data: 20/07/26 - 09:10
+# Versão do código: v.16.03 - data: 20/07/26 - 09:37
 
 import streamlit as st
 import pandas as pd
@@ -16,57 +16,59 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO FLUÍDICA EM PROFUSÃO COM A LOGO (CSS)
+# COLORIZAÇÃO E ESTILIZAÇÃO FLUÍDICA EM PROFUSÃO COM A LOGO (CSS OTIMIZADO PARA COMPACTAÇÃO)
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0f2b5c 0%, #1e4b8f 50%, #f7c325 100%);
             color: #ffffff !important;
-            padding-top: 0.5rem;
+            padding-top: 0.2rem;
         }
         [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #ffffff !important;
         }
         .stRadio > div {
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 10px;
+            padding: 8px;
+            border-radius: 8px;
         }
         div.stButton > button:first-child {
             background-color: #1e4b8f;
             color: white;
-            border-radius: 8px;
+            border-radius: 6px;
             border: 1px solid #f7c325;
             width: 100%;
+            padding: 0.3rem;
+            margin-top: -5px;
         }
         div.stButton > button:first-child:hover {
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        /* RODAPÉ DA LOGO FACIADO E COLADO LOGO ABAIXO */
+        /* RODAPÉ DA LOGO COLADO IMEDIATAMENTE ABAIXO */
         .sidebar-logo-footer {
             text-align: center;
             font-size: 0.72em;
             color: #ffffff;
-            margin-top: -12px;
-            margin-bottom: 10px;
-            padding-bottom: 6px;
+            margin-top: -15px;
+            margin-bottom: 5px;
+            padding-bottom: 4px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            line-height: 1.3;
+            line-height: 1.2;
         }
-        /* BLOCO DE PERFIL LIMPO, SEM RETÂNGULO E TOTALMENTE CENTRALIZADO */
+        /* BLOCO DE PERFIL COMPACTO E COLADO AOS ELEMENTOS */
         .profile-wrapper {
             text-align: center;
-            margin-top: 5px;
-            margin-bottom: 15px;
+            margin-top: -5px;
+            margin-bottom: 8px;
         }
         .profile-img-container {
-            width: 85px;
-            height: 85px;
+            width: 75px;
+            height: 75px;
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #f7c325;
-            margin: 0 auto 8px auto;
+            margin: 0 auto 4px auto;
             display: block;
         }
     </style>
@@ -277,10 +279,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# RODAPÉ DA LOGO POSICIONADO E FACIADO IMEDIATAMENTE ABAIXO DA LOGO
+# RODAPÉ DA LOGO FACIADO E POSICIONADO BEM PERTO
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.16.02 de 20/07/2026<br>
+        Versão: v.16.03 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -301,7 +303,7 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN LIMPO SEM RETÂNGULO, COM FOTO E PERFIL CENTRALIZADOS
+    # DESIGN COMPACTO E APROXIMADO
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
@@ -310,8 +312,8 @@ else:
     else:
         st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
         
-    st.sidebar.markdown(f"<h3 style='text-align:center; margin:5px 0 0 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
-    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin-top:2px;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h3 style='text-align:center; margin:0px 0 0 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin-top:0px;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if st.sidebar.button("🚪 Sair do Sistema"):
