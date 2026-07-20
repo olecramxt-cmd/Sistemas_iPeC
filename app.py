@@ -51,9 +51,9 @@ st.markdown("""
             text-align: center;
             font-size: 0.72em;
             color: #ffffff;
-            margin-top: -2px;
-            margin-bottom: 5px;
-            padding-bottom: 4px;
+            margin-top: -35px;
+            margin-bottom: 2px;
+            padding-bottom: 2px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             line-height: 1.2;
         }
