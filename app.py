@@ -600,7 +600,7 @@ if st.session_state["autenticado"]:
 # Módulo de Triagem Visual - Programa Miguilim
 # SISTEMAS iPeC - Integração com Base de Dados e Automação de Resultados
 # © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão: 1.0.1
+# Versão: 1.0.2
 # Data: 20/07/2026
 # =====================================================================
 
@@ -614,8 +614,12 @@ elif menu_principal == "👁️ Programa Miguilim":
         if df_db_global.empty:
             st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
         else:
-            lista_alunos_miguilim = ["Selecione o Aluno..."] + [f"{r['Id.']} - {r['Aluno']} (Turma: {r.get('Turma', 'N/I)})" for _, r in df_db_global.iterrows()]
-            aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", lista_alunos_miguilim)
+            opcoes_alunos_mig = ["Selecione o Aluno..."]
+            for _, r in df_db_global.iterrows():
+                txt_item = str(r['Id.']) + " - " + str(r['Aluno']) + " (Turma: " + str(r.get('Turma', 'N/I')) + ")"
+                opcoes_alunos_mig.append(txt_item)
+                
+            aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", opcoes_alunos_mig)
             
             p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
             
