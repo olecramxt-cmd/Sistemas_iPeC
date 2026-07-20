@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import re
 from datetime import datetime, timedelta
+
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -59,7 +60,7 @@ st.markdown("""
         /* BLOCO DE PERFIL COMPACTO E COLADO AOS ELEMENTOS */
         .profile-wrapper {
             text-align: center;
-            margin-top: -5px;
+            margin-top: -1px;
             margin-bottom: 8px;
         }
         .profile-img-container {
