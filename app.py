@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.15.03 - data: 20/07/26 - 08:24
+# Versão do código: v.15.04 - data: 20/07/26 - 08:30
 
 import streamlit as st
 import pandas as pd
@@ -53,8 +53,9 @@ st.markdown("""
             text-align: center;
             font-size: 0.75em;
             color: #ffffff;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
@@ -265,10 +266,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# RODAPÉ LOGO / VERSÃO POSICIONADO DIRETAMENTE ABAIXO DA LOGO
+# RODAPÉ DA LOGO POSICIONADO IMEDIATAMENTE ABAIXO DA LOGO
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.15.03 de 20/07/2026<br>
+        Versão: v.15.04 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -289,12 +290,11 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN NATIVO BLINDADO DA FOTO DO PERFIL DO USUÁRIO
+    # DESIGN NATIVO DA FOTO DO PERFIL DO USUÁRIO
     st.sidebar.markdown('<div class="user-card-profile">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
-    # TRATAMENTO ROBUSTO DE URL DO GITHUB RAW PARA EVITAR O ERRO DO ÍCONE 0
-    if url_foto and url_foto.startswith("http"):
+    if url_foto and "http" in url_foto:
         try:
             st.sidebar.image(url_foto, width=80)
         except Exception:
@@ -368,16 +368,15 @@ if st.session_state["autenticado"]:
 
                 st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real / Validação ao Salvar)")
                 
-                # FUNÇÃO DE ESTILIZAÇÃO CONDICIONAL DA TABELA PARA DESTAQUE DE CPF INCONSISTENTE
+                # CORREÇÃO DA FUNÇÃO DE ESTILIZAÇÃO USANDO .map() COMPATÍVEL COM PANDAS MODERNO
                 def destacar_cpf_inconsistente(val):
                     cpf_str = str(val).strip()
                     if not cpf_str or cpf_str in ["Não informado", ""] or not validar_cpf(cpf_str):
                         return 'background-color: #ffcccc; color: #990000; font-weight: bold;'
                     return ''
 
-                # APLICAÇÃO DO EDITOR INTERATIVO COM ESTILO CONDICIONAL NO CPF
                 df_editavel = st.data_editor(
-                    df_filtrado.style.applymap(destacar_cpf_inconsistente, subset=['CPF']),
+                    df_filtrado.style.map(destacar_cpf_inconsistente, subset=['CPF']),
                     use_container_width=True, 
                     hide_index=True,
                     key="editor_dados_tabela"
@@ -572,7 +571,7 @@ if st.session_state["autenticado"]:
         st.info(f"Módulo '{sub_biblioteca}' pronto para controle de leituras.")
 
     # 6. SUPORTE (Acesso restrito ao perfil Total)
-    elif menu_principal == "🛠️ Suporte":
+    elif menu_principal == "🛠️ Suporter":
         st.markdown("### 🛠️ Painel de Suporte e Auditoria de Infraestrutura")
         sub_suporte = st.sidebar.radio("Sub-menu:", ["Manual do Sistema", "Logs de Auditoria em Tempo Real"])
         if sub_suporte == "Logs de Auditoria em Tempo Real":
@@ -584,4 +583,4 @@ if st.session_state["autenticado"]:
             except Exception:
                 st.error("Aba de logs ainda não possui registros inseridos.")
 else:
-    st.info("Por falsas credenciais, realize o login na barra lateral para liberar as diretrizes do sistema.")
+    st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
