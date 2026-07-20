@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.15.02 - data: 20/07/26 - 08:10
+# Versão do código: v.15.03 - data: 20/07/26 - 08:24
 
 import streamlit as st
 import pandas as pd
@@ -49,13 +49,13 @@ st.markdown("""
             border: 1px solid rgba(247, 195, 37, 0.3);
             margin-bottom: 15px;
         }
-        .sidebar-footer {
+        .sidebar-logo-footer {
             text-align: center;
             font-size: 0.75em;
             color: #ffffff;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -265,6 +265,14 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
+# RODAPÉ LOGO / VERSÃO POSICIONADO DIRETAMENTE ABAIXO DA LOGO
+st.sidebar.markdown("""
+    <div class="sidebar-logo-footer">
+        Versão: v.15.03 de 20/07/2026<br>
+        © Prof. Colab. Marcelo Xavier Travassos
+    </div>
+""", unsafe_allow_html=True)
+
 if not st.session_state["autenticado"]:
     st.sidebar.title("🔐 Controle de Acesso")
     input_user = st.sidebar.text_input("Usuário (E-mail):", placeholder="exemplo@ipec.com")
@@ -281,11 +289,12 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN NATIVO DO PERFIL DO USUÁRIO NA SIDEBAR
+    # DESIGN NATIVO BLINDADO DA FOTO DO PERFIL DO USUÁRIO
     st.sidebar.markdown('<div class="user-card-profile">', unsafe_allow_html=True)
     
-    url_foto = st.session_state['foto_usuario']
-    if url_foto and "http" in url_foto:
+    url_foto = st.session_state['foto_usuario'].strip()
+    # TRATAMENTO ROBUSTO DE URL DO GITHUB RAW PARA EVITAR O ERRO DO ÍCONE 0
+    if url_foto and url_foto.startswith("http"):
         try:
             st.sidebar.image(url_foto, width=80)
         except Exception:
@@ -315,14 +324,6 @@ else:
         opcoes_menu.append("🛠️ Suporte")
         
     menu_principal = st.sidebar.selectbox("Selecione a Área:", opcoes_menu)
-
-    # RODAPÉ SOLICITADO NA LOGO / SIDEBAR
-    st.sidebar.markdown("""
-        <div class="sidebar-footer">
-            Versão: v.15.02 de 20/07/2026<br>
-            © Prof. Colab. Marcelo Xavier Travassos
-        </div>
-    """, unsafe_allow_html=True)
 
 # ==========================================
 # OPERAÇÃO DE CADA MÓDULO E SUB-MENUS
@@ -367,15 +368,16 @@ if st.session_state["autenticado"]:
 
                 st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real / Validação ao Salvar)")
                 
-                # EDITOR EM TEMPO REAL COM DESTAQUE CONDICIONAL PARA CPF INVÁLIDO/AUSENTE
-                def colorir_cpf_inconsistente(row):
-                    cpf_val = str(row.get("CPF", "")).strip()
-                    if not cpf_val or cpf_val in ["Não informado", ""] or not validar_cpf(cpf_val):
-                        return ['background-color: #ffcccc' if col == 'CPF' else '' for col in row.index]
-                    return ['' for _ in row.index]
+                # FUNÇÃO DE ESTILIZAÇÃO CONDICIONAL DA TABELA PARA DESTAQUE DE CPF INCONSISTENTE
+                def destacar_cpf_inconsistente(val):
+                    cpf_str = str(val).strip()
+                    if not cpf_str or cpf_str in ["Não informado", ""] or not validar_cpf(cpf_str):
+                        return 'background-color: #ffcccc; color: #990000; font-weight: bold;'
+                    return ''
 
+                # APLICAÇÃO DO EDITOR INTERATIVO COM ESTILO CONDICIONAL NO CPF
                 df_editavel = st.data_editor(
-                    df_filtrado, 
+                    df_filtrado.style.applymap(destacar_cpf_inconsistente, subset=['CPF']),
                     use_container_width=True, 
                     hide_index=True,
                     key="editor_dados_tabela"
@@ -387,11 +389,9 @@ if st.session_state["autenticado"]:
                             doc_w = conectar_planilha()
                             aba_w = doc_w.get_worksheet(0)
                             
-                            # Atualiza a base global mapeando pelo ID único e imutável
                             for idx, row_edit in df_editavel.iterrows():
                                 id_reg = row_edit["Id."]
                                 linha_planilha = int(id_reg) + 1
-                                # Recalcula idade se necessário
                                 row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
                                 valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
                                 aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
@@ -584,4 +584,4 @@ if st.session_state["autenticado"]:
             except Exception:
                 st.error("Aba de logs ainda não possui registros inseridos.")
 else:
-    st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
+    st.info("Por falsas credenciais, realize o login na barra lateral para liberar as diretrizes do sistema.")
