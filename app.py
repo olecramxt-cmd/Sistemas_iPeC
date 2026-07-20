@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.01 - data: 20/07/26 - 10:17
+# Versão do código: v.17.02 - data: 20/07/26 - 10:29
 
 import streamlit as st
 import pandas as pd
@@ -16,7 +16,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM SUAS CORREÇÕES MANUAIS DEFINITIVAS
+# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM OS AJUSTES MANUAIS EXATOS DO CHAT 13
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -48,21 +48,21 @@ st.markdown("""
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        /* VERSÃO E COPYRIGHT COLADOS RENTE À LOGO */
+        /* 1. VERSÃO E COPYRIGHT COLADOS RENTE À LOGO */
         .sidebar-logo-footer {
             text-align: center;
             font-size: 0.72em;
             color: #ffffff;
-            margin-top: -40px;
+            margin-top: -35px;
             margin-bottom: 2px;
             padding-bottom: 2px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             line-height: 1.2;
         }
-        /* BLOCO DE PERFIL FACIADO, COMPACTO E CENTRALIZADO */
+        /* 2. BLOCO DA FOTO E APROXIMAÇÃO DO NOME E PERFIL */
         .profile-wrapper {
             text-align: center;
-            margin-top: -5px;
+            margin-top: -15px;
             margin-bottom: 5px;
         }
         .profile-img-container {
@@ -71,7 +71,7 @@ st.markdown("""
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #f7c325;
-            margin: 0 auto 2px auto;
+            margin: 0 auto 1px auto;
             display: block;
         }
     </style>
@@ -282,10 +282,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# VERSÃO E COPYRIGHT COLADOS DIRETAMENTE ABAIXO DA LOGO
+# 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.01 de 20/07/2026<br>
+        Versão: v.17.02 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -306,7 +306,7 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # PERFIL CENTRALIZADO E FACIADO
+    # 2 & 3. BLOCO DA FOTO, NOME E PERFIL EXATOS DO CHAT 13 (FACIADOS E SEM ESPAÇAMENTOS)
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
@@ -315,8 +315,8 @@ else:
     else:
         st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
         
-   st.sidebar.markdown(f"<h3 style='text-align:center; margin: 0; padding: 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
-st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin: 0; padding: 0;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h3 style='text-align:center; margin: 0; padding: 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin: 0; padding: 0;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if st.sidebar.button("🚪 Sair do Sistema"):
@@ -427,7 +427,7 @@ if st.session_state["autenticado"]:
                 
                 opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
                 
-                # CORREÇÃO DEFINITIVA DO FORMULÁRIO DE ATUALIZAÇÃO (GARANTINDO A EXIBIÇÃO IMEDIATA)
+                # CORREÇÃO DEFINITIVA DO FLUXO DO FORMULÁRIO DE ATUALIZAÇÃO
                 if opcao_escolhida and opcao_escolhida.strip() != "":
                     id_selecionado = int(opcao_escolhida.split(" - ")[0])
                     match_busca = df_db_global[df_db_global["Id."] == id_selecionado]
@@ -444,17 +444,17 @@ if st.session_state["autenticado"]:
                             with form_cols[i % 3]:
                                 val_atual = str(linha_dados.get(campo, "Não informado"))
                                 if campo == "PBF":
-                                    novos_dados[campo] = st.selectbox("PBF:", ["Não", "Sim"], index=0 if val_atual == "Não" else 1)
+                                    novos_dados[campo] = st.selectbox("PBF:", ["Não", "Sim"], index=0 if val_atual == "Não" else 1, key=f"sel_pbf_{id_selecionado}")
                                 elif campo == "Status":
-                                    novos_dados[campo] = st.selectbox("Status:", ["Ativo", "Inativo", "Pendente"], index=0 if val_atual == "Ativo" else 1)
+                                    novos_dados[campo] = st.selectbox("Status:", ["Ativo", "Inativo", "Pendente"], index=0 if val_atual == "Ativo" else 1, key=f"sel_status_{id_selecionado}")
                                 elif campo == "Sexo":
-                                    novos_dados[campo] = st.selectbox("Sexo:", ["Masculino", "Feminino", "Não informado"], index=0 if "Masc" in val_atual else 1 if "Fem" in val_atual else 2)
+                                    novos_dados[campo] = st.selectbox("Sexo:", ["Masculino", "Feminino", "Não informado"], index=0 if "Masc" in val_atual else 1 if "Fem" in val_atual else 2, key=f"sel_sexo_{id_selecionado}")
                                 else:
-                                    novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual, key=f"inp_{campo}")
+                                    novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual, key=f"inp_{campo}_{id_selecionado}")
                         
                         novos_dados["Idade"] = calcular_idade_extenso(novos_dados["Nascimento"])
                         
-                        if st.button("💾 Salvar Alterações na Planilha"):
+                        if st.button("💾 Salvar Alterações na Planilha", key=f"btn_salvar_{id_selecionado}"):
                             try:
                                 doc_w = conectar_planilha()
                                 aba_w = doc_w.get_worksheet(0)
