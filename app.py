@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.02 - data: 20/07/26 - 10:29
+# Versão do código: v.17.03 - data: 20/07/26 - 13:21
 
 import streamlit as st
 import pandas as pd
@@ -285,7 +285,7 @@ except Exception: pass
 # 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.02 de 20/07/2026<br>
+        Versão: v.17.03 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -427,10 +427,14 @@ if st.session_state["autenticado"]:
                 
                 opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
                 
-                # CORREÇÃO DEFINITIVA DO FLUXO DO FORMULÁRIO DE ATUALIZAÇÃO
+                # CORREÇÃO BLINDADA DO FORMULÁRIO DE ATUALIZAÇÃO (CONVERSÃO NUMÉRICA SEGURA)
                 if opcao_escolhida and opcao_escolhida.strip() != "":
                     id_selecionado = int(opcao_escolhida.split(" - ")[0])
+                    
+                    # Garante que a coluna Id. seja estritamente numérica para evitar falhas de match
+                    df_db_global["Id."] = pd.to_numeric(df_db_global["Id."], errors='coerce')
                     match_busca = df_db_global[df_db_global["Id."] == id_selecionado]
+                    
                     if not match_busca.empty:
                         linha_dados = match_busca.iloc[0].to_dict()
                         linha_planilha = id_selecionado + 1 
@@ -467,6 +471,8 @@ if st.session_state["autenticado"]:
                                 st.rerun()
                             except Exception as err:
                                 st.error(f"Erro ao salvar: {err}")
+                    else:
+                        st.warning(f"⚠️ Não foi possível localizar o registro com ID {id_selecionado} no banco de dados ativo.")
 
     # 2. IMPORTAÇÃO DE DADOS (Acesso restrito ao perfil Total)
     elif menu_principal == "📥 Importação de Dados":
