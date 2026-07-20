@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.16.01 - data: 20/07/26 - 08:58
+# Versão do código: v.16.02 - data: 20/07/26 - 09:10
 
 import streamlit as st
 import pandas as pd
@@ -22,7 +22,7 @@ st.markdown("""
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0f2b5c 0%, #1e4b8f 50%, #f7c325 100%);
             color: #ffffff !important;
-            padding-top: 1rem;
+            padding-top: 0.5rem;
         }
         [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #ffffff !important;
@@ -48,16 +48,16 @@ st.markdown("""
             text-align: center;
             font-size: 0.72em;
             color: #ffffff;
-            margin-top: -10px;
+            margin-top: -12px;
             margin-bottom: 10px;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             line-height: 1.3;
         }
-        /* BLOCO DE PERFIL SEM RETÂNGULO DE FUNDO E TOTALMENTE CENTRALIZADO */
+        /* BLOCO DE PERFIL LIMPO, SEM RETÂNGULO E TOTALMENTE CENTRALIZADO */
         .profile-wrapper {
             text-align: center;
-            margin-top: 10px;
+            margin-top: 5px;
             margin-bottom: 15px;
         }
         .profile-img-container {
@@ -256,7 +256,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 match_sus = re.search(r"Cartão do SUS:\s*([\d\s]*)", linha_limpa)
                 match_cert = re.search(r"CERTIDÃO\s*(.*)", linha_limpa)
                 if match_cc and match_cc.group(1).strip(): aluno_atual["Cartão Cidadão"] = match_cc.group(1).strip()
-                if match_sus and match_sus.group(1].strip(): aluno_atual["Cartão do SUS"] = match_sus.group(1).replace(" ", "").strip()
+                if match_sus and match_sus.group(1).strip(): aluno_atual["Cartão do SUS"] = match_sus.group(1).replace(" ", "").strip()
                 if match_cert: aluno_atual["CERTIDÃO"] = match_cert.group(1).replace(":", "").replace("-", "").strip()
     if aluno_atual: alunos_capturados.append(aluno_atual)
     return pd.DataFrame(alunos_capturados) if alunos_capturados else pd.DataFrame(columns=COLUNAS_OFICIAIS)
@@ -277,10 +277,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# RODAPÉ DA LOGO FACIADO E POSICIONADO ACIMA DO LOGIN
+# RODAPÉ DA LOGO POSICIONADO E FACIADO IMEDIATAMENTE ABAIXO DA LOGO
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.16.01 de 20/07/2026<br>
+        Versão: v.16.02 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -301,7 +301,7 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN LIMPO SEM RETÂNGULO DE FUNDO, COM FOTO E PERFIL CENTRALIZADOS
+    # DESIGN LIMPO SEM RETÂNGULO, COM FOTO E PERFIL CENTRALIZADOS
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
