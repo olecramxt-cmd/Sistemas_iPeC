@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.16.00 - data: 20/07/26 - 08:38
+# Versão do código: v.16.01 - data: 20/07/26 - 08:58
 
 import streamlit as st
 import pandas as pd
@@ -22,6 +22,7 @@ st.markdown("""
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0f2b5c 0%, #1e4b8f 50%, #f7c325 100%);
             color: #ffffff !important;
+            padding-top: 1rem;
         }
         [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #ffffff !important;
@@ -36,38 +37,36 @@ st.markdown("""
             color: white;
             border-radius: 8px;
             border: 1px solid #f7c325;
+            width: 100%;
         }
         div.stButton > button:first-child:hover {
             background-color: #f7c325;
             color: #0f2b5c;
-        }
-        .user-card-profile {
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(247, 195, 37, 0.3);
-            margin-bottom: 15px;
         }
         /* RODAPÉ DA LOGO FACIADO E COLADO LOGO ABAIXO */
         .sidebar-logo-footer {
             text-align: center;
             font-size: 0.72em;
             color: #ffffff;
-            margin-top: -15px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             line-height: 1.3;
         }
-        /* ESTILIZAÇÃO DA FOTO DE PERFIL BLINDADA CONTRA ALTA RESOLUÇÃO */
+        /* BLOCO DE PERFIL SEM RETÂNGULO DE FUNDO E TOTALMENTE CENTRALIZADO */
+        .profile-wrapper {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
         .profile-img-container {
-            width: 80px;
-            height: 80px;
+            width: 85px;
+            height: 85px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #f7c325;
-            margin: 0 auto 5px auto;
+            border: 3px solid #f7c325;
+            margin: 0 auto 8px auto;
             display: block;
         }
     </style>
@@ -247,7 +246,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 if "Telefone" in linha_limpa: aluno_atual["Telefone"] = formatar_telefone(linha_limpa.split("Telefone")[-1])
             elif "E-mail(s):" in linha_limpa: aluno_atual["E-mail(s)"] = linha_limpa.split("E-mail(s):")[-1].strip()
             elif "Endereço:" in linha_limpa:
-                end_limpo = linha_limpo.split("Endereço:")[-1].replace("*", "").strip()
+                end_limpo = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
                 aluno_atual["Endereço"] = end_limpo
                 match_bairro = re.search(r"(?:Bairro|-,)\s*([^,.\n\-\*]+)", end_limpo, re.IGNORECASE)
                 if match_bairro: aluno_atual["Bairro"] = match_bairro.group(1).replace("- MG","").replace("UNAÍ","").strip()
@@ -257,7 +256,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 match_sus = re.search(r"Cartão do SUS:\s*([\d\s]*)", linha_limpa)
                 match_cert = re.search(r"CERTIDÃO\s*(.*)", linha_limpa)
                 if match_cc and match_cc.group(1).strip(): aluno_atual["Cartão Cidadão"] = match_cc.group(1).strip()
-                if match_sus and match_sus.group(1).strip(): aluno_atual["Cartão do SUS"] = match_sus.group(1).replace(" ", "").strip()
+                if match_sus and match_sus.group(1].strip(): aluno_atual["Cartão do SUS"] = match_sus.group(1).replace(" ", "").strip()
                 if match_cert: aluno_atual["CERTIDÃO"] = match_cert.group(1).replace(":", "").replace("-", "").strip()
     if aluno_atual: alunos_capturados.append(aluno_atual)
     return pd.DataFrame(alunos_capturados) if alunos_capturados else pd.DataFrame(columns=COLUNAS_OFICIAIS)
@@ -278,10 +277,10 @@ try:
     st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# RODAPÉ DA LOGO POSICIONADO E FACIADO IMEDIATAMENTE ABAIXO DA LOGO
+# RODAPÉ DA LOGO FACIADO E POSICIONADO ACIMA DO LOGIN
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.16.00 de 20/07/2026<br>
+        Versão: v.16.01 de 20/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -302,18 +301,17 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN NATIVO DA FOTO DO PERFIL COM REDIMENSIONAMENTO HTML SEGURO PARA ALTA RESOLUÇÃO
-    st.sidebar.markdown('<div class="user-card-profile">', unsafe_allow_html=True)
+    # DESIGN LIMPO SEM RETÂNGULO DE FUNDO, COM FOTO E PERFIL CENTRALIZADOS
+    st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
     
     url_foto = st.session_state['foto_usuario'].strip()
     if url_foto and "http" in url_foto:
-        # Renderização via HTML puro para forçar a dimensão e evitar travamentos por alta definição
         st.sidebar.markdown(f'<img src="{url_foto}" class="profile-img-container">', unsafe_allow_html=True)
     else:
         st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
         
-    st.sidebar.markdown(f"<h3 style='text-align:center; margin:5px 0 0 0;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
-    st.sidebar.markdown(f"<span style='color:#f7c325; font-size:0.9em;'>Perfil: {st.session_state['perfil_usuario']}</span>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<h3 style='text-align:center; margin:5px 0 0 0; color: #ffffff;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin-top:2px;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     if st.sidebar.button("🚪 Sair do Sistema"):
@@ -378,7 +376,6 @@ if st.session_state["autenticado"]:
 
                 st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real / Validação ao Salvar)")
                 
-                # CORREÇÃO DEFINITIVA DA ESTILIZAÇÃO COMPATÍVEL COM PANDAS MODERNO
                 def destacar_cpf_inconsistente(val):
                     cpf_str = str(val).strip()
                     if not cpf_str or cpf_str in ["Não informado", ""] or not validar_cpf(cpf_str):
