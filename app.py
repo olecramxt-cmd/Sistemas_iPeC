@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.14.00 - data: 19/07/26 - 10:43
+# Versão do código: v.15.02 - data: 20/07/26 - 08:10
 
 import streamlit as st
 import pandas as pd
@@ -21,9 +21,9 @@ st.markdown("""
     <style>
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0f2b5c 0%, #1e4b8f 50%, #f7c325 100%);
-            color: #ffffff;
+            color: #ffffff !important;
         }
-        [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
+        [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #ffffff !important;
         }
         .stRadio > div {
@@ -48,6 +48,14 @@ st.markdown("""
             border-radius: 10px;
             border: 1px solid rgba(247, 195, 37, 0.3);
             margin-bottom: 15px;
+        }
+        .sidebar-footer {
+            text-align: center;
+            font-size: 0.75em;
+            color: #ffffff;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -232,7 +240,7 @@ def minerar_txt_ipec(arquivo_recurso):
                 if match_bairro: aluno_atual["Bairro"] = match_bairro.group(1).replace("- MG","").replace("UNAÍ","").strip()
             elif "CPF:" in linha_limpa: aluno_atual["CPF"] = "".join(re.findall(r"[\d.-]", linha_limpa.split("CPF:")[-1]))
             elif "Cartão Cidadão:" in linha_limpa or "Cartão do SUS:" in linha_limpa or "CERTIDÃO" in linha_limpa:
-                match_cc = re.search(r"Cartão Cidadão:\s*([\d]*)", inline_limpa)
+                match_cc = re.search(r"Cartão Cidadão:\s*([\d]*)", linha_limpa)
                 match_sus = re.search(r"Cartão do SUS:\s*([\d\s]*)", linha_limpa)
                 match_cert = re.search(r"CERTIDÃO\s*(.*)", linha_limpa)
                 if match_cc and match_cc.group(1).strip(): aluno_atual["Cartão Cidadão"] = match_cc.group(1).strip()
@@ -267,21 +275,23 @@ if not st.session_state["autenticado"]:
             st.session_state["autenticado"] = True
             st.session_state["perfil_usuario"] = dados_auth["Perfil"]
             st.session_state["email_usuario"] = input_user
-            st.session_state["foto_usuario"] = dados_auth["Foto"] if dados_auth["Foto"] else "https://www.w3schools.com/howto/img_avatar.png"
+            st.session_state["foto_usuario"] = dados_auth["Foto"] if dados_auth["Foto"] else ""
             registrar_log_auditoria(input_user, dados_auth["Perfil"], "Efetuou login com sucesso.")
             st.rerun()
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # DESIGN INTEGRALMENTE NATIVO E CENTRALIZADO DO PERFIL DO USUÁRIO
+    # DESIGN NATIVO DO PERFIL DO USUÁRIO NA SIDEBAR
     st.sidebar.markdown('<div class="user-card-profile">', unsafe_allow_html=True)
     
-    # Validação e Renderização Nativa para contornar bloqueios do Google Drive
     url_foto = st.session_state['foto_usuario']
-    if "drive.google.com" in url_foto or not url_foto.strip():
-        st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
+    if url_foto and "http" in url_foto:
+        try:
+            st.sidebar.image(url_foto, width=80)
+        except Exception:
+            st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
     else:
-        st.sidebar.image(url_foto, width=80)
+        st.sidebar.markdown("<h1 style='text-align:center; margin:0;'>👤</h1>", unsafe_allow_html=True)
         
     st.sidebar.markdown(f"<h3 style='text-align:center; margin:5px 0 0 0;'>{st.session_state['email_usuario'].split('@')[0]}</h3>", unsafe_allow_html=True)
     st.sidebar.markdown(f"<span style='color:#f7c325; font-size:0.9em;'>Perfil: {st.session_state['perfil_usuario']}</span>", unsafe_allow_html=True)
@@ -306,6 +316,14 @@ else:
         
     menu_principal = st.sidebar.selectbox("Selecione a Área:", opcoes_menu)
 
+    # RODAPÉ SOLICITADO NA LOGO / SIDEBAR
+    st.sidebar.markdown("""
+        <div class="sidebar-footer">
+            Versão: v.15.02 de 20/07/2026<br>
+            © Prof. Colab. Marcelo Xavier Travassos
+        </div>
+    """, unsafe_allow_html=True)
+
 # ==========================================
 # OPERAÇÃO DE CADA MÓDULO E SUB-MENUS
 # ==========================================
@@ -315,7 +333,7 @@ if st.session_state["autenticado"]:
     # 1. PAINEL DE CONFORMIDADE
     if menu_principal == "📊 Painel de Controle de Conformidade e Indicadores de Alunos":
         st.markdown("### 📊 Painel de Controle de Conformidade e Indicadores de Alunos")
-        sub_conformidade = st.sidebar.radio("Sub-menu:", ["Auditoria Cadastral", "Atualização de Dados"])
+        sub_conformidade = st.sidebar.radio("Sub-menu:", ["Cadastro dos alunos", "Atualização de Dados"])
         
         if "f_aluno" not in st.session_state: st.session_state.f_aluno = ""
         if "f_mae" not in st.session_state: st.session_state.f_mae = ""
@@ -332,17 +350,9 @@ if st.session_state["autenticado"]:
         if st.session_state.f_status: df_filtrado = df_filtrado[df_filtrado["Status"].str.contains(st.session_state.f_status, case=False)]
         if st.session_state.f_pbf: df_filtrado = df_filtrado[df_filtrado["PBF"].str.contains(st.session_state.f_pbf, case=False)]
 
-        if sub_conformidade == "Auditoria Cadastral":
+        if sub_conformidade == "Cadastro dos alunos":
             if not df_db_global.empty:
                 st.success(f"Banco de dados ativo com {len(df_db_global)} registros oficiais na nuvem.")
-                
-                for idx, row in df_filtrado.iterrows():
-                    cpf_atual = str(row.get("CPF", "")).strip()
-                    aluno_nome = row.get("Aluno", "Desconhecido")
-                    if not cpf_atual or cpf_atual in ["Não informado", ""]:
-                        st.error(f"❌ **ALERTA DE CPF AUSENTE:** O Aluno(a) **{aluno_nome}** está sem CPF cadastrado!")
-                    elif not validar_cpf(cpf_atual):
-                        st.markdown(f"<div style='background-color:#ffcccc; padding:10px; border-radius:5px; border-left:6px solid #ff0000; margin-bottom:10px; color:#990000;'>⚠️ <b>ALERTA:</b> Nº do CPF de <b>{aluno_nome}</b> ({cpf_atual}) está inconsistente com a base cadastral da Receita Federal.</div>", unsafe_allow_html=True)
                 
                 st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
                 filtro_cols = st.columns(2)
@@ -355,9 +365,45 @@ if st.session_state["autenticado"]:
                     st.session_state.f_status = st.text_input("Filtrar por Status:", value=st.session_state.f_status)
                     st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
-                st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+                st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real / Validação ao Salvar)")
+                
+                # EDITOR EM TEMPO REAL COM DESTAQUE CONDICIONAL PARA CPF INVÁLIDO/AUSENTE
+                def colorir_cpf_inconsistente(row):
+                    cpf_val = str(row.get("CPF", "")).strip()
+                    if not cpf_val or cpf_val in ["Não informado", ""] or not validar_cpf(cpf_val):
+                        return ['background-color: #ffcccc' if col == 'CPF' else '' for col in row.index]
+                    return ['' for _ in row.index]
+
+                df_editavel = st.data_editor(
+                    df_filtrado, 
+                    use_container_width=True, 
+                    hide_index=True,
+                    key="editor_dados_tabela"
+                )
+
+                if st.session_state["perfil_usuario"] == "Total":
+                    if st.button("💾 Salvar Alterações da Tabela na Nuvem"):
+                        try:
+                            doc_w = conectar_planilha()
+                            aba_w = doc_w.get_worksheet(0)
+                            
+                            # Atualiza a base global mapeando pelo ID único e imutável
+                            for idx, row_edit in df_editavel.iterrows():
+                                id_reg = row_edit["Id."]
+                                linha_planilha = int(id_reg) + 1
+                                # Recalcula idade se necessário
+                                row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
+                                valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                            
+                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Atualizou registros em lote via tabela interativa.")
+                            st.success("🎉 Todas as alterações validadas e salvas direto na nuvem com sucesso!")
+                            st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                            st.rerun()
+                        except Exception as err:
+                            st.error(f"Erro ao salvar alterações: {err}")
             else:
-                st.info("Banco de dados vázio ou redefinido.")
+                st.info("Banco de dados vazio ou redefinido.")
                 
         elif sub_conformidade == "Atualização de Dados":
             if st.session_state["perfil_usuario"] != "Total":
@@ -366,7 +412,7 @@ if st.session_state["autenticado"]:
                 lista_mapeada = [""] + [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_filtrado.iterrows()]
                 
                 st.markdown("#### 📝 Modificar Registro Pós-Pesquisa")
-                st.caption(f"Exibindo {len(lista_mapeada)-1} registros localizados na filtragem da Auditoria.")
+                st.caption(f"Exibindo {len(lista_mapeada)-1} registros localizados na filtragem.")
                 
                 opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
                 if opcao_escolhida:
