@@ -13,7 +13,7 @@ from google.oauth2.service_account import Credentials
 # CONFIGURAÇÃO ESTRITA DA PÁGINA COM NOME E LOGO NA ABA DO NAVEGADOR
 st.set_page_config(
     page_title="Sistemas de Gestão Escolar - iPeC", 
-    page_icon="Logo_inovador_iPeC_com_circuito-removebg-preview.png",
+    page_icon="imagens/Logo_inovador_iPeC_com_circuito-removebg-preview.png",
     layout="wide"
 )
 
@@ -280,7 +280,7 @@ if "autenticado" not in st.session_state:
 
 # INTERFACE: SIDEBAR DE CONTROLE DE ACESSO
 try:
-    st.sidebar.image("Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
+    st.sidebar.image("imagens/Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
 # 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
