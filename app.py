@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.06 - data: 21/07/26 - 09:40
+# Versão do código: v.17.09 - data: 21/07/26 - 10:32
 
 import streamlit as st
 import pandas as pd
@@ -286,7 +286,7 @@ except Exception: pass
 # 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.06 de 21/07/2026<br>
+        Versão: v.17.09 de 21/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -602,13 +602,35 @@ if st.session_state["autenticado"]:
             if df_db_global.empty:
                 st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
             else:
-                opcoes_alunos_mig = ["Selecione o Aluno..."]
-                for _, r in df_db_global.iterrows():
-                    txt_item = str(r['Id.']) + " - " + str(r['Aluno']) + " (Turma: " + str(r.get('Turma', 'N/I')) + ")"
-                    opcoes_alunos_mig.append(txt_item)
-                    
-                aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", opcoes_alunos_mig)
+                # FILTROS INTEGRADOS DE PERÍODO DE ENSINO E TURMA NO TOPO
+                st.markdown("##### 🔍 Filtro Integrado de Seleção")
+                col_f1, col_f2 = st.columns(2)
                 
+                lista_periodos = ["Selecione o Período..."] + sorted(df_db_global["Período de Ensino"].dropna().unique().tolist())
+                with col_f1:
+                    periodo_selecionado = st.selectbox("Período de Ensino:", lista_periodos)
+                
+                df_filtrado_turma = df_db_global.copy()
+                if periodo_selecionado != "Selecione o Período...":
+                    df_filtrado_turma = df_filtrado_turma[df_filtrado_turma["Período de Ensino"] == periodo_selecionado]
+                
+                lista_turmas = ["Selecione a Turma..."] + sorted(df_filtrado_turma["Turma"].dropna().unique().tolist())
+                with col_f2:
+                    turma_selecionada = st.selectbox("Turma:", lista_turmas)
+                
+                # FILTRAGEM FINAL DOS ALUNOS PELA INTERSEÇÃO
+                df_alunos_final = df_filtrado_turma.copy()
+                if turma_selecionada != "Selecione a Turma...":
+                    df_alunos_final = df_alunos_final[df_alunos_final["Turma"] == turma_selecionada]
+                
+                opcoes_alunos_mig = ["Selecione o Aluno..."]
+                for _, r in df_alunos_final.iterrows():
+                    txt_item = str(r['Id.']) + " - " + str(r['Aluno'])
+                    opcoes_alunos_mig.append(txt_item)
+                
+                aluno_escolhido_mig = st.selectbox("Selecione o Aluno Correspondente:", opcoes_alunos_mig)
+                
+                # VARIÁVEIS INICIAIS EM BRANCO
                 p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
                 
                 if aluno_escolhido_mig and aluno_escolhido_mig != "Selecione o Aluno...":
@@ -627,7 +649,7 @@ if st.session_state["autenticado"]:
                     st.markdown("##### 1. Bloco de Identificação")
                     col_id1, col_id2 = st.columns(2)
                     with col_id1:
-                        val_periodo = st.text_input("Período de Ensino / Série (Ex: 1º, 2º...):", value=p_ensino_val)
+                        val_periodo = st.text_input("Período de Ensino / Série:", value=p_ensino_val)
                         val_aluno_nome = st.text_input("Aluno:", value=aluno_val)
                         val_cpf = st.text_input("CPF:", value=cpf_val)
                     with col_id2:
@@ -635,7 +657,7 @@ if st.session_state["autenticado"]:
                         val_mae = st.text_input("Mãe do Aluno:", value=mae_val)
                     
                     st.markdown("##### 2. Avaliação de Acuidade Visual e Condições")
-                    opcoes_visao = ["1.0", "0.9", "0.8", "0.7", "0.6", "0.5", "0.4", "0.3", "0.2", "0.1", "0.0", "Sem percepção luminosa"]
+                    opcoes_visao = ["Selecione...", "1.0", "0.9", "0.8", "0.7", "0.6", "0.5", "0.4", "0.3", "0.2", "0.1", "0.0", "Sem percepção luminosa"]
                     
                     col_v1, col_v2 = st.columns(2)
                     with col_v1:
@@ -650,19 +672,21 @@ if st.session_state["autenticado"]:
                     st.markdown("**2.3 - Condições Especiais:**")
                     col_c1, col_c2 = st.columns(2)
                     with col_c1:
-                        val_estrabismo = st.selectbox("Estrabismo:", ["Não", "Sim"])
+                        val_estrabismo = st.selectbox("Estrabismo:", ["Selecione...", "Não", "Sim"], index=0)
                     with col_c2:
-                        index_pbf = 1 if pbf_val.strip().lower() == "sim" else 0
-                        val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Não", "Sim"], index=index_pbf)
+                        index_pbf = 0 if pbf_val.strip().lower() != "sim" else 2
+                        val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Selecione...", "Não", "Sim"], index=index_pbf)
                     
                     btn_processar_miguilim = st.form_submit_button("🔍 Processar Resultado e Salvar Triagem")
                     
                     if btn_processar_miguilim:
                         if not val_aluno_nome or val_aluno_nome == "":
-                            st.error("⚠️ O campo do Aluno é obrigatório para registrar a triagem.")
+                            st.error("⚠️ Selecione um aluno válido para registrar a triagem.")
+                        elif sem_dir == "Selecione..." or sem_esq == "Selecione...":
+                            st.warning("⚠️ Preencha os campos obrigatórios de acuidade visual sem óculos.")
                         else:
                             def conv_v(txt):
-                                if txt == "Sem percepção luminosa": return 0.0
+                                if txt == "Sem percepção luminosa" or txt == "Selecione...": return 1.0
                                 try: return float(txt)
                                 except: return 1.0
                             
