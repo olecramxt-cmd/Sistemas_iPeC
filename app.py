@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.05 - data: 20/07/26 - 13:31
+# Versão do código: v.17.06 - data: 21/07/26 - 09:40
 
 import streamlit as st
 import pandas as pd
@@ -286,7 +286,7 @@ except Exception: pass
 # 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.05 de 20/07/2026<br>
+        Versão: v.17.06 de 21/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -401,16 +401,13 @@ if st.session_state["autenticado"]:
                             doc_w = conectar_planilha()
                             aba_w = doc_w.get_worksheet(0)
                             
-                            # OTIMIZAÇÃO BLINDADA: Compara e atualiza APENAS as linhas que efetivamente sofreram alteração
                             alteracoes_realizadas = 0
                             with st.spinner("Verificando e salvando apenas os registros alterados..."):
                                 for idx, row_edit in df_editavel.iterrows():
                                     id_reg = row_edit["Id."]
-                                    # Localiza o registro correspondente no banco original da sessão
                                     original_match = df_db_global[df_db_global["Id."] == id_reg]
                                     if not original_match.empty:
                                         row_orig = original_match.iloc[0]
-                                        # Verifica se houve mudança real em qualquer coluna oficial
                                         diferente = any(str(row_edit.get(c, "")) != str(row_orig.get(c, "")) for c in COLUNAS_OFICIAIS if c != "Idade")
                                         if diferente:
                                             linha_planilha = int(id_reg) + 1
@@ -443,11 +440,9 @@ if st.session_state["autenticado"]:
                 
                 opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
                 
-                # CORREÇÃO BLINDADA DO FORMULÁRIO DE ATUALIZAÇÃO (CONVERSÃO NUMÉRICA SEGURA)
                 if opcao_escolhida and opcao_escolhida.strip() != "":
                     id_selecionado = int(opcao_escolhida.split(" - ")[0])
                     
-                    # Garante que a coluna Id. seja estritamente numérica para evitar falhas de match
                     df_db_global["Id."] = pd.to_numeric(df_db_global["Id."], errors='coerce')
                     match_busca = df_db_global[df_db_global["Id."] == id_selecionado]
                     
@@ -490,7 +485,7 @@ if st.session_state["autenticado"]:
                     else:
                         st.warning(f"⚠️ Não foi possível localizar o registro com ID {id_selecionado} no banco de dados ativo.")
 
-    # 2. IMPORTAÇÃO DE DADOS (Acesso restrito ao perfil Total)
+    # 2. IMPORTAÇÃO DE DADOS
     elif menu_principal == "📥 Importação de Dados":
         st.markdown("### 📥 Importação de Dados")
         sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
@@ -595,14 +590,8 @@ if st.session_state["autenticado"]:
         st.markdown("### 📈 Módulo de Relatórios Acadêmicos")
         sub_relatorios = st.sidebar.radio("Sub-menu:", ["Ficha Individual (PDF)", "Estatísticas PBF e AEE/CID"])
         st.info(f"Sub-área '{sub_relatorios}' pronta para desenvolvimento de layouts.")
-# =====================================================================
-# Módulo de Triagem Visual - Programa Miguilim
-# SISTEMAS iPeC - Integração com Base de Dados e Automação de Resultados
-# © Prof. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão: 1.0.3
-# Data: 20/07/2026
-# =====================================================================
 
+    # 4. PROGRAMA MIGUILIM
     elif menu_principal == "👁️ Programa Miguilim":
         st.markdown("### 👁️ Programa Miguilim - Saúde Visual e Auditiva")
         sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
@@ -700,3 +689,24 @@ if st.session_state["autenticado"]:
         elif sub_miguilim == "Encaminhamentos Clínicos":
             st.markdown("### 📋 Encaminhamentos Clínicos — Programa Miguilim")
             st.info("Painel analítico para listagem de alunos encaminhados e relatórios de acompanhamento clínico visual e auditivo.")
+
+    # 5. PROGRAMA BIBLIOTECA
+    elif menu_principal == "📚 Programa Biblioteca":
+        st.markdown("### 📚 Programa Biblioteca - Gestão Literária")
+        sub_biblioteca = st.sidebar.radio("Sub-menu:", ["Catálogo do Acervo", "Empréstimos e Devoluções"])
+        st.info(f"Módulo '{sub_biblioteca}' pronto para controle de leituras.")
+
+    # 6. SUPORTE
+    elif menu_principal == "🛠️ Suporte":
+        st.markdown("### 🛠️ Painel de Suporte e Auditoria de Infraestrutura")
+        sub_suporte = st.sidebar.radio("Sub-menu:", ["Manual do Sistema", "Logs de Auditoria em Tempo Real"])
+        if sub_suporte == "Logs de Auditoria em Tempo Real":
+            try:
+                doc_s = conectar_planilha()
+                aba_log_s = doc_s.worksheet("log_auditoria_ipec")
+                df_logs = pd.DataFrame(aba_log_s.get_all_records())
+                st.dataframe(df_logs, use_container_width=True)
+            except Exception:
+                st.error("Aba de logs ainda não possui registros inseridos.")
+else:
+    st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
