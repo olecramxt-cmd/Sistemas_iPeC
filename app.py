@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.19 - data: 22/07/26 - 16:42
+# Versão do código: v.17.20 - data: 22/07/26 - 16:50
 
 import streamlit as st
 import pandas as pd
@@ -157,12 +157,23 @@ def carregar_banco_dados_virtual():
         dados = aba.get_all_records()
         if not dados: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
         df_bruto = pd.DataFrame(dados)
+        
+        # Mapeamento flexível para capturar variações no nome da coluna de ano ("Ano Le", "Ano", etc.)
+        colunas_encontradas = df_bruto.columns.tolist()
+        coluna_ano_real = None
+        for c in colunas_encontradas:
+            if "ano" in str(c).lower():
+                coluna_ano_real = c
+                break
+        
+        if coluna_ano_real and coluna_ano_real != "Ano Letivo":
+            df_bruto.rename(columns={coluna_ano_real: "Ano Letivo"}, inplace=True)
+
         if "Aluno" in df_bruto.columns:
             df_bruto = df_bruto[df_bruto["Aluno"].astype(str).str.strip() != ""]
         if df_bruto.empty: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
         df_bruto["Id."] = range(1, len(df_bruto) + 1)
         
-        # Garante que registros antigos sem ano letivo preenchido assumam o ano padrão 2026
         if "Ano Letivo" not in df_bruto.columns:
             df_bruto["Ano Letivo"] = "2026"
         else:
@@ -231,7 +242,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.19 de 22/07/2026<br>
+        Versão: v.17.20 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
