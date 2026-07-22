@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.14 - data: 22/07/26 - 14:58
+# Versão do código: v.17.15 - data: 22/07/26 - 15:01
 
 import streamlit as st
 import pandas as pd
@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM OS AJUSTES MANUAIS E BOTÃO DE EXCLUSÃO VERMELHO
+# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM O BOTÃO DE EXCLUSÃO ISOLADO EM VERMELHO
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -48,13 +48,13 @@ st.markdown("""
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        /* Estilização específica para o botão de exclusão em vermelho */
-        div.stButton > button[kind="secondary"] {
+        /* Estilização cirúrgica exclusiva para o botão de exclusão em vermelho */
+        button[key^="btn_exec_excluir_"] {
             background-color: #cc0000 !important;
             color: white !important;
             border: 1px solid #ff9999 !important;
         }
-        div.stButton > button[kind="secondary"]:hover {
+        button[key^="btn_exec_excluir_"]:hover {
             background-color: #ff1a1a !important;
             color: white !important;
         }
@@ -86,7 +86,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 COLUNAS_OFICIAIS = [
-    "Id.", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
+    "Id.", "Ano Letivo", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
     "Mãe", "Pai", "Sexo", "Telefone", "E-mail(s)", "Endereço", "Bairro",
     "Cartão Cidadão", "Cartão do SUS", "CERTIDÃO", "CPF", "Período de Ensino",
     "Turma", "Turno", "Professor de Apoio Escolar - PAE", "Status", "Transferência"
@@ -161,6 +161,8 @@ def carregar_banco_dados_virtual():
             df_bruto = df_bruto[df_bruto["Aluno"].astype(str).str.strip() != ""]
         if df_bruto.empty: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
         df_bruto["Id."] = range(1, len(df_bruto) + 1)
+        if "Ano Letivo" not in df_bruto.columns:
+            df_bruto["Ano Letivo"] = "2026"
         if "Nascimento" in df_bruto.columns:
             df_bruto["Idade"] = df_bruto["Nascimento"].apply(calcular_idade_extenso)
         for col in COLUNAS_OFICIAIS:
@@ -223,7 +225,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.14 de 22/07/2026<br>
+        Versão: v.17.15 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -277,7 +279,11 @@ else:
     if ano_letivo_escolhido == "Selecione...":
         st.info("ℹ️ Por favor, selecione o Ano Letivo acima para liberar o acesso aos módulos operacionais.")
     else:
-        # Verificação se há lançamentos no banco de dados ativo
+        # Filtra a base global considerando estritamente o ano letivo selecionado
+        if not df_db_global.empty and "Ano Letivo" in df_db_global.columns:
+            df_db_global = df_db_global[df_db_global["Ano Letivo"].astype(str).str.strip() == str(ano_letivo_escolhido)]
+
+        # Verificação se há lançamentos no ano letivo escolhido
         if df_db_global.empty:
             st.warning(f"⚠️ Atenção: Não existem lançamentos ou registros ativos encontrados para o ano letivo de {ano_letivo_escolhido}.")
         else:
@@ -367,7 +373,7 @@ else:
                                                         linha_planilha = int(id_reg) + 1
                                                         row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
                                                         valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
-                                                        aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                                                        aba_w.update(range_name=f"A{linha_planilha}:Z{linha_planilha}", values=[valores_alinhados])
                                                         alteracoes_realizadas += 1
                                                         time.sleep(0.3)
                                         
@@ -387,16 +393,16 @@ else:
                                         doc_inc = conectar_planilha()
                                         aba_inc = doc_inc.get_worksheet(0)
                                         
-                                        proximo_id_val = len(df_db_global) + 1
-                                        novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else "Não informado") for c in COLUNAS_OFICIAIS}
+                                        proximo_id_val = len(carregar_banco_dados_virtual()) + 1
+                                        novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else str(ano_letivo_escolhido) if c == "Ano Letivo" else "Não informado") for c in COLUNAS_OFICIAIS}
                                         novo_registro_vazio["Id."] = proximo_id_val
                                         novo_registro_vazio["Aluno"] = f"Novo Aluno {proximo_id_val}"
                                         
                                         valores_novo = [str(novo_registro_vazio.get(c, "")) for c in COLUNAS_OFICIAIS]
                                         aba_inc.append_row(valores_novo)
                                         
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Incluiu novo registro vazio ID {proximo_id_val}.")
-                                        st.success(f"🎉 Novo registro ID {proximo_id_val} incluído com sucesso na nuvem! Edite-o na tabela acima.")
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Incluiu novo registro vazio ID {proximo_id_val} para {ano_letivo_escolhido}.")
+                                        st.success(f"🎉 Novo registro ID {proximo_id_val} incluído com sucesso na nuvem para {ano_letivo_escolhido}! Edite-o na tabela acima.")
                                         st.session_state["dados_banco"] = carregar_banco_dados_virtual()
                                         st.rerun()
                                     except Exception as err_inc:
@@ -406,8 +412,8 @@ else:
                                 lista_exclusao = [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_db_global.iterrows()]
                                 aluno_a_excluir = st.selectbox("Selecionar para Exclusão:", ["Selecione..."] + lista_exclusao, key="sel_exc_aluno")
                                 
-                                # Botão de exclusão com estilização secundária (vermelho)
-                                if st.button("🗑️ Excluir Aluno Selecionado", type="secondary"):
+                                # Botão de exclusão com estilização exclusiva em vermelho
+                                if st.button("🗑️ Excluir Aluno Selecionado", key=f"btn_exec_excluir_{ano_letivo_escolhido}"):
                                     if aluno_a_excluir and aluno_a_excluir != "Selecione...":
                                         st.session_state["confirmar_exclusao_aluno"] = aluno_a_excluir
                                     else:
@@ -437,7 +443,7 @@ else:
                                                     for _, r_up in df_atualizado.iterrows():
                                                         dados_para_atualizar.append([str(r_up.get(c, "")) for c in COLUNAS_OFICIAIS])
                                                     
-                                                    aba_exc.update(range_name=f"A1:Y{len(dados_para_atualizar)}", values=dados_para_atualizar)
+                                                    aba_exc.update(range_name=f"A1:Z{len(dados_para_atualizar)}", values=dados_para_atualizar)
                                                 
                                                 registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu registro ID {id_exc} da planilha e reindexou base.")
                                                 del st.session_state["confirmar_exclusao_aluno"]
@@ -463,7 +469,9 @@ else:
                         lista_dfs = []
                         for arquivo in arquivos_escolhidos:
                             df_m = minerar_txt_ipec(arquivo)
-                            if not df_m.empty: lista_dfs.append(df_m)
+                            if not df_m.empty: 
+                                df_m["Ano Letivo"] = ano_letivo_escolhido
+                                lista_dfs.append(df_m)
                                 
                         if lista_dfs:
                             df_novo_lote = pd.concat(lista_dfs, ignore_index=True)
@@ -492,7 +500,7 @@ else:
                             decisoes_conflito = {}
                             if conflitos_detectados:
                                 st.markdown("### ⚠️ Conflito de Duplicidade Detectado!")
-                                st.warning(f"O sistema identificou {len(conflitos_detectados)} alunos que já existem na planilha.")
+                                st.warning(f"O sistema identificou {len(conflitos_detectados)} alunos que já existem na planilha para {ano_letivo_escolhido}.")
                                 
                                 for idx, c in enumerate(conflitos_detectados):
                                     st.markdown(f"**Aluno:** {c['novo']['Aluno']} | **Mãe:** {c['novo']['Mãe']}")
@@ -524,6 +532,7 @@ else:
                                     
                                     for item in linhas_limpas_insercao:
                                         item["Id."] = proximo_id
+                                        item["Ano Letivo"] = ano_letivo_escolhido
                                         item["Idade"] = calcular_idade_extenso(item["Nascimento"])
                                         item["Telefone"] = formatar_telefone(item["Telefone"])
                                         valores = [str(item.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
@@ -538,11 +547,12 @@ else:
                                         if decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados":
                                             dados_novos = c["novo"]
                                             dados_novos["Id."] = c["atual"]["Id."]
+                                            dados_novos["Ano Letivo"] = ano_letivo_escolhido
                                             dados_novos["Idade"] = calcular_idade_extenso(dados_novos["Nascimento"])
                                             dados_novos["Telefone"] = formatar_telefone(dados_novos["Telefone"])
                                             valores_update = [str(dados_novos.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
                                             l_alvo = c["linha_planilha"]
-                                            aba_upload.update(range_name=f"A{l_alvo}:Y{l_alvo}", values=[valores_update])
+                                            aba_upload.update(range_name=f"A{l_alvo}:Z{l_alvo}", values=[valores_update])
                                             linhas_sobrepostas += 1
                                     
                                     registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Importou lote .txt ({ano_letivo_escolhido}): {len(linhas_finais_append)} inseridos, {linhas_sobrepostas} sobrepostos.")
@@ -576,7 +586,7 @@ else:
                         
                         p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
                         
-                        if aluno_escolhido_mig and aluno_escolhido_mig != "Selecione o Aluno...":
+                        if aluno_escolhido_mig and aluno_escolh_mig != "Selecione o Aluno...":
                             id_alvo_mig = int(aluno_escolhido_mig.split(" - ")[0])
                             match_mig = df_db_global[df_db_global["Id."] == id_alvo_mig]
                             if not match_mig.empty:
