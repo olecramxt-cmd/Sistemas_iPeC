@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.12 - data: 22/07/26 - 14:50
+# Versão do código: v.17.13 - data: 22/07/26 - 14:55
 
 import streamlit as st
 import pandas as pd
@@ -223,7 +223,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.12 de 22/07/2026<br>
+        Versão: v.17.13 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
