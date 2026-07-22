@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.10 - data: 22/07/26 - 14:30
+# Versão do código: v.17.11 - data: 22/07/26 - 14:39
 
 import streamlit as st
 import pandas as pd
@@ -286,7 +286,7 @@ except Exception: pass
 # 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.10 de 22/07/2026<br>
+        Versão: v.17.11 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -437,7 +437,6 @@ if st.session_state["autenticado"]:
                                 doc_inc = conectar_planilha()
                                 aba_inc = doc_inc.get_worksheet(0)
                                 
-                                # Calcula o próximo ID sequencial estrito
                                 proximo_id_val = len(df_db_global) + 1
                                 novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else "Não informado") for c in COLUNAS_OFICIAIS}
                                 novo_registro_vazio["Id."] = proximo_id_val
@@ -454,7 +453,7 @@ if st.session_state["autenticado"]:
                                 st.error(f"Erro ao incluir: {err_inc}")
 
                     with b_col3:
-                        lista_exclusao = [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_filtrado.iterrows()]
+                        lista_exclusao = [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_db_global.iterrows()]
                         aluno_a_excluir = st.selectbox("Selecionar para Exclusão:", ["Selecione..."] + lista_exclusao, key="sel_exc_aluno")
                         
                         if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -464,20 +463,28 @@ if st.session_state["autenticado"]:
                                     doc_exc = conectar_planilha()
                                     aba_exc = doc_exc.get_worksheet(0)
                                     
-                                    # Remove do DataFrame local e reindexa o ID sequencialmente
-                                    df_atualizado = df_db_global[df_db_global["Id."] != id_exc].copy()
-                                    df_atualizado["Id."] = range(1, len(df_atualizado) + 1)
+                                    # Linha exata na planilha do Google Sheets (ID + 1 por conta do cabeçalho)
+                                    linha_planilha_alvo = id_exc + 1
                                     
-                                    # Reescreve a planilha na nuvem mantendo o cabeçalho na linha 1
-                                    aba_exc.clear()
-                                    linhas_reescritas = [COLUNAS_OFICIAIS]
-                                    for _, r_exc in df_atualizado.iterrows():
-                                        linhas_reescritas.append([str(r_exc.get(c, "")) for c in COLUNAS_OFICIAIS])
+                                    # Apaga diretamente a linha específica na nuvem
+                                    aba_exc.delete_rows(linha_planilha_alvo)
                                     
-                                    aba_exc.update(range_name=f"A1:Y{len(linhas_reescritas)}", values=linhas_reescritas)
+                                    # Recarrega o banco atualizado e reindexa todos os IDs sequencialmente
+                                    df_atualizado = carregar_banco_dados_virtual()
+                                    df_atualizado = df_atualizado[df_atualizado["Id."] != id_exc].copy()
                                     
-                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu registro ID {id_exc} e reindexou base.")
-                                    st.success(f"🗑️ Registro excluído e base reindexada com sucesso!")
+                                    if not df_atualizado.empty:
+                                        df_atualizado["Id."] = range(1, len(df_atualizado) + 1)
+                                        # Atualiza a planilha inteira com a nova numeração limpa
+                                        dados_para_atualizar = [COLUNAS_OFICIAIS]
+                                        for _, r_up in df_atualizado.iterrows():
+                                            dados_para_atualizar.append([str(r_up.get(c, "")) for c in COLUNAS_OFICIAIS])
+                                        
+                                        # Sobrescreve com segurança a partir da linha 1
+                                        aba_exc.update(range_name=f"A1:Y{len(dados_para_atualizar)}", values=dados_para_atualizar)
+                                    
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu registro ID {id_exc} da planilha e reindexou base.")
+                                    st.success(f"🗑️ Registro excluído e base reindexada com sucesso na nuvem!")
                                     st.session_state["dados_banco"] = carregar_banco_dados_virtual()
                                     st.rerun()
                                 except Exception as err_exc:
