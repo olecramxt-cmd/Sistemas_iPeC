@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.18 - data: 22/07/26 - 16:40
+# Versão do código: v.17.19 - data: 22/07/26 - 16:42
 
 import streamlit as st
 import pandas as pd
@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM ISOLAMENTO CIRÚRGICO DO BOTÃO DE EXCLUSÃO E CAMPOS BLOQUEADOS EM CINZA
+# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM ISOLAMENTO CIRÚRGICO DO BOTÃO DE EXCLUSÃO
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -161,8 +161,14 @@ def carregar_banco_dados_virtual():
             df_bruto = df_bruto[df_bruto["Aluno"].astype(str).str.strip() != ""]
         if df_bruto.empty: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
         df_bruto["Id."] = range(1, len(df_bruto) + 1)
+        
+        # Garante que registros antigos sem ano letivo preenchido assumam o ano padrão 2026
         if "Ano Letivo" not in df_bruto.columns:
             df_bruto["Ano Letivo"] = "2026"
+        else:
+            df_bruto["Ano Letivo"] = df_bruto["Ano Letivo"].astype(str).str.strip()
+            df_bruto.loc[df_bruto["Ano Letivo"].isin(["", "nan", "NaN", "None", "Não informado"]), "Ano Letivo"] = "2026"
+
         if "Nascimento" in df_bruto.columns:
             df_bruto["Idade"] = df_bruto["Nascimento"].apply(calcular_idade_extenso)
         for col in COLUNAS_OFICIAIS:
@@ -225,7 +231,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.18 de 22/07/2026<br>
+        Versão: v.17.19 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -574,7 +580,6 @@ else:
                     if df_db_global.empty:
                         st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
                     else:
-                        # Concatenação inteligente do Período de Ensino com a Turma (ex: 1º ANO KARINI - COLÔMBIA ou 6º Ano - A)
                         df_db_global["Turma_Formatada"] = df_db_global["Período de Ensino"].astype(str).str.strip() + " - " + df_db_global["Turma"].astype(str).str.strip()
                         
                         turmas_disponiveis = ["Selecione a Turma..."] + sorted(list(df_db_global["Turma_Formatada"].dropna().unique()))
@@ -588,7 +593,6 @@ else:
                             else:
                                 st.markdown(f"Exibindo {len(df_miguilim_filtrado)} aluno(s) para triagem visual.")
                                 
-                                # Configuração das colunas e colunas extras solicitadas
                                 dados_tabela_mig = []
                                 for _, r in df_miguilim_filtrado.iterrows():
                                     dados_tabela_mig.append({
@@ -612,7 +616,6 @@ else:
                                 
                                 df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
                                 
-                                # Configuração estrita de colunas com menus suspensos (column_config)
                                 escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
                                 
                                 conf_colunas = {
@@ -620,7 +623,7 @@ else:
                                     "Aluno": st.column_config.TextColumn("Aluno", disabled=True),
                                     "CPF": st.column_config.TextColumn("CPF", disabled=True),
                                     "Mãe": st.column_config.TextColumn("Mãe", disabled=True),
-                                    "PBF": st.column_config.TextColumn("PBF", disabled=True), # Bloqueado/Cinza
+                                    "PBF": st.column_config.TextColumn("PBF", disabled=True),
                                     "Sem óculos(Dir)": st.column_config.SelectboxColumn("Sem óculos(Dir)", options=escala_visao, required=False),
                                     "Sem óculos(Esq)": st.column_config.SelectboxColumn("Sem óculos(Esq)", options=escala_visao, required=False),
                                     "Com óculos(Dir)": st.column_config.SelectboxColumn("Com óculos(Dir)", options=escala_visao, required=False),
@@ -648,7 +651,7 @@ else:
                                         try:
                                             aba_mig = doc_mig.worksheet("miguilim_ipec")
                                         except gspread.WorksheetNotFound:
-                                            aba_mig = doc_mig.add_worksheet(title="miguilim_ipec", rows="1000", cols="16")
+                                            aba_mig = doc_mig.add_worksheet(title="miguilim_ipec", rows="1000", cols="18")
                                             aba_mig.append_row([
                                                 "Ano Letivo", "Turma", "Aluno", "CPF", "Mãe", 
                                                 "Sem óculos(Dir)", "Sem óculos(Esq)", "Com óculos(Dir)", "Com óculos(Esq)", 
