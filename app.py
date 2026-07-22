@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.14 - data: 22/07/26 - 14:58
+# Versão do código: v.17.17 - data: 22/07/26 - 15:20
 
 import streamlit as st
 import pandas as pd
@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM OS AJUSTES MANUAIS E BOTÃO DE EXCLUSÃO VERMELHO
+# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM ISOLAMENTO CIRÚRGICO DO BOTÃO DE EXCLUSÃO
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -48,13 +48,13 @@ st.markdown("""
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        /* Estilização específica para o botão de exclusão em vermelho */
-        div.stButton > button[kind="secondary"] {
+        /* ISOLAMENTO EXCLUSIVO: Apenas o botão de exclusão fica vermelho */
+        button[key*="excluir"], button:has(div:contains("Excluir")) {
             background-color: #cc0000 !important;
             color: white !important;
             border: 1px solid #ff9999 !important;
         }
-        div.stButton > button[kind="secondary"]:hover {
+        button[key*="excluir"]:hover, button:has(div:contains("Excluir")):hover {
             background-color: #ff1a1a !important;
             color: white !important;
         }
@@ -86,7 +86,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 COLUNAS_OFICIAIS = [
-    "Id.", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
+    "Id.", "Ano Letivo", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
     "Mãe", "Pai", "Sexo", "Telefone", "E-mail(s)", "Endereço", "Bairro",
     "Cartão Cidadão", "Cartão do SUS", "CERTIDÃO", "CPF", "Período de Ensino",
     "Turma", "Turno", "Professor de Apoio Escolar - PAE", "Status", "Transferência"
@@ -161,6 +161,8 @@ def carregar_banco_dados_virtual():
             df_bruto = df_bruto[df_bruto["Aluno"].astype(str).str.strip() != ""]
         if df_bruto.empty: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
         df_bruto["Id."] = range(1, len(df_bruto) + 1)
+        if "Ano Letivo" not in df_bruto.columns:
+            df_bruto["Ano Letivo"] = "2026"
         if "Nascimento" in df_bruto.columns:
             df_bruto["Idade"] = df_bruto["Nascimento"].apply(calcular_idade_extenso)
         for col in COLUNAS_OFICIAIS:
@@ -223,7 +225,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.14 de 22/07/2026<br>
+        Versão: v.17.17 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -277,7 +279,9 @@ else:
     if ano_letivo_escolhido == "Selecione...":
         st.info("ℹ️ Por favor, selecione o Ano Letivo acima para liberar o acesso aos módulos operacionais.")
     else:
-        # Verificação se há lançamentos no banco de dados ativo
+        if not df_db_global.empty and "Ano Letivo" in df_db_global.columns:
+            df_db_global = df_db_global[df_db_global["Ano Letivo"].astype(str).str.strip() == str(ano_letivo_escolhido)]
+
         if df_db_global.empty:
             st.warning(f"⚠️ Atenção: Não existem lançamentos ou registros ativos encontrados para o ano letivo de {ano_letivo_escolhido}.")
         else:
@@ -367,7 +371,7 @@ else:
                                                         linha_planilha = int(id_reg) + 1
                                                         row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
                                                         valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
-                                                        aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                                                        aba_w.update(range_name=f"A{linha_planilha}:Z{linha_planilha}", values=[valores_alinhados])
                                                         alteracoes_realizadas += 1
                                                         time.sleep(0.3)
                                         
@@ -387,16 +391,16 @@ else:
                                         doc_inc = conectar_planilha()
                                         aba_inc = doc_inc.get_worksheet(0)
                                         
-                                        proximo_id_val = len(df_db_global) + 1
-                                        novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else "Não informado") for c in COLUNAS_OFICIAIS}
+                                        proximo_id_val = len(carregar_banco_dados_virtual()) + 1
+                                        novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else str(ano_letivo_escolhido) if c == "Ano Letivo" else "Não informado") for c in COLUNAS_OFICIAIS}
                                         novo_registro_vazio["Id."] = proximo_id_val
                                         novo_registro_vazio["Aluno"] = f"Novo Aluno {proximo_id_val}"
                                         
                                         valores_novo = [str(novo_registro_vazio.get(c, "")) for c in COLUNAS_OFICIAIS]
                                         aba_inc.append_row(valores_novo)
                                         
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Incluiu novo registro vazio ID {proximo_id_val}.")
-                                        st.success(f"🎉 Novo registro ID {proximo_id_val} incluído com sucesso na nuvem! Edite-o na tabela acima.")
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Incluiu novo registro vazio ID {proximo_id_val} para {ano_letivo_escolhido}.")
+                                        st.success(f"🎉 Novo registro ID {proximo_id_val} incluído com sucesso na nuvem para {ano_letivo_escolhido}! Edite-o na tabela acima.")
                                         st.session_state["dados_banco"] = carregar_banco_dados_virtual()
                                         st.rerun()
                                     except Exception as err_inc:
@@ -406,14 +410,13 @@ else:
                                 lista_exclusao = [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_db_global.iterrows()]
                                 aluno_a_excluir = st.selectbox("Selecionar para Exclusão:", ["Selecione..."] + lista_exclusao, key="sel_exc_aluno")
                                 
-                                # Botão de exclusão com estilização secundária (vermelho)
-                                if st.button("🗑️ Excluir Aluno Selecionado", type="secondary"):
+                                # Botão de exclusão com estilização vermelha implacável
+                                if st.button("🗑️ Excluir Aluno Selecionado", key="btn_exec_excluir_aluno"):
                                     if aluno_a_excluir and aluno_a_excluir != "Selecione...":
                                         st.session_state["confirmar_exclusao_aluno"] = aluno_a_excluir
                                     else:
                                         st.warning("⚠️ Selecione um aluno válido para exclusão.")
                                 
-                                # Caixa de confirmação de segurança para exclusão
                                 if "confirmar_exclusao_aluno" in st.session_state and st.session_state["confirmar_exclusao_aluno"]:
                                     aluno_alvo_str = st.session_state["confirmar_exclusao_aluno"]
                                     st.error(f"⚠️ Confirmação: O aluno **{aluno_alvo_str}** realmente deve ser excluído?")
@@ -437,7 +440,7 @@ else:
                                                     for _, r_up in df_atualizado.iterrows():
                                                         dados_para_atualizar.append([str(r_up.get(c, "")) for c in COLUNAS_OFICIAIS])
                                                     
-                                                    aba_exc.update(range_name=f"A1:Y{len(dados_para_atualizar)}", values=dados_para_atualizar)
+                                                    aba_exc.update(range_name=f"A1:Z{len(dados_para_atualizar)}", values=dados_para_atualizar)
                                                 
                                                 registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu registro ID {id_exc} da planilha e reindexou base.")
                                                 del st.session_state["confirmar_exclusao_aluno"]
@@ -463,7 +466,9 @@ else:
                         lista_dfs = []
                         for arquivo in arquivos_escolhidos:
                             df_m = minerar_txt_ipec(arquivo)
-                            if not df_m.empty: lista_dfs.append(df_m)
+                            if not df_m.empty: 
+                                df_m["Ano Letivo"] = ano_letivo_escolhido
+                                lista_dfs.append(df_m)
                                 
                         if lista_dfs:
                             df_novo_lote = pd.concat(lista_dfs, ignore_index=True)
@@ -492,7 +497,7 @@ else:
                             decisoes_conflito = {}
                             if conflitos_detectados:
                                 st.markdown("### ⚠️ Conflito de Duplicidade Detectado!")
-                                st.warning(f"O sistema identificou {len(conflitos_detectados)} alunos que já existem na planilha.")
+                                st.warning(f"O sistema identificou {len(conflitos_detectados)} alunos que já existem na planilha para {ano_letivo_escolhido}.")
                                 
                                 for idx, c in enumerate(conflitos_detectados):
                                     st.markdown(f"**Aluno:** {c['novo']['Aluno']} | **Mãe:** {c['novo']['Mãe']}")
@@ -524,6 +529,7 @@ else:
                                     
                                     for item in linhas_limpas_insercao:
                                         item["Id."] = proximo_id
+                                        item["Ano Letivo"] = ano_letivo_escolhido
                                         item["Idade"] = calcular_idade_extenso(item["Nascimento"])
                                         item["Telefone"] = formatar_telefone(item["Telefone"])
                                         valores = [str(item.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
@@ -538,11 +544,12 @@ else:
                                         if decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados":
                                             dados_novos = c["novo"]
                                             dados_novos["Id."] = c["atual"]["Id."]
+                                            dados_novos["Ano Letivo"] = ano_letivo_escolhido
                                             dados_novos["Idade"] = calcular_idade_extenso(dados_novos["Nascimento"])
                                             dados_novos["Telefone"] = formatar_telefone(dados_novos["Telefone"])
                                             valores_update = [str(dados_novos.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
                                             l_alvo = c["linha_planilha"]
-                                            aba_upload.update(range_name=f"A{l_alvo}:Y{l_alvo}", values=[valores_update])
+                                            aba_upload.update(range_name=f"A{l_alvo}:Z{l_alvo}", values=[valores_update])
                                             linhas_sobrepostas += 1
                                     
                                     registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Importou lote .txt ({ano_letivo_escolhido}): {len(linhas_finais_append)} inseridos, {linhas_sobrepostas} sobrepostos.")
@@ -562,94 +569,75 @@ else:
                 sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
                 
                 if sub_miguilim == "Triagem de Acuidade":
-                    st.markdown("#### 📋 Formulário de Triagem de Acuidade Visual")
+                    st.markdown("#### 📋 Triagem de Acuidade Visual em Lote (Layout Horizontal)")
                     
                     if df_db_global.empty:
                         st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
                     else:
-                        opcoes_alunos_mig = ["Selecione o Aluno..."]
-                        for _, r in df_db_global.iterrows():
-                            txt_item = str(r['Id.']) + " - " + str(r['Aluno']) + " (Turma: " + str(r.get('Turma', 'N/I')) + ")"
-                            opcoes_alunos_mig.append(txt_item)
-                            
-                        aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", opcoes_alunos_mig)
+                        turmas_disponiveis = ["Todas"] + sorted(list(df_db_global["Turma"].dropna().unique()))
+                        turma_selecionada = st.selectbox("🎯 Filtrar por Turma / Período de Ensino:", turmas_disponiveis)
                         
-                        p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
+                        df_miguilim_filtrado = df_db_global.copy()
+                        if turma_selecionada != "Todas":
+                            df_miguilim_filtrado = df_miguilim_filtrado[df_miguilim_filtrado["Turma"] == turma_selecionada]
                         
-                        if aluno_escolhido_mig and aluno_escolhido_mig != "Selecione o Aluno...":
-                            id_alvo_mig = int(aluno_escolhido_mig.split(" - ")[0])
-                            match_mig = df_db_global[df_db_global["Id."] == id_alvo_mig]
-                            if not match_mig.empty:
-                                dado_aluno = match_mig.iloc[0]
-                                p_ensino_val = str(dado_aluno.get("Período de Ensino", ""))
-                                turma_val = str(dado_aluno.get("Turma", ""))
-                                aluno_val = str(dado_aluno.get("Aluno", ""))
-                                cpf_val = str(dado_aluno.get("CPF", ""))
-                                mae_val = str(dado_aluno.get("Mãe", ""))
-                                pbf_val = str(dado_aluno.get("PBF", "Não"))
-                        
-                        with st.form("form_miguilim_acuidade"):
-                            st.markdown("##### 1. Bloco de Identificação")
-                            col_id1, col_id2 = st.columns(2)
-                            with col_id1:
-                                val_periodo = st.text_input("Período de Ensino / Série (Ex: 1º, 2º...):", value=p_ensino_val)
-                                val_aluno_nome = st.text_input("Aluno:", value=aluno_val)
-                                val_cpf = st.text_input("CPF:", value=cpf_val)
-                            with col_id2:
-                                val_turma = st.text_input("Turma:", value=turma_val)
-                                val_mae = st.text_input("Mãe do Aluno:", value=mae_val)
+                        if df_miguilim_filtrado.empty:
+                            st.info("ℹ️ Nenhum aluno localizado para a turma selecionada.")
+                        else:
+                            st.markdown(f"Exibindo {len(df_miguilim_filtrado)} aluno(s) para triagem visual.")
                             
-                            st.markdown("##### 2. Avaliação de Acuidade Visual e Condições")
-                            opcoes_visao = ["1.0", "0.9", "0.8", "0.7", "0.6", "0.5", "0.4", "0.3", "0.2", "0.1", "0.0", "Sem percepção luminosa"]
+                            # Prepara DataFrame simplificado estritamente em linhas horizontais conforme solicitado
+                            colunas_miguilim_tabela = [
+                                "Id.", "Aluno", "CPF", "Mãe", 
+                                "Sem Óculos (Dir)", "Sem Óculos (Esq)", 
+                                "Com Óculos (Dir)", "Com Óculos (Esq)", 
+                                "Estrabismo", "PBF"
+                            ]
                             
-                            col_v1, col_v2 = st.columns(2)
-                            with col_v1:
-                                st.markdown("**2.1 - Sem óculos:**")
-                                sem_dir = st.selectbox("Direito (Sem Óculos):", opcoes_visao, index=0)
-                                sem_esq = st.selectbox("Esquerdo (Sem Óculos):", opcoes_visao, index=0)
-                            with col_v2:
-                                st.markdown("**2.2 - Com óculos:**")
-                                com_dir = st.selectbox("Direito (Com Óculos):", opcoes_visao, index=0)
-                                com_esq = st.selectbox("Esquerdo (Com Óculos):", opcoes_visao, index=0)
+                            dados_tabela_mig = []
+                            for _, r in df_miguilim_filtrado.iterrows():
+                                dados_tabela_mig.append({
+                                    "Id.": r["Id."],
+                                    "Aluno": r["Aluno"],
+                                    "CPF": r["CPF"],
+                                    "Mãe": r["Mãe"],
+                                    "Sem Óculos (Dir)": "1.0",
+                                    "Sem Óculos (Esq)": "1.0",
+                                    "Com Óculos (Dir)": "1.0",
+                                    "Com Óculos (Esq)": "1.0",
+                                    "Estrabismo": "Não",
+                                    "PBF": r.get("PBF", "Não")
+                                })
                             
-                            st.markdown("**2.3 - Condições Especiais:**")
-                            col_c1, col_c2 = st.columns(2)
-                            with col_c1:
-                                val_estrabismo = st.selectbox("Estrabismo:", ["Não", "Sim"])
-                            with col_c2:
-                                index_pbf = 1 if pbf_val.strip().lower() == "sim" else 0
-                                val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Não", "Sim"], index=index_pbf)
+                            df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
                             
-                            btn_processar_miguilim = st.form_submit_button("🔍 Processar Resultado e Salvar Triagem")
+                            df_miguilim_resultado = st.data_editor(
+                                df_tabela_mig_edit,
+                                use_container_width=True,
+                                hide_index=True,
+                                key="editor_miguilim_horizontal"
+                            )
                             
-                            if btn_processar_miguilim:
-                                if not val_aluno_nome or val_aluno_nome == "":
-                                    st.error("⚠️ O campo do Aluno é obrigatório para registrar a triagem.")
-                                else:
-                                    def conv_v(txt):
-                                        if txt == "Sem percepção luminosa": return 0.0
-                                        try: return float(txt)
-                                        except: return 1.0
-                                    
-                                    d_s, e_s = conv_v(sem_dir), conv_v(sem_esq)
-                                    d_c, e_c = conv_v(com_dir), conv_v(com_esq)
-                                    
-                                    tem_alteracao_geral = (d_s < 1.0 or e_s < 1.0 or d_c < 1.0 or e_c < 1.0 or val_estrabismo == "Sim")
-                                    tem_valor_critico = (d_s <= 0.6 or e_s <= 0.6 or d_c <= 0.6 or e_c <= 0.6)
-                                    tem_alteracao_moderada = ((d_s > 0.6 and d_s < 1.0) or (e_s > 0.6 and e_s < 1.0) or 
-                                                              (d_c > 0.6 and d_c < 1.0) or (e_c > 0.6 and e_c < 1.0))
-                                    
-                                    if not tem_alteracao_geral:
-                                        status_resultado = "Sem alteração"
-                                    elif tem_valor_critico:
-                                        status_resultado = "Encaminhado"
-                                    elif tem_alteracao_moderada or val_estrabismo == "Sim":
-                                        status_resultado = "Alteração Moderada"
-                                    else:
-                                        status_resultado = "Não Examinado"
+                            if st.button("💾 Processar e Salvar Triagens em Lote"):
+                                try:
+                                    for _, row_m in df_miguilim_resultado.iterrows():
+                                        aluno_nome = row_m["Aluno"]
+                                        d_s = float(row_m["Sem Óculos (Dir)"]) if row_m["Sem Óculos (Dir)"] != "Sem percepção luminosa" else 0.0
+                                        e_s = float(row_m["Sem Óculos (Esq)"]) if row_m["Sem Óculos (Esq)"] != "Sem percepção luminosa" else 0.0
+                                        d_c = float(row_m["Com Óculos (Dir)"]) if row_m["Com Óculos (Dir)"] != "Sem percepção luminosa" else 0.0
+                                        e_c = float(row_m["Com Óculos (Esq)"]) if row_m["Com Óculos (Esq)"] != "Sem percepção luminosa" else 0.0
+                                        estr = row_m["Estrabismo"]
                                         
-                                    st.success(f"🎉 Triagem processada com sucesso! **Resultado Atribuído:** {status_resultado}")
-                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Realizou triagem Miguilim ({ano_letivo_escolhido}) para o aluno {val_aluno_nome} - Status: {status_resultado}")
+                                        tem_alteracao_geral = (d_s < 1.0 or e_s < 1.0 or d_c < 1.0 or e_c < 1.0 or estr == "Sim")
+                                        tem_valor_critico = (d_s <= 0.6 or e_s <= 0.6 or d_c <= 0.6 or e_c <= 0.6)
+                                        
+                                        status_resultado = "Sem alteração" if not tem_alteracao_geral else ("Encaminhado" if tem_valor_critico else "Alteração Moderada")
+                                        
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Triagem Miguilim ({ano_letivo_escolhido}) - Aluno: {aluno_nome} | Status: {status_resultado}")
+                                    
+                                    st.success("🎉 Todas as triagens da seleção foram processadas e salvas com sucesso!")
+                                except Exception as err_mig:
+                                    st.error(f"Erro ao salvar triagens: {err_mig}")
 
                 elif sub_miguilim == "Encaminhamentos Clínicos":
                     st.markdown(f"### 📋 Encaminhamentos Clínicos — Programa Miguilim ({ano_letivo_escolhido})")
