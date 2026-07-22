@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.09 - data: 21/07/26 - 10:32
+# Versão do código: v.17.10 - data: 22/07/26 - 14:30
 
 import streamlit as st
 import pandas as pd
@@ -286,7 +286,7 @@ except Exception: pass
 # 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.09 de 21/07/2026<br>
+        Versão: v.17.10 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -380,7 +380,7 @@ if st.session_state["autenticado"]:
                     st.session_state.f_status = st.text_input("Filtrar por Status:", value=st.session_state.f_status)
                     st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
-                st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real / Validação ao Salvar)")
+                st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real)")
                 
                 def destacar_cpf_inconsistente(val):
                     cpf_str = str(val).strip()
@@ -396,36 +396,94 @@ if st.session_state["autenticado"]:
                 )
 
                 if st.session_state["perfil_usuario"] == "Total":
-                    if st.button("💾 Salvar Alterações da Tabela na Nuvem"):
-                        try:
-                            doc_w = conectar_planilha()
-                            aba_w = doc_w.get_worksheet(0)
-                            
-                            alteracoes_realizadas = 0
-                            with st.spinner("Verificando e salvando apenas os registros alterados..."):
-                                for idx, row_edit in df_editavel.iterrows():
-                                    id_reg = row_edit["Id."]
-                                    original_match = df_db_global[df_db_global["Id."] == id_reg]
-                                    if not original_match.empty:
-                                        row_orig = original_match.iloc[0]
-                                        diferente = any(str(row_edit.get(c, "")) != str(row_orig.get(c, "")) for c in COLUNAS_OFICIAIS if c != "Idade")
-                                        if diferente:
-                                            linha_planilha = int(id_reg) + 1
-                                            row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
-                                            valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
-                                            aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
-                                            alteracoes_realizadas += 1
-                                            time.sleep(0.3)
-                            
-                            if alteracoes_realizadas > 0:
-                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou {alteracoes_realizadas} registro(s) via tabela interativa.")
-                                st.success(f"🎉 {alteracoes_realizadas} registro(s) alterado(s) e salvo(s) direto na nuvem com sucesso!")
+                    # BOTÕES SOLICITADOS: SALVAR, INCLUIR E EXCLUIR NA MESMA LINHA
+                    b_col1, b_col2, b_col3 = st.columns(3)
+                    
+                    with b_col1:
+                        if st.button("💾 Salvar"):
+                            try:
+                                doc_w = conectar_planilha()
+                                aba_w = doc_w.get_worksheet(0)
+                                
+                                alteracoes_realizadas = 0
+                                with st.spinner("Verificando e salvando apenas os registros alterados..."):
+                                    for idx, row_edit in df_editavel.iterrows():
+                                        id_reg = row_edit["Id."]
+                                        original_match = df_db_global[df_db_global["Id."] == id_reg]
+                                        if not original_match.empty:
+                                            row_orig = original_match.iloc[0]
+                                            diferente = any(str(row_edit.get(c, "")) != str(row_orig.get(c, "")) for c in COLUNAS_OFICIAIS if c != "Idade")
+                                            if diferente:
+                                                linha_planilha = int(id_reg) + 1
+                                                row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
+                                                valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                                aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                                                alteracoes_realizadas += 1
+                                                time.sleep(0.3)
+                                
+                                if alteracoes_realizadas > 0:
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou {alteracoes_realizadas} registro(s) via tabela interativa.")
+                                    st.success(f"🎉 {alteracoes_realizadas} registro(s) alterado(s) e salvo(s) direto na nuvem com sucesso!")
+                                    st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                    st.rerun()
+                                else:
+                                    st.info("ℹ️ Nenhuma alteração foi detectada na tabela para salvar.")
+                            except Exception as err:
+                                st.error(f"Erro ao salvar alterações: {err}")
+
+                    with b_col2:
+                        if st.button("➕ Incluir Aluno"):
+                            try:
+                                doc_inc = conectar_planilha()
+                                aba_inc = doc_inc.get_worksheet(0)
+                                
+                                # Calcula o próximo ID sequencial estrito
+                                proximo_id_val = len(df_db_global) + 1
+                                novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else "Não informado") for c in COLUNAS_OFICIAIS}
+                                novo_registro_vazio["Id."] = proximo_id_val
+                                novo_registro_vazio["Aluno"] = f"Novo Aluno {proximo_id_val}"
+                                
+                                valores_novo = [str(novo_registro_vazio.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                aba_inc.append_row(valores_novo)
+                                
+                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Incluiu novo registro vazio ID {proximo_id_val}.")
+                                st.success(f"🎉 Novo registro ID {proximo_id_val} incluído com sucesso na nuvem! Edite-o na tabela acima.")
                                 st.session_state["dados_banco"] = carregar_banco_dados_virtual()
                                 st.rerun()
+                            except Exception as err_inc:
+                                st.error(f"Erro ao incluir: {err_inc}")
+
+                    with b_col3:
+                        lista_exclusao = [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_filtrado.iterrows()]
+                        aluno_a_excluir = st.selectbox("Selecionar para Exclusão:", ["Selecione..."] + lista_exclusao, key="sel_exc_aluno")
+                        
+                        if st.button("🗑️ Excluir Aluno Selecionado"):
+                            if aluno_a_excluir and aluno_a_excluir != "Selecione...":
+                                try:
+                                    id_exc = int(aluno_a_excluir.split(" - ")[0])
+                                    doc_exc = conectar_planilha()
+                                    aba_exc = doc_exc.get_worksheet(0)
+                                    
+                                    # Remove do DataFrame local e reindexa o ID sequencialmente
+                                    df_atualizado = df_db_global[df_db_global["Id."] != id_exc].copy()
+                                    df_atualizado["Id."] = range(1, len(df_atualizado) + 1)
+                                    
+                                    # Reescreve a planilha na nuvem mantendo o cabeçalho na linha 1
+                                    aba_exc.clear()
+                                    linhas_reescritas = [COLUNAS_OFICIAIS]
+                                    for _, r_exc in df_atualizado.iterrows():
+                                        linhas_reescritas.append([str(r_exc.get(c, "")) for c in COLUNAS_OFICIAIS])
+                                    
+                                    aba_exc.update(range_name=f"A1:Y{len(linhas_reescritas)}", values=linhas_reescritas)
+                                    
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu registro ID {id_exc} e reindexou base.")
+                                    st.success(f"🗑️ Registro excluído e base reindexada com sucesso!")
+                                    st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                    st.rerun()
+                                except Exception as err_exc:
+                                    st.error(f"Erro ao excluir: {err_exc}")
                             else:
-                                st.info("ℹ️ Nenhuma alteração foi detectada na tabela para salvar.")
-                        except Exception as err:
-                            st.error(f"Erro ao salvar alterações: {err}")
+                                st.warning("⚠️ Selecione um aluno válido para exclusão.")
             else:
                 st.info("Banco de dados vazio ou redefinido.")
                 
@@ -602,35 +660,13 @@ if st.session_state["autenticado"]:
             if df_db_global.empty:
                 st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
             else:
-                # FILTROS INTEGRADOS DE PERÍODO DE ENSINO E TURMA NO TOPO
-                st.markdown("##### 🔍 Filtro Integrado de Seleção")
-                col_f1, col_f2 = st.columns(2)
-                
-                lista_periodos = ["Selecione o Período..."] + sorted(df_db_global["Período de Ensino"].dropna().unique().tolist())
-                with col_f1:
-                    periodo_selecionado = st.selectbox("Período de Ensino:", lista_periodos)
-                
-                df_filtrado_turma = df_db_global.copy()
-                if periodo_selecionado != "Selecione o Período...":
-                    df_filtrado_turma = df_filtrado_turma[df_filtrado_turma["Período de Ensino"] == periodo_selecionado]
-                
-                lista_turmas = ["Selecione a Turma..."] + sorted(df_filtrado_turma["Turma"].dropna().unique().tolist())
-                with col_f2:
-                    turma_selecionada = st.selectbox("Turma:", lista_turmas)
-                
-                # FILTRAGEM FINAL DOS ALUNOS PELA INTERSEÇÃO
-                df_alunos_final = df_filtrado_turma.copy()
-                if turma_selecionada != "Selecione a Turma...":
-                    df_alunos_final = df_alunos_final[df_alunos_final["Turma"] == turma_selecionada]
-                
                 opcoes_alunos_mig = ["Selecione o Aluno..."]
-                for _, r in df_alunos_final.iterrows():
-                    txt_item = str(r['Id.']) + " - " + str(r['Aluno'])
+                for _, r in df_db_global.iterrows():
+                    txt_item = str(r['Id.']) + " - " + str(r['Aluno']) + " (Turma: " + str(r.get('Turma', 'N/I')) + ")"
                     opcoes_alunos_mig.append(txt_item)
+                    
+                aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", opcoes_alunos_mig)
                 
-                aluno_escolhido_mig = st.selectbox("Selecione o Aluno Correspondente:", opcoes_alunos_mig)
-                
-                # VARIÁVEIS INICIAIS EM BRANCO
                 p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
                 
                 if aluno_escolhido_mig and aluno_escolhido_mig != "Selecione o Aluno...":
@@ -649,7 +685,7 @@ if st.session_state["autenticado"]:
                     st.markdown("##### 1. Bloco de Identificação")
                     col_id1, col_id2 = st.columns(2)
                     with col_id1:
-                        val_periodo = st.text_input("Período de Ensino / Série:", value=p_ensino_val)
+                        val_periodo = st.text_input("Período de Ensino / Série (Ex: 1º, 2º...):", value=p_ensino_val)
                         val_aluno_nome = st.text_input("Aluno:", value=aluno_val)
                         val_cpf = st.text_input("CPF:", value=cpf_val)
                     with col_id2:
@@ -657,7 +693,7 @@ if st.session_state["autenticado"]:
                         val_mae = st.text_input("Mãe do Aluno:", value=mae_val)
                     
                     st.markdown("##### 2. Avaliação de Acuidade Visual e Condições")
-                    opcoes_visao = ["Selecione...", "1.0", "0.9", "0.8", "0.7", "0.6", "0.5", "0.4", "0.3", "0.2", "0.1", "0.0", "Sem percepção luminosa"]
+                    opcoes_visao = ["1.0", "0.9", "0.8", "0.7", "0.6", "0.5", "0.4", "0.3", "0.2", "0.1", "0.0", "Sem percepção luminosa"]
                     
                     col_v1, col_v2 = st.columns(2)
                     with col_v1:
@@ -672,21 +708,19 @@ if st.session_state["autenticado"]:
                     st.markdown("**2.3 - Condições Especiais:**")
                     col_c1, col_c2 = st.columns(2)
                     with col_c1:
-                        val_estrabismo = st.selectbox("Estrabismo:", ["Selecione...", "Não", "Sim"], index=0)
+                        val_estrabismo = st.selectbox("Estrabismo:", ["Não", "Sim"])
                     with col_c2:
-                        index_pbf = 0 if pbf_val.strip().lower() != "sim" else 2
-                        val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Selecione...", "Não", "Sim"], index=index_pbf)
+                        index_pbf = 1 if pbf_val.strip().lower() == "sim" else 0
+                        val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Não", "Sim"], index=index_pbf)
                     
                     btn_processar_miguilim = st.form_submit_button("🔍 Processar Resultado e Salvar Triagem")
                     
                     if btn_processar_miguilim:
                         if not val_aluno_nome or val_aluno_nome == "":
-                            st.error("⚠️ Selecione um aluno válido para registrar a triagem.")
-                        elif sem_dir == "Selecione..." or sem_esq == "Selecione...":
-                            st.warning("⚠️ Preencha os campos obrigatórios de acuidade visual sem óculos.")
+                            st.error("⚠️ O campo do Aluno é obrigatório para registrar a triagem.")
                         else:
                             def conv_v(txt):
-                                if txt == "Sem percepção luminosa" or txt == "Selecione...": return 1.0
+                                if txt == "Sem percepção luminosa": return 0.0
                                 try: return float(txt)
                                 except: return 1.0
                             
