@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.21 - data: 22/07/26 - 17:10
+# Versão do código: v.17.23 - data: 22/07/26 - 17:35
 
 import streamlit as st
 import pandas as pd
@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import time
 import gspread
 from google.oauth2.service_account import Credentials
+import os
 
 # CONFIGURAÇÃO ESTRITA DA PÁGINA COM NOME CORRETO NA ABA DO NAVEGADOR
 st.set_page_config(
@@ -241,7 +242,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.21 de 22/07/2026<br>
+        Versão: v.17.23 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -282,9 +283,23 @@ else:
         st.rerun()
 
     # ==========================================
-    # CENTRAL DE TRABALHOS: FILTRO GLOBAL DE ANO
+    # CENTRAL DE TRABALHOS: TÍTULO, LOGO E ESCOLA
     # ==========================================
     st.markdown("### 🏫 SISTEMAS iPeC - Central de Trabalhos")
+    
+    # Renderização blindada da logo da escola ao lado esquerdo
+    col_logo_esc, col_nome_esc = st.columns([0.08, 0.92])
+    with col_logo_esc:
+        try:
+            if os.path.exists("imagens/Logo da Escola.jpeg"):
+                st.image("imagens/Logo da Escola.jpeg", width=55)
+            else:
+                st.markdown("🏫")
+        except Exception:
+            st.markdown("🏫")
+    with col_nome_esc:
+        st.markdown("<h4 style='color: #0f2b5c; margin-top: 10px; margin-bottom: 0;'>ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</h4>", unsafe_allow_html=True)
+
     st.markdown("---")
     
     anos_disponiveis = ["Selecione...", "2026", "2027", "2028", "2029", "2030"]
@@ -491,13 +506,21 @@ else:
                     if df_db_global.empty:
                         st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
                     else:
-                        # CONCATENAÇÃO INTELIGENTE SEM DUPLICIDADE DE TURMA/SÉRIE
+                        # LIMPEZA RIGOROSA CONTRA DUPLICIDADE NO FILTRO DE TURMAS
                         def formatar_turma_limpa(row):
                             p_ensino = str(row["Período de Ensino"]).strip()
                             t_turma = str(row["Turma"]).strip()
-                            if t_turma.lower() in p_ensino.lower() or p_ensino.lower() in t_turma.lower():
-                                # Retorna o mais completo sem repetir
+                            # Remove repetições textuais (ex: se Turma for "7 ANO A" e Período for "7º ANO")
+                            p_limpo = re.sub(r'[^a-zA-Z0-9]', '', p_ensino).lower()
+                            t_limpo = re.sub(r'[^a-zA-Z0-9]', '', t_turma).lower()
+                            
+                            if t_limpo in p_limpo or p_limpo in t_limpo:
                                 return t_turma if len(t_turma) >= len(p_ensino) else p_ensino
+                            
+                            # Se a turma já contém o nome da série (ex: "7º ANO A" dentro de "7º Ano")
+                            if t_turma.upper().startswith(p_ensino.upper()):
+                                return t_turma
+                                
                             return f"{p_ensino} - {t_turma}"
 
                         df_db_global["Turma_Formatada"] = df_db_global.apply(formatar_turma_limpa, axis=1)
@@ -526,10 +549,10 @@ else:
                                         "Com óculos(Esq)": "",
                                         "Estrabismo": "Não",
                                         "PBF": r.get("PBF", "Não"),
-                                        "Sem alteração": False,
-                                        "Alteração Moderada": False,
-                                        "Encaminhado": False,
-                                        "Não examinado": False,
+                                        "Sem alteração": "Não",
+                                        "Alteração Moderada": "Não",
+                                        "Encaminhado": "Não",
+                                        "Não examinado": "Não",
                                         "Uso do celular": "Não",
                                         "Observação": ""
                                     })
@@ -537,6 +560,7 @@ else:
                                 df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
                                 
                                 escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
+                                opcoes_sim_nao = ["Não", "Sim"]
                                 opcoes_celular = ["Não", "1h", "2h", "3h", "4h", "5h", "6h", "7h", "8h", "Mais de 8h"]
                                 
                                 conf_colunas = {
@@ -550,10 +574,10 @@ else:
                                     "Com óculos(Dir)": st.column_config.SelectboxColumn("Com óculos(Dir)", options=escala_visao, required=False),
                                     "Com óculos(Esq)": st.column_config.SelectboxColumn("Com óculos(Esq)", options=escala_visao, required=False),
                                     "Estrabismo": st.column_config.SelectboxColumn("Estrabismo", options=["Não", "Sim"], required=True),
-                                    "Sem alteração": st.column_config.CheckboxColumn("Sem alter.", default=False),
-                                    "Alteração Moderada": st.column_config.CheckboxColumn("Alt. Mod.", default=False),
-                                    "Encaminhado": st.column_config.CheckboxColumn("Encaminhado", default=False),
-                                    "Não examinado": st.column_config.CheckboxColumn("Não exam.", default=False),
+                                    "Sem alteração": st.column_config.SelectboxColumn("Sem alter.", options=opcoes_sim_nao, required=True),
+                                    "Alteração Moderada": st.column_config.SelectboxColumn("Alt. Mod.", options=opcoes_sim_nao, required=True),
+                                    "Encaminhado": st.column_config.SelectboxColumn("Encaminhado", options=opcoes_sim_nao, required=True),
+                                    "Não examinado": st.column_config.SelectboxColumn("Não exam.", options=opcoes_sim_nao, required=True),
                                     "Uso do celular": st.column_config.SelectboxColumn("Uso celular", options=opcoes_celular, required=True),
                                     "Observação": st.column_config.TextColumn("Observação", max_chars=500, default="")
                                 }
@@ -568,22 +592,21 @@ else:
                                 
                                 if st.button("💾 Processar e Salvar Triagens em Lote"):
                                     try:
-                                        # VALIDAÇÃO DAS REGRAS CLÍNICAS EXIGIDAS
                                         erros_validacao = []
                                         for idx, row_m in df_miguilim_resultado.iterrows():
                                             aluno_nome = row_m["Aluno"]
-                                            sem_alt = bool(row_m["Sem alteração"])
-                                            alt_mod = bool(row_m["Alteração Moderada"])
-                                            encam = bool(row_m["Encaminhado"])
-                                            nao_exam = bool(row_m["Não examinado"])
+                                            sem_alt = str(row_m["Sem alteração"]) == "Sim"
+                                            alt_mod = str(row_m["Alteração Moderada"]) == "Sim"
+                                            encam = str(row_m["Encaminhado"]) == "Sim"
+                                            nao_exam = str(row_m["Não examinado"]) == "Sim"
                                             
-                                            # Regra 1: Sem alteração não pode ser marcado junto com Alteração Moderada ou Encaminhado
+                                            # Regra 1: Sem alteração vs Alt. Moderada / Encaminhado
                                             if sem_alt and (alt_mod or encam):
-                                                erros_validacao.append(f"Aluno {aluno_nome}: 'Sem alteração' não pode ser marcado simultaneamente com 'Alteração Moderada' ou 'Encaminhado'.")
+                                                erros_validacao.append(f"Aluno {aluno_nome}: Se 'Sem alteração' for 'Sim', as opções 'Alteração Moderada' e 'Encaminhado' devem ser 'Não'.")
                                             
-                                            # Regra 2: Não examinado só pode se nenhum dos outros 3 estiver marcado
+                                            # Regra 2: Não examinado só pode se nenhum dos outros 3 estiver marcado como Sim
                                             if nao_exam and (sem_alt or alt_mod or encam):
-                                                erros_validacao.append(f"Aluno {aluno_nome}: 'Não examinado' só pode ser marcado se nenhuma outra condição diagnóstica estiver ativa.")
+                                                erros_validacao.append(f"Aluno {aluno_nome}: 'Não examinado' só pode ser 'Sim' se nenhuma outra condição clínica estiver ativa.")
 
                                         if erros_validacao:
                                             for e_val in erros_validacao:
@@ -630,7 +653,7 @@ else:
                                                 aba_mig.append_rows(linhas_para_salvar)
                                             
                                             registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens em lote Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada}")
-                                            st.success("🎉 Todas as triagens da turma foram validadas, processadas e salvas com sucesso na aba exclusiva 'miguilim_ipec'!")
+                                            st.success("🎉 Todas as triagens da turma foram validadas rigorosamente, processadas e salvas com sucesso na aba exclusiva 'miguilim_ipec'!")
                                     except Exception as err_mig:
                                         st.error(f"Erro ao salvar triagens na nuvem: {err_mig}")
 
