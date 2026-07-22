@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.11 - data: 22/07/26 - 14:39
+# Versão do código: v.17.12 - data: 22/07/26 - 14:50
 
 import streamlit as st
 import pandas as pd
@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM OS AJUSTES MANUAIS EXATOS DO CHAT 13
+# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM OS AJUSTES MANUAIS E BOTÃO DE EXCLUSÃO VERMELHO
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -28,7 +28,6 @@ st.markdown("""
         [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #ffffff !important;
         }
-        /* PUXA TODO O CONJUNTO DA BARRA LATERAL PARA O TOPO ABSOLUTO */
         [data-testid="stSidebar"] > div:first-child {
             margin-top: -35px !important;
         }
@@ -49,7 +48,16 @@ st.markdown("""
             background-color: #f7c325;
             color: #0f2b5c;
         }
-        /* 1. VERSÃO E COPYRIGHT COLADOS RENTE À LOGO */
+        /* Estilização específica para o botão de exclusão em vermelho */
+        div.stButton > button[kind="secondary"] {
+            background-color: #cc0000 !important;
+            color: white !important;
+            border: 1px solid #ff9999 !important;
+        }
+        div.stButton > button[kind="secondary"]:hover {
+            background-color: #ff1a1a !important;
+            color: white !important;
+        }
         .sidebar-logo-footer {
             text-align: center;
             font-size: 0.72em;
@@ -60,7 +68,6 @@ st.markdown("""
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             line-height: 1.2;
         }
-        /* 2. BLOCO DA FOTO E APROXIMAÇÃO DO NOME E PERFIL */
         .profile-wrapper {
             text-align: center;
             margin-top: -15px;
@@ -78,7 +85,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Estrutura oficial de colunas solicitada
 COLUNAS_OFICIAIS = [
     "Id.", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
     "Mãe", "Pai", "Sexo", "Telefone", "E-mail(s)", "Endereço", "Bairro",
@@ -200,74 +206,6 @@ def gerenciar_autenticacao(user_input, pass_input):
     return None
 
 # ==========================================
-# MINERADOR PROCESSUAL DE LOTES
-# ==========================================
-def minerar_txt_ipec(arquivo_recurso):
-    nome_arquivo = arquivo_recurso.name
-    primeiro_char = re.search(r"^\d", nome_arquivo.strip())
-    turno_padrao = "Vespertino" if primeiro_char and int(primeiro_char.group(0)) in [1,2,3,4] else "Matutino" if primeiro_char else "Não informado"
-    try:
-        linhas = arquivo_recurso.read().decode("utf-8").splitlines()
-    except UnicodeDecodeError:
-        arquivo_recurso.seek(0)
-        linhas = arquivo_recurso.read().decode("cp1252").splitlines()
-
-    alunos_capturados, aluno_atual = [], {}
-    periodo_ensino_doc, turma_doc = "Não informado", "Não informado"
-    
-    for linha in linhas:
-        linha_limpa = linha.strip()
-        if "Período de" in linha_limpa:
-            periodo_ensino_doc = linha_limpa.split("Período de")[-1].replace("Ensino", "").replace(":", "").strip()
-            continue
-        elif "Turma:" in linha_limpa:
-            turma_doc = linha_limpa.split("Turma:")[-1].strip()
-            continue
-        if "Alun" in linha_limpa and "Nascimen" in linha_limpa:
-            if aluno_atual: alunos_capturados.append(aluno_atual)
-            aluno_atual = {col: "Não informado" for col in COLUNAS_OFICIAIS}
-            aluno_atual["PBF"] = "Não"
-            aluno_atual["Transferência"] = ""
-            match_aluno = re.search(r"Alun(.*?)(?:Nascimen|$)", linha_limpa)
-            match_nasc = re.search(r"Nascimen(.*)", linha_limpa)
-            aluno_atual["Aluno"] = match_aluno.group(1).replace(":","").strip() if match_aluno else "Não informado"
-            aluno_atual["Nascimento"] = match_nasc.group(1).replace(":","").strip() if match_nasc else "Não informado"
-            aluno_atual["Idade"] = calcular_idade_extenso(aluno_atual["Nascimento"])
-            aluno_atual["Período de Ensino"] = periodo_ensino_doc
-            aluno_atual["Turma"] = turma_doc
-            aluno_atual["Turno"] = turno_padrao
-            aluno_atual["Status"] = "Ativo"
-            continue
-        if aluno_atual:
-            if "Naturalida" in linha_limpa:
-                match_nat = re.search(r"Naturalida(.*?)(?:Nacionalid|$)", linha_limpa)
-                match_nac = re.search(r"Nacionalid(.*)", linha_limpa)
-                aluno_atual["Naturalidade"] = match_nat.group(1).replace(":","").strip() if match_nat else "Não informado"
-                aluno_atual["Nacionalidade"] = match_nac.group(1).replace(":","").strip() if match_nac else "Não informado"
-            elif "Mãe:" in linha_limpa: aluno_atual["Mãe"] = linha_limpa.split("Mãe:")[-1].strip()
-            elif "Pai:" in linha_limpa: aluno_atual["Pai"] = linha_limpa.split("Pai:")[-1].strip()
-            elif "Sexo:" in linha_limpa:
-                match_sexo = re.search(r"Sexo:\s*(.*?)(?:Telefone|$)", linha_limpa, re.IGNORECASE)
-                if match_sexo: aluno_atual["Sexo"] = match_sexo.group(1).replace("ResponsávOutro", "").replace("Responsáv", "").strip()
-                if "Telefone" in linha_limpa: aluno_atual["Telefone"] = formatar_telefone(linha_limpa.split("Telefone")[-1])
-            elif "E-mail(s):" in linha_limpa: aluno_atual["E-mail(s)"] = linha_limpa.split("E-mail(s):")[-1].strip()
-            elif "Endereço:" in linha_limpa:
-                end_limpo = linha_limpa.split("Endereço:")[-1].replace("*", "").strip()
-                aluno_atual["Endereço"] = end_limpo
-                match_bairro = re.search(r"(?:Bairro|-,)\s*([^,.\n\-\*]+)", end_limpo, re.IGNORECASE)
-                if match_bairro: aluno_atual["Bairro"] = match_bairro.group(1).replace("- MG","").replace("UNAÍ","").strip()
-            elif "CPF:" in linha_limpa: aluno_atual["CPF"] = "".join(re.findall(r"[\d.-]", linha_limpa.split("CPF:")[-1]))
-            elif "Cartão Cidadão:" in linha_limpa or "Cartão do SUS:" in linha_limpa or "CERTIDÃO" in linha_limpa:
-                match_cc = re.search(r"Cartão Cidadão:\s*([\d]*)", linha_limpa)
-                match_sus = re.search(r"Cartão do SUS:\s*([\d\s]*)", linha_limpa)
-                match_cert = re.search(r"CERTIDÃO\s*(.*)", linha_limpa)
-                if match_cc and match_cc.group(1).strip(): aluno_atual["Cartão Cidadão"] = match_cc.group(1).strip()
-                if match_sus and match_sus.group(1).strip(): aluno_atual["Cartão do SUS"] = match_sus.group(1).replace(" ", "").strip()
-                if match_cert: aluno_atual["CERTIDÃO"] = match_cert.group(1).replace(":", "").replace("-", "").strip()
-    if aluno_atual: alunos_capturados.append(aluno_atual)
-    return pd.DataFrame(alunos_capturados) if alunos_capturados else pd.DataFrame(columns=COLUNAS_OFICIAIS)
-
-# ==========================================
 # CONTROLE DE SESSÃO E CARGA DE DADOS
 # ==========================================
 if "dados_banco" not in st.session_state:
@@ -278,15 +216,14 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# INTERFACE: SIDEBAR DE CONTROLE DE ACESSO
+# INTERFACE: SIDEBAR DE CONTROLE DE ACESSO (LIMPA, APENAS LOGO E DADOS)
 try:
     st.sidebar.image("imagens/Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
 except Exception: pass
 
-# 1. VERSÃO E COPYRIGHT EXATOS DO CHAT 13 (COLADOS RENTE À LOGO)
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.11 de 22/07/2026<br>
+        Versão: v.17.12 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -307,9 +244,7 @@ if not st.session_state["autenticado"]:
         else:
             st.sidebar.error("Credenciais incorretas.")
 else:
-    # 2 & 3. BLOCO DA FOTO, NOME E PERFIL EXATOS DO CHAT 13 (FACIADOS E SEM ESPAÇAMENTOS)
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
-    
     url_foto = st.session_state['foto_usuario'].strip()
     if url_foto and "http" in url_foto:
         st.sidebar.markdown(f'<img src="{url_foto}" class="profile-img-container">', unsafe_allow_html=True)
@@ -326,452 +261,413 @@ else:
         st.session_state["perfil_usuario"] = None
         st.rerun()
 
-    st.sidebar.markdown("---")
-    st.sidebar.title("🧭 Menu Corporativo")
+    # ==========================================
+    # CENTRAL DE TRABALHOS: FILTRO GLOBAL DE ANO
+    # ==========================================
+    st.markdown("### 🏫 SISTEMAS iPeC - Central de Trabalhos")
+    st.markdown("---")
     
-    opcoes_menu = ["📊 Painel de Controle de Conformidade e Indicadores de Alunos"]
-    if st.session_state["perfil_usuario"] == "Total":
-        opcoes_menu.append("📥 Importação de Dados")
+    anos_disponiveis = ["Selecione...", "2026", "2027", "2028", "2029", "2030"]
+    ano_letivo_escolhido = st.selectbox("📅 Informe o Ano Letivo de Trabalho:", anos_disponiveis, index=0)
     
-    opcoes_menu.extend(["📈 Relatórios", "👁️ Programa Miguilim", "📚 Programa Biblioteca"])
-    if st.session_state["perfil_usuario"] == "Total":
-        opcoes_menu.append("🛠️ Suporte")
-        
-    menu_principal = st.sidebar.selectbox("Selecione a Área:", opcoes_menu)
-
-# ==========================================
-# OPERAÇÃO DE CADA MÓDULO E SUB-MENUS
-# ==========================================
-if st.session_state["autenticado"]:
     df_db_global = st.session_state["dados_banco"]
 
-    # 1. PAINEL DE CONFORMIDADE
-    if menu_principal == "📊 Painel de Controle de Conformidade e Indicadores de Alunos":
-        st.markdown("### 📊 Painel de Controle de Conformidade e Indicadores de Alunos")
-        sub_conformidade = st.sidebar.radio("Sub-menu:", ["Cadastro dos alunos", "Atualização de Dados"])
-        
-        if "f_aluno" not in st.session_state: st.session_state.f_aluno = ""
-        if "f_mae" not in st.session_state: st.session_state.f_mae = ""
-        if "f_turma" not in st.session_state: st.session_state.f_turma = ""
-        if "f_turno" not in st.session_state: st.session_state.f_turno = ""
-        if "f_status" not in st.session_state: st.session_state.f_status = ""
-        if "f_pbf" not in st.session_state: st.session_state.f_pbf = ""
-
-        df_filtrado = df_db_global.copy()
-        if st.session_state.f_aluno: df_filtrado = df_filtrado[df_filtrado["Aluno"].str.contains(st.session_state.f_aluno, case=False)]
-        if st.session_state.f_mae: df_filtrado = df_filtrado[df_filtrado["Mãe"].str.contains(st.session_state.f_mae, case=False)]
-        if st.session_state.f_turma: df_filtrado = df_filtrado[df_filtrado["Turma"].str.contains(st.session_state.f_turma, case=False)]
-        if st.session_state.f_turno: df_filtrado = df_filtrado[df_filtrado["Turno"].str.contains(st.session_state.f_turno, case=False)]
-        if st.session_state.f_status: df_filtrado = df_filtrado[df_filtrado["Status"].str.contains(st.session_state.f_status, case=False)]
-        if st.session_state.f_pbf: df_filtrado = df_filtrado[df_filtrado["PBF"].str.contains(st.session_state.f_pbf, case=False)]
-
-        if sub_conformidade == "Cadastro dos alunos":
-            if not df_db_global.empty:
-                st.success(f"Banco de dados ativo com {len(df_db_global)} registros oficiais na nuvem.")
-                
-                st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
-                filtro_cols = st.columns(2)
-                with filtro_cols[0]:
-                    st.session_state.f_aluno = st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno)
-                    st.session_state.f_mae = st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae)
-                    st.session_state.f_turma = st.text_input("Filtrar por Turma:", value=st.session_state.f_turma)
-                with filtro_cols[1]:
-                    st.session_state.f_turno = st.text_input("Filtrar por Turno:", value=st.session_state.f_turno)
-                    st.session_state.f_status = st.text_input("Filtrar por Status:", value=st.session_state.f_status)
-                    st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
-
-                st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real)")
-                
-                def destacar_cpf_inconsistente(val):
-                    cpf_str = str(val).strip()
-                    if not cpf_str or cpf_str in ["Não informado", ""] or not validar_cpf(cpf_str):
-                        return 'background-color: #ffcccc; color: #990000; font-weight: bold;'
-                    return ''
-
-                df_editavel = st.data_editor(
-                    df_filtrado.style.map(destacar_cpf_inconsistente, subset=['CPF']),
-                    use_container_width=True, 
-                    hide_index=True,
-                    key="editor_dados_tabela"
-                )
-
-                if st.session_state["perfil_usuario"] == "Total":
-                    # BOTÕES SOLICITADOS: SALVAR, INCLUIR E EXCLUIR NA MESMA LINHA
-                    b_col1, b_col2, b_col3 = st.columns(3)
-                    
-                    with b_col1:
-                        if st.button("💾 Salvar"):
-                            try:
-                                doc_w = conectar_planilha()
-                                aba_w = doc_w.get_worksheet(0)
-                                
-                                alteracoes_realizadas = 0
-                                with st.spinner("Verificando e salvando apenas os registros alterados..."):
-                                    for idx, row_edit in df_editavel.iterrows():
-                                        id_reg = row_edit["Id."]
-                                        original_match = df_db_global[df_db_global["Id."] == id_reg]
-                                        if not original_match.empty:
-                                            row_orig = original_match.iloc[0]
-                                            diferente = any(str(row_edit.get(c, "")) != str(row_orig.get(c, "")) for c in COLUNAS_OFICIAIS if c != "Idade")
-                                            if diferente:
-                                                linha_planilha = int(id_reg) + 1
-                                                row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
-                                                valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
-                                                aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
-                                                alteracoes_realizadas += 1
-                                                time.sleep(0.3)
-                                
-                                if alteracoes_realizadas > 0:
-                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou {alteracoes_realizadas} registro(s) via tabela interativa.")
-                                    st.success(f"🎉 {alteracoes_realizadas} registro(s) alterado(s) e salvo(s) direto na nuvem com sucesso!")
-                                    st.session_state["dados_banco"] = carregar_banco_dados_virtual()
-                                    st.rerun()
-                                else:
-                                    st.info("ℹ️ Nenhuma alteração foi detectada na tabela para salvar.")
-                            except Exception as err:
-                                st.error(f"Erro ao salvar alterações: {err}")
-
-                    with b_col2:
-                        if st.button("➕ Incluir Aluno"):
-                            try:
-                                doc_inc = conectar_planilha()
-                                aba_inc = doc_inc.get_worksheet(0)
-                                
-                                proximo_id_val = len(df_db_global) + 1
-                                novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else "Não informado") for c in COLUNAS_OFICIAIS}
-                                novo_registro_vazio["Id."] = proximo_id_val
-                                novo_registro_vazio["Aluno"] = f"Novo Aluno {proximo_id_val}"
-                                
-                                valores_novo = [str(novo_registro_vazio.get(c, "")) for c in COLUNAS_OFICIAIS]
-                                aba_inc.append_row(valores_novo)
-                                
-                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Incluiu novo registro vazio ID {proximo_id_val}.")
-                                st.success(f"🎉 Novo registro ID {proximo_id_val} incluído com sucesso na nuvem! Edite-o na tabela acima.")
-                                st.session_state["dados_banco"] = carregar_banco_dados_virtual()
-                                st.rerun()
-                            except Exception as err_inc:
-                                st.error(f"Erro ao incluir: {err_inc}")
-
-                    with b_col3:
-                        lista_exclusao = [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_db_global.iterrows()]
-                        aluno_a_excluir = st.selectbox("Selecionar para Exclusão:", ["Selecione..."] + lista_exclusao, key="sel_exc_aluno")
-                        
-                        if st.button("🗑️ Excluir Aluno Selecionado"):
-                            if aluno_a_excluir and aluno_a_excluir != "Selecione...":
-                                try:
-                                    id_exc = int(aluno_a_excluir.split(" - ")[0])
-                                    doc_exc = conectar_planilha()
-                                    aba_exc = doc_exc.get_worksheet(0)
-                                    
-                                    # Linha exata na planilha do Google Sheets (ID + 1 por conta do cabeçalho)
-                                    linha_planilha_alvo = id_exc + 1
-                                    
-                                    # Apaga diretamente a linha específica na nuvem
-                                    aba_exc.delete_rows(linha_planilha_alvo)
-                                    
-                                    # Recarrega o banco atualizado e reindexa todos os IDs sequencialmente
-                                    df_atualizado = carregar_banco_dados_virtual()
-                                    df_atualizado = df_atualizado[df_atualizado["Id."] != id_exc].copy()
-                                    
-                                    if not df_atualizado.empty:
-                                        df_atualizado["Id."] = range(1, len(df_atualizado) + 1)
-                                        # Atualiza a planilha inteira com a nova numeração limpa
-                                        dados_para_atualizar = [COLUNAS_OFICIAIS]
-                                        for _, r_up in df_atualizado.iterrows():
-                                            dados_para_atualizar.append([str(r_up.get(c, "")) for c in COLUNAS_OFICIAIS])
-                                        
-                                        # Sobrescreve com segurança a partir da linha 1
-                                        aba_exc.update(range_name=f"A1:Y{len(dados_para_atualizar)}", values=dados_para_atualizar)
-                                    
-                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu registro ID {id_exc} da planilha e reindexou base.")
-                                    st.success(f"🗑️ Registro excluído e base reindexada com sucesso na nuvem!")
-                                    st.session_state["dados_banco"] = carregar_banco_dados_virtual()
-                                    st.rerun()
-                                except Exception as err_exc:
-                                    st.error(f"Erro ao excluir: {err_exc}")
-                            else:
-                                st.warning("⚠️ Selecione um aluno válido para exclusão.")
-            else:
-                st.info("Banco de dados vazio ou redefinido.")
-                
-        elif sub_conformidade == "Atualização de Dados":
-            if st.session_state["perfil_usuario"] != "Total":
-                st.warning("⚠️ Seu perfil possui apenas permissão de leitura. Atualização bloqueada.")
-            else:
-                lista_mapeada = [""] + [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_filtrado.iterrows()]
-                
-                st.markdown("#### 📝 Modificar Registro Pós-Pesquisa")
-                st.caption(f"Exibindo {len(lista_mapeada)-1} registros localizados na filtragem.")
-                
-                opcao_escolhida = st.selectbox("Escolha o aluno para Atualizar:", lista_mapeada)
-                
-                if opcao_escolhida and opcao_escolhida.strip() != "":
-                    id_selecionado = int(opcao_escolhida.split(" - ")[0])
-                    
-                    df_db_global["Id."] = pd.to_numeric(df_db_global["Id."], errors='coerce')
-                    match_busca = df_db_global[df_db_global["Id."] == id_selecionado]
-                    
-                    if not match_busca.empty:
-                        linha_dados = match_busca.iloc[0].to_dict()
-                        linha_planilha = id_selecionado + 1 
-                        
-                        st.info(f"Modo de sobreposição estrito ativo para a linha {linha_planilha} da planilha.")
-                        form_cols = st.columns(3)
-                        novos_dados = {"Id.": id_selecionado}
-                        
-                        campos_espalhados = [c for c in COLUNAS_OFICIAIS if c not in ["Id.", "Idade"]]
-                        for i, campo in enumerate(campos_espalhados):
-                            with form_cols[i % 3]:
-                                val_atual = str(linha_dados.get(campo, "Não informado"))
-                                if campo == "PBF":
-                                    novos_dados[campo] = st.selectbox("PBF:", ["Não", "Sim"], index=0 if val_atual == "Não" else 1, key=f"sel_pbf_{id_selecionado}")
-                                elif campo == "Status":
-                                    novos_dados[campo] = st.selectbox("Status:", ["Ativo", "Inativo", "Pendente"], index=0 if val_atual == "Ativo" else 1, key=f"sel_status_{id_selecionado}")
-                                elif campo == "Sexo":
-                                    novos_dados[campo] = st.selectbox("Sexo:", ["Masculino", "Feminino", "Não informado"], index=0 if "Masc" in val_atual else 1 if "Fem" in val_atual else 2, key=f"sel_sexo_{id_selecionado}")
-                                else:
-                                    novos_dados[campo] = st.text_input(f"{campo}:", value=val_atual, key=f"inp_{campo}_{id_selecionado}")
-                        
-                        novos_dados["Idade"] = calcular_idade_extenso(novos_dados["Nascimento"])
-                        
-                        if st.button("💾 Salvar Alterações na Planilha", key=f"btn_salvar_{id_selecionado}"):
-                            try:
-                                doc_w = conectar_planilha()
-                                aba_w = doc_w.get_worksheet(0)
-                                valores_alinhados = [str(novos_dados.get(c, "")) for c in COLUNAS_OFICIAIS]
-                                aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
-                                
-                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou cadastro do aluno ID {id_selecionado}.")
-                                st.success("🎉 Registro sobreposto com sucesso direto na nuvem!")
-                                st.session_state["dados_banco"] = carregar_banco_dados_virtual()
-                                st.rerun()
-                            except Exception as err:
-                                st.error(f"Erro ao salvar: {err}")
-                    else:
-                        st.warning(f"⚠️ Não foi possível localizar o registro com ID {id_selecionado} no banco de dados ativo.")
-
-    # 2. IMPORTAÇÃO DE DADOS
-    elif menu_principal == "📥 Importação de Dados":
-        st.markdown("### 📥 Importação de Dados")
-        sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
-        
-        if sub_lote == "Importar Arquivo .TXT":
-            arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
-            if arquivos_escolhidos:
-                lista_dfs = []
-                for arquivo in arquivos_escolhidos:
-                    df_m = minerar_txt_ipec(arquivo)
-                    if not df_m.empty: lista_dfs.append(df_m)
-                        
-                if lista_dfs:
-                    df_novo_lote = pd.concat(lista_dfs, ignore_index=True)
-                    conflitos_detectados, linhas_limpas_insercao = [], []
-                    
-                    for idx, row in df_novo_lote.iterrows():
-                        nome_aluno = str(row["Aluno"]).strip()
-                        nome_mae = str(row["Mãe"]).strip()
-                        
-                        if df_db_global.empty:
-                            linhas_limpas_insercao.append(row.to_dict())
-                            continue
-                        
-                        duplicado = df_db_global[(df_db_global["Aluno"].str.strip().str.lower() == nome_aluno.lower()) & 
-                                                 (df_db_global["Mãe"].str.strip().str.lower() == nome_mae.lower())]
-                        
-                        if not duplicado.empty:
-                            conflitos_detectados.append({
-                                "atual": duplicado.iloc[0].to_dict(),
-                                "novo": row.to_dict(),
-                                "linha_planilha": int(duplicado.iloc[0]["Id."]) + 1
-                            })
-                        else:
-                            linhas_limpas_insercao.append(row.to_dict())
-                    
-                    decisoes_conflito = {}
-                    if conflitos_detectados:
-                        st.markdown("### ⚠️ Conflito de Duplicidade Detectado!")
-                        st.warning(f"O sistema identificou {len(conflitos_detectados)} alunos que já existem na planilha.")
-                        
-                        for idx, c in enumerate(conflitos_detectados):
-                            st.markdown(f"**Aluno:** {c['novo']['Aluno']} | **Mãe:** {c['novo']['Mãe']}")
-                            col_c = st.columns(2)
-                            with col_c[0]:
-                                st.caption("Dados Atuais na Planilha:")
-                                st.json({"Nasc": c["atual"]["Nascimento"], "Turma": c["atual"]["Turma"], "Turno": c["atual"]["Turno"]})
-                            with col_c[1]:
-                                st.caption("Dados Novos do Arquivo TXT:")
-                                st.json({"Nasc": c["novo"]["Nascimento"], "Turma": c["novo"]["Turma"], "Turno": c["novo"]["Turno"]})
-                            
-                            escolha = st.radio(f"Ação para {c['novo']['Aluno']}:", 
-                                               ["Manter o registro anterior da planilha", "Substituir e sobrepor com os novos dados"], 
-                                               key=f"conf_{idx}")
-                            decisoes_conflito[idx] = escolha
-                            st.markdown("---")
-
-                    if linhas_limpas_insercao:
-                        st.markdown("#### Registros Novos Livres de Duplicidade:")
-                        st.dataframe(pd.DataFrame(linhas_limpas_insercao)[COLUNAS_OFICIAIS], use_container_width=True, hide_index=True)
-
-                    if st.button("🚀 Executar Carga Total e Resolver Conflitos"):
-                        try:
-                            doc_u = conectar_planilha()
-                            aba_upload = doc_u.get_worksheet(0)
-                            linhas_finais_append = []
-                            valores_existentes = aba_upload.get_all_values()
-                            proximo_id = len(valores_existentes) if valores_existentes else 1
-                            
-                            for item in linhas_limpas_insercao:
-                                item["Id."] = proximo_id
-                                item["Idade"] = calcular_idade_extenso(item["Nascimento"])
-                                item["Telefone"] = formatar_telefone(item["Telefone"])
-                                valores = [str(item.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
-                                linhas_finais_append.append(valores)
-                                proximo_id += 1
-                                
-                            if linhas_finais_append:
-                                aba_upload.append_rows(linhas_finais_append)
-                            
-                            linhas_sobrepostas = 0
-                            for idx, c in enumerate(conflitos_detectados):
-                                if decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados":
-                                    dados_novos = c["novo"]
-                                    dados_novos["Id."] = c["atual"]["Id."]
-                                    dados_novos["Idade"] = calcular_idade_extenso(dados_novos["Nascimento"])
-                                    dados_novos["Telefone"] = formatar_telefone(dados_novos["Telefone"])
-                                    valores_update = [str(dados_novos.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
-                                    l_alvo = c["linha_planilha"]
-                                    aba_upload.update(range_name=f"A{l_alvo}:Y{l_alvo}", values=[valores_update])
-                                    linhas_sobrepostas += 1
-                            
-                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Importou lote .txt: {len(linhas_finais_append)} inseridos, {linhas_sobrepostas} sobrepostos.")
-                            st.success("🎉 Processamento executado com sucesso!")
-                            st.session_state["dados_banco"] = carregar_banco_dados_virtual()
-                            st.rerun()
-                        except Exception as e_upload:
-                            st.error(f"Erro crítico no envio: {e_upload}")
-
-    # 3. RELATÓRIOS
-    elif menu_principal == "📈 Relatórios":
-        st.markdown("### 📈 Módulo de Relatórios Acadêmicos")
-        sub_relatorios = st.sidebar.radio("Sub-menu:", ["Ficha Individual (PDF)", "Estatísticas PBF e AEE/CID"])
-        st.info(f"Sub-área '{sub_relatorios}' pronta para desenvolvimento de layouts.")
-
-    # 4. PROGRAMA MIGUILIM
-    elif menu_principal == "👁️ Programa Miguilim":
-        st.markdown("### 👁️ Programa Miguilim - Saúde Visual e Auditiva")
-        sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
-        
-        if sub_miguilim == "Triagem de Acuidade":
-            st.markdown("#### 📋 Formulário de Triagem de Acuidade Visual")
+    if ano_letivo_escolhido == "Selecione...":
+        st.info("ℹ️ Por favor, selecione o Ano Letivo acima para liberar o acesso aos módulos operacionais.")
+    else:
+        # Verificação se há lançamentos no banco de dados ativo
+        if df_db_global.empty:
+            st.warning(f"⚠️ Atenção: Não existem lançamentos ou registros ativos encontrados para o ano letivo de {ano_letivo_escolhido}.")
+        else:
+            st.sidebar.markdown("---")
+            st.sidebar.title("🧭 Menu Corporativo")
             
-            if df_db_global.empty:
-                st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
-            else:
-                opcoes_alunos_mig = ["Selecione o Aluno..."]
-                for _, r in df_db_global.iterrows():
-                    txt_item = str(r['Id.']) + " - " + str(r['Aluno']) + " (Turma: " + str(r.get('Turma', 'N/I')) + ")"
-                    opcoes_alunos_mig.append(txt_item)
-                    
-                aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", opcoes_alunos_mig)
+            opcoes_menu = ["📊 Painel de Controle de Conformidade e Indicadores de Alunos"]
+            if st.session_state["perfil_usuario"] == "Total":
+                opcoes_menu.append("📥 Importação de Dados")
+            
+            opcoes_menu.extend(["📈 Relatórios", "👁️ Programa Miguilim", "📚 Programa Biblioteca"])
+            if st.session_state["perfil_usuario"] == "Total":
+                opcoes_menu.append("🛠️ Suporte")
                 
-                p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
+            menu_principal = st.sidebar.selectbox("Selecione a Área:", opcoes_menu)
+
+            # ==========================================
+            # OPERAÇÃO DE CADA MÓDULO E SUB-MENUS
+            # ==========================================
+            if menu_principal == "📊 Painel de Controle de Conformidade e Indicadores de Alunos":
+                st.markdown(f"### 📊 Painel de Controle - Ano Letivo: {ano_letivo_escolhido}")
+                sub_conformidade = st.sidebar.radio("Sub-menu:", ["Cadastro dos alunos", "Atualização de Dados"])
                 
-                if aluno_escolhido_mig and aluno_escolhido_mig != "Selecione o Aluno...":
-                    id_alvo_mig = int(aluno_escolhido_mig.split(" - ")[0])
-                    match_mig = df_db_global[df_db_global["Id."] == id_alvo_mig]
-                    if not match_mig.empty:
-                        dado_aluno = match_mig.iloc[0]
-                        p_ensino_val = str(dado_aluno.get("Período de Ensino", ""))
-                        turma_val = str(dado_aluno.get("Turma", ""))
-                        aluno_val = str(dado_aluno.get("Aluno", ""))
-                        cpf_val = str(dado_aluno.get("CPF", ""))
-                        mae_val = str(dado_aluno.get("Mãe", ""))
-                        pbf_val = str(dado_aluno.get("PBF", "Não"))
-                
-                with st.form("form_miguilim_acuidade"):
-                    st.markdown("##### 1. Bloco de Identificação")
-                    col_id1, col_id2 = st.columns(2)
-                    with col_id1:
-                        val_periodo = st.text_input("Período de Ensino / Série (Ex: 1º, 2º...):", value=p_ensino_val)
-                        val_aluno_nome = st.text_input("Aluno:", value=aluno_val)
-                        val_cpf = st.text_input("CPF:", value=cpf_val)
-                    with col_id2:
-                        val_turma = st.text_input("Turma:", value=turma_val)
-                        val_mae = st.text_input("Mãe do Aluno:", value=mae_val)
-                    
-                    st.markdown("##### 2. Avaliação de Acuidade Visual e Condições")
-                    opcoes_visao = ["1.0", "0.9", "0.8", "0.7", "0.6", "0.5", "0.4", "0.3", "0.2", "0.1", "0.0", "Sem percepção luminosa"]
-                    
-                    col_v1, col_v2 = st.columns(2)
-                    with col_v1:
-                        st.markdown("**2.1 - Sem óculos:**")
-                        sem_dir = st.selectbox("Direito (Sem Óculos):", opcoes_visao, index=0)
-                        sem_esq = st.selectbox("Esquerdo (Sem Óculos):", opcoes_visao, index=0)
-                    with col_v2:
-                        st.markdown("**2.2 - Com óculos:**")
-                        com_dir = st.selectbox("Direito (Com Óculos):", opcoes_visao, index=0)
-                        com_esq = st.selectbox("Esquerdo (Com Óculos):", opcoes_visao, index=0)
-                    
-                    st.markdown("**2.3 - Condições Especiais:**")
-                    col_c1, col_c2 = st.columns(2)
-                    with col_c1:
-                        val_estrabismo = st.selectbox("Estrabismo:", ["Não", "Sim"])
-                    with col_c2:
-                        index_pbf = 1 if pbf_val.strip().lower() == "sim" else 0
-                        val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Não", "Sim"], index=index_pbf)
-                    
-                    btn_processar_miguilim = st.form_submit_button("🔍 Processar Resultado e Salvar Triagem")
-                    
-                    if btn_processar_miguilim:
-                        if not val_aluno_nome or val_aluno_nome == "":
-                            st.error("⚠️ O campo do Aluno é obrigatório para registrar a triagem.")
-                        else:
-                            def conv_v(txt):
-                                if txt == "Sem percepção luminosa": return 0.0
-                                try: return float(txt)
-                                except: return 1.0
+                if "f_aluno" not in st.session_state: st.session_state.f_aluno = ""
+                if "f_mae" not in st.session_state: st.session_state.f_mae = ""
+                if "f_turma" not in st.session_state: st.session_state.f_turma = ""
+                if "f_turno" not in st.session_state: st.session_state.f_turno = ""
+                if "f_status" not in st.session_state: st.session_state.f_status = ""
+                if "f_pbf" not in st.session_state: st.session_state.f_pbf = ""
+
+                df_filtrado = df_db_global.copy()
+                if st.session_state.f_aluno: df_filtrado = df_filtrado[df_filtrado["Aluno"].str.contains(st.session_state.f_aluno, case=False)]
+                if st.session_state.f_mae: df_filtrado = df_filtrado[df_filtrado["Mãe"].str.contains(st.session_state.f_mae, case=False)]
+                if st.session_state.f_turma: df_filtrado = df_filtrado[df_filtrado["Turma"].str.contains(st.session_state.f_turma, case=False)]
+                if st.session_state.f_turno: df_filtrado = df_filtrado[df_filtrado["Turno"].str.contains(st.session_state.f_turno, case=False)]
+                if st.session_state.f_status: df_filtrado = df_filtrado[df_filtrado["Status"].str.contains(st.session_state.f_status, case=False)]
+                if st.session_state.f_pbf: df_filtrado = df_filtrado[df_filtrado["PBF"].str.contains(st.session_state.f_pbf, case=False)]
+
+                if sub_conformidade == "Cadastro dos alunos":
+                    if not df_db_global.empty:
+                        st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_global)} registros oficiais na nuvem.")
+                        
+                        st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
+                        filtro_cols = st.columns(2)
+                        with filtro_cols[0]:
+                            st.session_state.f_aluno = st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno)
+                            st.session_state.f_mae = st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae)
+                            st.session_state.f_turma = st.text_input("Filtrar por Turma:", value=st.session_state.f_turma)
+                        with filtro_cols[1]:
+                            st.session_state.f_turno = st.text_input("Filtrar por Turno:", value=st.session_state.f_turno)
+                            st.session_state.f_status = st.text_input("Filtrar por Status:", value=st.session_state.f_status)
+                            st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
+
+                        st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real)")
+                        
+                        def destacar_cpf_inconsistente(val):
+                            cpf_str = str(val).strip()
+                            if not cpf_str or cpf_str in ["Não informado", ""] or not validar_cpf(cpf_str):
+                                return 'background-color: #ffcccc; color: #990000; font-weight: bold;'
+                            return ''
+
+                        df_editavel = st.data_editor(
+                            df_filtrado.style.map(destacar_cpf_inconsistente, subset=['CPF']),
+                            use_container_width=True, 
+                            hide_index=True,
+                            key="editor_dados_tabela"
+                        )
+
+                        if st.session_state["perfil_usuario"] == "Total":
+                            b_col1, b_col2, b_col3 = st.columns(3)
                             
-                            d_s, e_s = conv_v(sem_dir), conv_v(sem_esq)
-                            d_c, e_c = conv_v(com_dir), conv_v(com_esq)
-                            
-                            tem_alteracao_geral = (d_s < 1.0 or e_s < 1.0 or d_c < 1.0 or e_c < 1.0 or val_estrabismo == "Sim")
-                            tem_valor_critico = (d_s <= 0.6 or e_s <= 0.6 or d_c <= 0.6 or e_c <= 0.6)
-                            tem_alteracao_moderada = ((d_s > 0.6 and d_s < 1.0) or (e_s > 0.6 and e_s < 1.0) or 
-                                                      (d_c > 0.6 and d_c < 1.0) or (e_c > 0.6 and e_c < 1.0))
-                            
-                            if not tem_alteracao_geral:
-                                status_resultado = "Sem alteração"
-                            elif tem_valor_critico:
-                                status_resultado = "Encaminhado"
-                            elif tem_alteracao_moderada or val_estrabismo == "Sim":
-                                status_resultado = "Alteração Moderada"
-                            else:
-                                status_resultado = "Não Examinado"
+                            with b_col1:
+                                if st.button("💾 Salvar"):
+                                    try:
+                                        doc_w = conectar_planilha()
+                                        aba_w = doc_w.get_worksheet(0)
+                                        
+                                        alteracoes_realizadas = 0
+                                        with st.spinner("Verificando e salvando apenas os registros alterados..."):
+                                            for idx, row_edit in df_editavel.iterrows():
+                                                id_reg = row_edit["Id."]
+                                                original_match = df_db_global[df_db_global["Id."] == id_reg]
+                                                if not original_match.empty:
+                                                    row_orig = original_match.iloc[0]
+                                                    diferente = any(str(row_edit.get(c, "")) != str(row_orig.get(c, "")) for c in COLUNAS_OFICIAIS if c != "Idade")
+                                                    if diferente:
+                                                        linha_planilha = int(id_reg) + 1
+                                                        row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
+                                                        valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                                        aba_w.update(range_name=f"A{linha_planilha}:Y{linha_planilha}", values=[valores_alinhados])
+                                                        alteracoes_realizadas += 1
+                                                        time.sleep(0.3)
+                                        
+                                        if alteracoes_realizadas > 0:
+                                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou {alteracoes_realizadas} registro(s) via tabela interativa.")
+                                            st.success(f"🎉 {alteracoes_realizadas} registro(s) alterado(s) e salvo(s) direto na nuvem com sucesso!")
+                                            st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                            st.rerun()
+                                        else:
+                                            st.info("ℹ️ Nenhuma alteração foi detectada na tabela para salvar.")
+                                    except Exception as err:
+                                        st.error(f"Erro ao salvar alterações: {err}")
+
+                            with b_col2:
+                                if st.button("➕ Incluir Aluno"):
+                                    try:
+                                        doc_inc = conectar_planilha()
+                                        aba_inc = doc_inc.get_worksheet(0)
+                                        
+                                        proximo_id_val = len(df_db_global) + 1
+                                        novo_registro_vazio = {c: ("Não" if c == "PBF" else "Ativo" if c == "Status" else "Não informado") for c in COLUNAS_OFICIAIS}
+                                        novo_registro_vazio["Id."] = proximo_id_val
+                                        novo_registro_vazio["Aluno"] = f"Novo Aluno {proximo_id_val}"
+                                        
+                                        valores_novo = [str(novo_registro_vazio.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                        aba_inc.append_row(valores_novo)
+                                        
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Incluiu novo registro vazio ID {proximo_id_val}.")
+                                        st.success(f"🎉 Novo registro ID {proximo_id_val} incluído com sucesso na nuvem! Edite-o na tabela acima.")
+                                        st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                        st.rerun()
+                                    except Exception as err_inc:
+                                        st.error(f"Erro ao incluir: {err_inc}")
+
+                            with b_col3:
+                                lista_exclusao = [f"{int(r['Id.'])} - {r['Aluno']}" for _, r in df_db_global.iterrows()]
+                                aluno_a_excluir = st.selectbox("Selecionar para Exclusão:", ["Selecione..."] + lista_exclusao, key="sel_exc_aluno")
                                 
-                            st.success(f"🎉 Triagem processada com sucesso! **Resultado Atribuído:** {status_resultado}")
-                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Realizou triagem Miguilim para o aluno {val_aluno_nome} - Status: {status_resultado}")
+                                # Botão de exclusão com estilização secundária (vermelho)
+                                if st.button("🗑️ Excluir Aluno Selecionado", type="secondary"):
+                                    if aluno_a_excluir and aluno_a_excluir != "Selecione...":
+                                        st.session_state["confirmar_exclusao_aluno"] = aluno_a_excluir
+                                    else:
+                                        st.warning("⚠️ Selecione um aluno válido para exclusão.")
+                                
+                                # Caixa de confirmação de segurança para exclusão
+                                if "confirmar_exclusao_aluno" in st.session_state and st.session_state["confirmar_exclusao_aluno"]:
+                                    aluno_alvo_str = st.session_state["confirmar_exclusao_aluno"]
+                                    st.error(f"⚠️ Confirmação: O aluno **{aluno_alvo_str}** realmente deve ser excluído?")
+                                    c_conf1, c_conf2 = st.columns(2)
+                                    with c_conf1:
+                                        if st.button("Sim, Excluir"):
+                                            try:
+                                                id_exc = int(aluno_alvo_str.split(" - ")[0])
+                                                doc_exc = conectar_planilha()
+                                                aba_exc = doc_exc.get_worksheet(0)
+                                                
+                                                linha_planilha_alvo = id_exc + 1
+                                                aba_exc.delete_rows(linha_planilha_alvo)
+                                                
+                                                df_atualizado = carregar_banco_dados_virtual()
+                                                df_atualizado = df_atualizado[df_atualizado["Id."] != id_exc].copy()
+                                                
+                                                if not df_atualizado.empty:
+                                                    df_atualizado["Id."] = range(1, len(df_atualizado) + 1)
+                                                    dados_para_atualizar = [COLUNAS_OFICIAIS]
+                                                    for _, r_up in df_atualizado.iterrows():
+                                                        dados_para_atualizar.append([str(r_up.get(c, "")) for c in COLUNAS_OFICIAIS])
+                                                    
+                                                    aba_exc.update(range_name=f"A1:Y{len(dados_para_atualizar)}", values=dados_para_atualizar)
+                                                
+                                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu registro ID {id_exc} da planilha e reindexou base.")
+                                                del st.session_state["confirmar_exclusao_aluno"]
+                                                st.success(f"🗑️ Registro excluído e base reindexada com sucesso na nuvem!")
+                                                st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                                st.rerun()
+                                            except Exception as err_exc:
+                                                st.error(f"Erro ao excluir: {err_exc}")
+                                    with c_conf2:
+                                        if st.button("Não, Voltar"):
+                                            del st.session_state["confirmar_exclusao_aluno"]
+                                            st.rerun()
+                    else:
+                        st.info("Banco de dados vazio ou redefinido.")
+                        
+            elif menu_principal == "📥 Importação de Dados":
+                st.markdown(f"### 📥 Importação de Dados - Ano Letivo: {ano_letivo_escolhido}")
+                sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
+                
+                if sub_lote == "Importar Arquivo .TXT":
+                    arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
+                    if arquivos_escolhidos:
+                        lista_dfs = []
+                        for arquivo in arquivos_escolhidos:
+                            df_m = minerar_txt_ipec(arquivo)
+                            if not df_m.empty: lista_dfs.append(df_m)
+                                
+                        if lista_dfs:
+                            df_novo_lote = pd.concat(lista_dfs, ignore_index=True)
+                            conflitos_detectados, linhas_limpas_insercao = [], []
+                            
+                            for idx, row in df_novo_lote.iterrows():
+                                nome_aluno = str(row["Aluno"]).strip()
+                                nome_mae = str(row["Mãe"]).strip()
+                                
+                                if df_db_global.empty:
+                                    linhas_limpas_insercao.append(row.to_dict())
+                                    continue
+                                
+                                duplicado = df_db_global[(df_db_global["Aluno"].str.strip().str.lower() == nome_aluno.lower()) & 
+                                                         (df_db_global["Mãe"].str.strip().str.lower() == nome_mae.lower())]
+                                
+                                if not duplicado.empty:
+                                    conflitos_detectados.append({
+                                        "atual": duplicado.iloc[0].to_dict(),
+                                        "novo": row.to_dict(),
+                                        "linha_planilha": int(duplicado.iloc[0]["Id."]) + 1
+                                    })
+                                else:
+                                    linhas_limpas_insercao.append(row.to_dict())
+                            
+                            decisoes_conflito = {}
+                            if conflitos_detectados:
+                                st.markdown("### ⚠️ Conflito de Duplicidade Detectado!")
+                                st.warning(f"O sistema identificou {len(conflitos_detectados)} alunos que já existem na planilha.")
+                                
+                                for idx, c in enumerate(conflitos_detectados):
+                                    st.markdown(f"**Aluno:** {c['novo']['Aluno']} | **Mãe:** {c['novo']['Mãe']}")
+                                    col_c = st.columns(2)
+                                    with col_c[0]:
+                                        st.caption("Dados Atuais na Planilha:")
+                                        st.json({"Nasc": c["atual"]["Nascimento"], "Turma": c["atual"]["Turma"], "Turno": c["atual"]["Turno"]})
+                                    with col_c[1]:
+                                        st.caption("Dados Novos do Arquivo TXT:")
+                                        st.json({"Nasc": c["novo"]["Nascimento"], "Turma": c["novo"]["Turma"], "Turno": c["novo"]["Turno"]})
+                                    
+                                    escolha = st.radio(f"Ação para {c['novo']['Aluno']}:", 
+                                                       ["Manter o registro anterior da planilha", "Substituir e sobrepor com os novos dados"], 
+                                                       key=f"conf_{idx}")
+                                    decisoes_conflito[idx] = escolha
+                                    st.markdown("---")
 
-        elif sub_miguilim == "Encaminhamentos Clínicos":
-            st.markdown("### 📋 Encaminhamentos Clínicos — Programa Miguilim")
-            st.info("Painel analítico para listagem de alunos encaminhados e relatórios de acompanhamento clínico visual e auditivo.")
+                            if linhas_limpas_insercao:
+                                st.markdown("#### Registros Novos Livres de Duplicidade:")
+                                st.dataframe(pd.DataFrame(linhas_limpas_insercao)[COLUNAS_OFICIAIS], use_container_width=True, hide_index=True)
 
-    # 5. PROGRAMA BIBLIOTECA
-    elif menu_principal == "📚 Programa Biblioteca":
-        st.markdown("### 📚 Programa Biblioteca - Gestão Literária")
-        sub_biblioteca = st.sidebar.radio("Sub-menu:", ["Catálogo do Acervo", "Empréstimos e Devoluções"])
-        st.info(f"Módulo '{sub_biblioteca}' pronto para controle de leituras.")
+                            if st.button("🚀 Executar Carga Total e Resolver Conflitos"):
+                                try:
+                                    doc_u = conectar_planilha()
+                                    aba_upload = doc_u.get_worksheet(0)
+                                    linhas_finais_append = []
+                                    valores_existentes = aba_upload.get_all_values()
+                                    proximo_id = len(valores_existentes) if valores_existentes else 1
+                                    
+                                    for item in linhas_limpas_insercao:
+                                        item["Id."] = proximo_id
+                                        item["Idade"] = calcular_idade_extenso(item["Nascimento"])
+                                        item["Telefone"] = formatar_telefone(item["Telefone"])
+                                        valores = [str(item.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
+                                        linhas_finais_append.append(valores)
+                                        proximo_id += 1
+                                        
+                                    if linhas_finais_append:
+                                        aba_upload.append_rows(linhas_finais_append)
+                                    
+                                    linhas_sobrepostas = 0
+                                    for idx, c in enumerate(conflitos_detectados):
+                                        if decisoes_conflito[idx] == "Substituir e sobrepor com os novos dados":
+                                            dados_novos = c["novo"]
+                                            dados_novos["Id."] = c["atual"]["Id."]
+                                            dados_novos["Idade"] = calcular_idade_extenso(dados_novos["Nascimento"])
+                                            dados_novos["Telefone"] = formatar_telefone(dados_novos["Telefone"])
+                                            valores_update = [str(dados_novos.get(c, "Não informado")) for c in COLUNAS_OFICIAIS]
+                                            l_alvo = c["linha_planilha"]
+                                            aba_upload.update(range_name=f"A{l_alvo}:Y{l_alvo}", values=[valores_update])
+                                            linhas_sobrepostas += 1
+                                    
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Importou lote .txt ({ano_letivo_escolhido}): {len(linhas_finais_append)} inseridos, {linhas_sobrepostas} sobrepostos.")
+                                    st.success("🎉 Processamento executado com sucesso!")
+                                    st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                    st.rerun()
+                                except Exception as e_upload:
+                                    st.error(f"Erro crítico no envio: {e_upload}")
 
-    # 6. SUPORTE
-    elif menu_principal == "🛠️ Suporte":
-        st.markdown("### 🛠️ Painel de Suporte e Auditoria de Infraestrutura")
-        sub_suporte = st.sidebar.radio("Sub-menu:", ["Manual do Sistema", "Logs de Auditoria em Tempo Real"])
-        if sub_suporte == "Logs de Auditoria em Tempo Real":
-            try:
-                doc_s = conectar_planilha()
-                aba_log_s = doc_s.worksheet("log_auditoria_ipec")
-                df_logs = pd.DataFrame(aba_log_s.get_all_records())
-                st.dataframe(df_logs, use_container_width=True)
-            except Exception:
-                st.error("Aba de logs ainda não possui registros inseridos.")
+            elif menu_principal == "📈 Relatórios":
+                st.markdown(f"### 📈 Módulo de Relatórios Acadêmicos - Ano Letivo: {ano_letivo_escolhido}")
+                sub_relatorios = st.sidebar.radio("Sub-menu:", ["Ficha Individual (PDF)", "Estatísticas PBF e AEE/CID"])
+                st.info(f"Sub-área '{sub_relatorios}' pronta para desenvolvimento de layouts.")
+
+            elif menu_principal == "👁️ Programa Miguilim":
+                st.markdown(f"### 👁️ Programa Miguilim - Saúde Visual e Auditiva ({ano_letivo_escolhido})")
+                sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
+                
+                if sub_miguilim == "Triagem de Acuidade":
+                    st.markdown("#### 📋 Formulário de Triagem de Acuidade Visual")
+                    
+                    if df_db_global.empty:
+                        st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
+                    else:
+                        opcoes_alunos_mig = ["Selecione o Aluno..."]
+                        for _, r in df_db_global.iterrows():
+                            txt_item = str(r['Id.']) + " - " + str(r['Aluno']) + " (Turma: " + str(r.get('Turma', 'N/I')) + ")"
+                            opcoes_alunos_mig.append(txt_item)
+                            
+                        aluno_escolhido_mig = st.selectbox("Localizar Aluno no Cadastro:", opcoes_alunos_mig)
+                        
+                        p_ensino_val, turma_val, aluno_val, cpf_val, mae_val, pbf_val = "", "", "", "", "", "Não"
+                        
+                        if aluno_escolhido_mig and aluno_escolhido_mig != "Selecione o Aluno...":
+                            id_alvo_mig = int(aluno_escolhido_mig.split(" - ")[0])
+                            match_mig = df_db_global[df_db_global["Id."] == id_alvo_mig]
+                            if not match_mig.empty:
+                                dado_aluno = match_mig.iloc[0]
+                                p_ensino_val = str(dado_aluno.get("Período de Ensino", ""))
+                                turma_val = str(dado_aluno.get("Turma", ""))
+                                aluno_val = str(dado_aluno.get("Aluno", ""))
+                                cpf_val = str(dado_aluno.get("CPF", ""))
+                                mae_val = str(dado_aluno.get("Mãe", ""))
+                                pbf_val = str(dado_aluno.get("PBF", "Não"))
+                        
+                        with st.form("form_miguilim_acuidade"):
+                            st.markdown("##### 1. Bloco de Identificação")
+                            col_id1, col_id2 = st.columns(2)
+                            with col_id1:
+                                val_periodo = st.text_input("Período de Ensino / Série (Ex: 1º, 2º...):", value=p_ensino_val)
+                                val_aluno_nome = st.text_input("Aluno:", value=aluno_val)
+                                val_cpf = st.text_input("CPF:", value=cpf_val)
+                            with col_id2:
+                                val_turma = st.text_input("Turma:", value=turma_val)
+                                val_mae = st.text_input("Mãe do Aluno:", value=mae_val)
+                            
+                            st.markdown("##### 2. Avaliação de Acuidade Visual e Condições")
+                            opcoes_visao = ["1.0", "0.9", "0.8", "0.7", "0.6", "0.5", "0.4", "0.3", "0.2", "0.1", "0.0", "Sem percepção luminosa"]
+                            
+                            col_v1, col_v2 = st.columns(2)
+                            with col_v1:
+                                st.markdown("**2.1 - Sem óculos:**")
+                                sem_dir = st.selectbox("Direito (Sem Óculos):", opcoes_visao, index=0)
+                                sem_esq = st.selectbox("Esquerdo (Sem Óculos):", opcoes_visao, index=0)
+                            with col_v2:
+                                st.markdown("**2.2 - Com óculos:**")
+                                com_dir = st.selectbox("Direito (Com Óculos):", opcoes_visao, index=0)
+                                com_esq = st.selectbox("Esquerdo (Com Óculos):", opcoes_visao, index=0)
+                            
+                            st.markdown("**2.3 - Condições Especiais:**")
+                            col_c1, col_c2 = st.columns(2)
+                            with col_c1:
+                                val_estrabismo = st.selectbox("Estrabismo:", ["Não", "Sim"])
+                            with col_c2:
+                                index_pbf = 1 if pbf_val.strip().lower() == "sim" else 0
+                                val_pbf_edit = st.selectbox("PBF (Programa Bolsa Família / Critério social):", ["Não", "Sim"], index=index_pbf)
+                            
+                            btn_processar_miguilim = st.form_submit_button("🔍 Processar Resultado e Salvar Triagem")
+                            
+                            if btn_processar_miguilim:
+                                if not val_aluno_nome or val_aluno_nome == "":
+                                    st.error("⚠️ O campo do Aluno é obrigatório para registrar a triagem.")
+                                else:
+                                    def conv_v(txt):
+                                        if txt == "Sem percepção luminosa": return 0.0
+                                        try: return float(txt)
+                                        except: return 1.0
+                                    
+                                    d_s, e_s = conv_v(sem_dir), conv_v(sem_esq)
+                                    d_c, e_c = conv_v(com_dir), conv_v(com_esq)
+                                    
+                                    tem_alteracao_geral = (d_s < 1.0 or e_s < 1.0 or d_c < 1.0 or e_c < 1.0 or val_estrabismo == "Sim")
+                                    tem_valor_critico = (d_s <= 0.6 or e_s <= 0.6 or d_c <= 0.6 or e_c <= 0.6)
+                                    tem_alteracao_moderada = ((d_s > 0.6 and d_s < 1.0) or (e_s > 0.6 and e_s < 1.0) or 
+                                                              (d_c > 0.6 and d_c < 1.0) or (e_c > 0.6 and e_c < 1.0))
+                                    
+                                    if not tem_alteracao_geral:
+                                        status_resultado = "Sem alteração"
+                                    elif tem_valor_critico:
+                                        status_resultado = "Encaminhado"
+                                    elif tem_alteracao_moderada or val_estrabismo == "Sim":
+                                        status_resultado = "Alteração Moderada"
+                                    else:
+                                        status_resultado = "Não Examinado"
+                                        
+                                    st.success(f"🎉 Triagem processada com sucesso! **Resultado Atribuído:** {status_resultado}")
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Realizou triagem Miguilim ({ano_letivo_escolhido}) para o aluno {val_aluno_nome} - Status: {status_resultado}")
+
+                elif sub_miguilim == "Encaminhamentos Clínicos":
+                    st.markdown(f"### 📋 Encaminhamentos Clínicos — Programa Miguilim ({ano_letivo_escolhido})")
+                    st.info("Painel analítico para listagem de alunos encaminhados e relatórios de acompanhamento clínico visual e auditivo.")
+
+            elif menu_principal == "📚 Programa Biblioteca":
+                st.markdown(f"### 📚 Programa Biblioteca - Gestão Literária ({ano_letivo_escolhido})")
+                sub_biblioteca = st.sidebar.radio("Sub-menu:", ["Catálogo do Acervo", "Empréstimos e Devoluções"])
+                st.info(f"Módulo '{sub_biblioteca}' pronto para controle de leituras.")
+
+            elif menu_principal == "🛠️ Suporte":
+                st.markdown(f"### 🛠️ Painel de Suporte e Auditoria de Infraestrutura ({ano_letivo_escolhido})")
+                sub_suporte = st.sidebar.radio("Sub-menu:", ["Manual do Sistema", "Logs de Auditoria em Tempo Real"])
+                if sub_suporte == "Logs de Auditoria em Tempo Real":
+                    try:
+                        doc_s = conectar_planilha()
+                        aba_log_s = doc_s.worksheet("log_auditoria_ipec")
+                        df_logs = pd.DataFrame(aba_log_s.get_all_records())
+                        st.dataframe(df_logs, use_container_width=True)
+                    except Exception:
+                        st.error("Aba de logs ainda não possui registros inseridos.")
 else:
     st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
