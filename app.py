@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.13 - data: 22/07/26 - 14:55
+# Versão do código: v.17.14 - data: 22/07/26 - 14:58
 
 import streamlit as st
 import pandas as pd
@@ -223,7 +223,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.13 de 22/07/2026<br>
+        Versão: v.17.14 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -243,6 +243,8 @@ if not st.session_state["autenticado"]:
             st.rerun()
         else:
             st.sidebar.error("Credenciais incorretas.")
+    
+    st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
 else:
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
     url_foto = st.session_state['foto_usuario'].strip()
@@ -669,5 +671,3 @@ else:
                         st.dataframe(df_logs, use_container_width=True)
                     except Exception:
                         st.error("Aba de logs ainda não possui registros inseridos.")
-else:
-    st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
