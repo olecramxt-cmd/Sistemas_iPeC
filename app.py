@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.17 - data: 22/07/26 - 15:20
+# Versão do código: v.17.18 - data: 22/07/26 - 16:40
 
 import streamlit as st
 import pandas as pd
@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM ISOLAMENTO CIRÚRGICO DO BOTÃO DE EXCLUSÃO
+# COLORIZAÇÃO E ESTILIZAÇÃO CSS COM ISOLAMENTO CIRÚRGICO DO BOTÃO DE EXCLUSÃO E CAMPOS BLOQUEADOS EM CINZA
 st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -225,7 +225,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.17 de 22/07/2026<br>
+        Versão: v.17.18 de 22/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -574,70 +574,120 @@ else:
                     if df_db_global.empty:
                         st.warning("⚠️ O banco de dados está vazio. Cadastre ou importe alunos primeiro.")
                     else:
-                        turmas_disponiveis = ["Todas"] + sorted(list(df_db_global["Turma"].dropna().unique()))
+                        # Concatenação inteligente do Período de Ensino com a Turma (ex: 1º ANO KARINI - COLÔMBIA ou 6º Ano - A)
+                        df_db_global["Turma_Formatada"] = df_db_global["Período de Ensino"].astype(str).str.strip() + " - " + df_db_global["Turma"].astype(str).str.strip()
+                        
+                        turmas_disponiveis = ["Selecione a Turma..."] + sorted(list(df_db_global["Turma_Formatada"].dropna().unique()))
                         turma_selecionada = st.selectbox("🎯 Filtrar por Turma / Período de Ensino:", turmas_disponiveis)
                         
-                        df_miguilim_filtrado = df_db_global.copy()
-                        if turma_selecionada != "Todas":
-                            df_miguilim_filtrado = df_miguilim_filtrado[df_miguilim_filtrado["Turma"] == turma_selecionada]
-                        
-                        if df_miguilim_filtrado.empty:
-                            st.info("ℹ️ Nenhum aluno localizado para a turma selecionada.")
-                        else:
-                            st.markdown(f"Exibindo {len(df_miguilim_filtrado)} aluno(s) para triagem visual.")
+                        if turma_selecionada != "Selecione a Turma...":
+                            df_miguilim_filtrado = df_db_global[df_db_global["Turma_Formatada"] == turma_selecionada]
                             
-                            # Prepara DataFrame simplificado estritamente em linhas horizontais conforme solicitado
-                            colunas_miguilim_tabela = [
-                                "Id.", "Aluno", "CPF", "Mãe", 
-                                "Sem Óculos (Dir)", "Sem Óculos (Esq)", 
-                                "Com Óculos (Dir)", "Com Óculos (Esq)", 
-                                "Estrabismo", "PBF"
-                            ]
-                            
-                            dados_tabela_mig = []
-                            for _, r in df_miguilim_filtrado.iterrows():
-                                dados_tabela_mig.append({
-                                    "Id.": r["Id."],
-                                    "Aluno": r["Aluno"],
-                                    "CPF": r["CPF"],
-                                    "Mãe": r["Mãe"],
-                                    "Sem Óculos (Dir)": "1.0",
-                                    "Sem Óculos (Esq)": "1.0",
-                                    "Com Óculos (Dir)": "1.0",
-                                    "Com Óculos (Esq)": "1.0",
-                                    "Estrabismo": "Não",
-                                    "PBF": r.get("PBF", "Não")
-                                })
-                            
-                            df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
-                            
-                            df_miguilim_resultado = st.data_editor(
-                                df_tabela_mig_edit,
-                                use_container_width=True,
-                                hide_index=True,
-                                key="editor_miguilim_horizontal"
-                            )
-                            
-                            if st.button("💾 Processar e Salvar Triagens em Lote"):
-                                try:
-                                    for _, row_m in df_miguilim_resultado.iterrows():
-                                        aluno_nome = row_m["Aluno"]
-                                        d_s = float(row_m["Sem Óculos (Dir)"]) if row_m["Sem Óculos (Dir)"] != "Sem percepção luminosa" else 0.0
-                                        e_s = float(row_m["Sem Óculos (Esq)"]) if row_m["Sem Óculos (Esq)"] != "Sem percepção luminosa" else 0.0
-                                        d_c = float(row_m["Com Óculos (Dir)"]) if row_m["Com Óculos (Dir)"] != "Sem percepção luminosa" else 0.0
-                                        e_c = float(row_m["Com Óculos (Esq)"]) if row_m["Com Óculos (Esq)"] != "Sem percepção luminosa" else 0.0
-                                        estr = row_m["Estrabismo"]
+                            if df_miguilim_filtrado.empty:
+                                st.info("ℹ️ Nenhum aluno localizado para a seleção informada.")
+                            else:
+                                st.markdown(f"Exibindo {len(df_miguilim_filtrado)} aluno(s) para triagem visual.")
+                                
+                                # Configuração das colunas e colunas extras solicitadas
+                                dados_tabela_mig = []
+                                for _, r in df_miguilim_filtrado.iterrows():
+                                    dados_tabela_mig.append({
+                                        "Id.": r["Id."],
+                                        "Aluno": r["Aluno"],
+                                        "CPF": r["CPF"],
+                                        "Mãe": r["Mãe"],
+                                        "Sem óculos(Dir)": "",
+                                        "Sem óculos(Esq)": "",
+                                        "Com óculos(Dir)": "",
+                                        "Com óculos(Esq)": "",
+                                        "Estrabismo": "Não",
+                                        "PBF": r.get("PBF", "Não"),
+                                        "Sem alteração": False,
+                                        "Alteração Moderada": False,
+                                        "Encaminhado": False,
+                                        "Não examinado": False,
+                                        "Uso do celular": "Não",
+                                        "Observação": ""
+                                    })
+                                
+                                df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
+                                
+                                # Configuração estrita de colunas com menus suspensos (column_config)
+                                escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
+                                
+                                conf_colunas = {
+                                    "Id.": st.column_config.NumberColumn("Id.", disabled=True),
+                                    "Aluno": st.column_config.TextColumn("Aluno", disabled=True),
+                                    "CPF": st.column_config.TextColumn("CPF", disabled=True),
+                                    "Mãe": st.column_config.TextColumn("Mãe", disabled=True),
+                                    "PBF": st.column_config.TextColumn("PBF", disabled=True), # Bloqueado/Cinza
+                                    "Sem óculos(Dir)": st.column_config.SelectboxColumn("Sem óculos(Dir)", options=escala_visao, required=False),
+                                    "Sem óculos(Esq)": st.column_config.SelectboxColumn("Sem óculos(Esq)", options=escala_visao, required=False),
+                                    "Com óculos(Dir)": st.column_config.SelectboxColumn("Com óculos(Dir)", options=escala_visao, required=False),
+                                    "Com óculos(Esq)": st.column_config.SelectboxColumn("Com óculos(Esq)", options=escala_visao, required=False),
+                                    "Estrabismo": st.column_config.SelectboxColumn("Estrabismo", options=["Não", "Sim"], required=True),
+                                    "Sem alteração": st.column_config.CheckboxColumn("Sem alter.", default=False),
+                                    "Alteração Moderada": st.column_config.CheckboxColumn("Alt. Mod.", default=False),
+                                    "Encaminhado": st.column_config.CheckboxColumn("Encaminhado", default=False),
+                                    "Não examinado": st.column_config.CheckboxColumn("Não exam.", default=False),
+                                    "Uso do celular": st.column_config.SelectboxColumn("Uso celular", options=["Não", "Sim"], required=True),
+                                    "Observação": st.column_config.TextColumn("Observação", default="")
+                                }
+
+                                df_miguilim_resultado = st.data_editor(
+                                    df_tabela_mig_edit,
+                                    column_config=conf_colunas,
+                                    use_container_width=True,
+                                    hide_index=True,
+                                    key="editor_miguilim_horizontal"
+                                )
+                                
+                                if st.button("💾 Processar e Salvar Triagens em Lote"):
+                                    try:
+                                        doc_mig = conectar_planilha()
+                                        try:
+                                            aba_mig = doc_mig.worksheet("miguilim_ipec")
+                                        except gspread.WorksheetNotFound:
+                                            aba_mig = doc_mig.add_worksheet(title="miguilim_ipec", rows="1000", cols="16")
+                                            aba_mig.append_row([
+                                                "Ano Letivo", "Turma", "Aluno", "CPF", "Mãe", 
+                                                "Sem óculos(Dir)", "Sem óculos(Esq)", "Com óculos(Dir)", "Com óculos(Esq)", 
+                                                "Estrabismo", "PBF", "Sem alteração", "Alteração Moderada", 
+                                                "Encaminhado", "Não examinado", "Uso do celular", "Observação", "Data_Hora"
+                                            ])
                                         
-                                        tem_alteracao_geral = (d_s < 1.0 or e_s < 1.0 or d_c < 1.0 or e_c < 1.0 or estr == "Sim")
-                                        tem_valor_critico = (d_s <= 0.6 or e_s <= 0.6 or d_c <= 0.6 or e_c <= 0.6)
+                                        data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
+                                        linhas_para_salvar = []
                                         
-                                        status_resultado = "Sem alteração" if not tem_alteracao_geral else ("Encaminhado" if tem_valor_critico else "Alteração Moderada")
+                                        for _, row_m in df_miguilim_resultado.iterrows():
+                                            linhas_para_salvar.append([
+                                                str(ano_letivo_escolhido),
+                                                str(turma_selecionada),
+                                                str(row_m["Aluno"]),
+                                                str(row_m["CPF"]),
+                                                str(row_m["Mãe"]),
+                                                str(row_m["Sem óculos(Dir)"]),
+                                                str(row_m["Sem óculos(Esq)"]),
+                                                str(row_m["Com óculos(Dir)"]),
+                                                str(row_m["Com óculos(Esq)"]),
+                                                str(row_m["Estrabismo"]),
+                                                str(row_m["PBF"]),
+                                                str(row_m["Sem alteração"]),
+                                                str(row_m["Alteração Moderada"]),
+                                                str(row_m["Encaminhado"]),
+                                                str(row_m["Não examinado"]),
+                                                str(row_m["Uso do celular"]),
+                                                str(row_m["Observação"]),
+                                                data_hora_atual
+                                            ])
                                         
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Triagem Miguilim ({ano_letivo_escolhido}) - Aluno: {aluno_nome} | Status: {status_resultado}")
-                                    
-                                    st.success("🎉 Todas as triagens da seleção foram processadas e salvas com sucesso!")
-                                except Exception as err_mig:
-                                    st.error(f"Erro ao salvar triagens: {err_mig}")
+                                        if linhas_para_salvar:
+                                            aba_mig.append_rows(linhas_para_salvar)
+                                        
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens em lote Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada}")
+                                        st.success("🎉 Todas as triagens da turma foram processadas e salvas com sucesso na aba exclusiva 'miguilim_ipec'!")
+                                    except Exception as err_mig:
+                                        st.error(f"Erro ao salvar triagens na nuvem: {err_mig}")
 
                 elif sub_miguilim == "Encaminhamentos Clínicos":
                     st.markdown(f"### 📋 Encaminhamentos Clínicos — Programa Miguilim ({ano_letivo_escolhido})")
