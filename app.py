@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.25 - data: 23/07/26 - 13:28
+# Versão do código: v.17.26 - data: 23/07/26 - 14:01
 
 import streamlit as st
 import pandas as pd
@@ -11,7 +11,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import os
 
-# CONFIGURAÇÃO ESTRITA DA PÁGINA COM SEGOE UI BLACK NOS TÍTULOS
+# CONFIGURAÇÃO ESTRITA DA PÁGINA
 st.set_page_config(
     page_title="Sistemas de Gestão Escolar - iPeC", 
     page_icon="imagens/Logo_inovador_iPeC_com_circuito-removebg-preview.png",
@@ -81,14 +81,25 @@ st.markdown("""
             margin: 0 auto 1px auto;
             display: block;
         }
-        /* APLICAÇÃO DA FONTE SEGOE UI BLACK COM TAMANHO IMPONENTE NOS TÍTULOS */
+        /* ALINHAMENTO PERFEITO DOS TÍTULOS E FONTE SEGOE UI BLACK */
+        .header-bloco-principal {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
         .titulo-central-elegante {
             font-family: 'Segoe UI Black', Arial, sans-serif;
             font-size: 38px;
             font-weight: 900;
             color: #0f2b5c;
-            line-height: 1.2;
-            margin-bottom: 5px;
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+        .escola-bloco-flex {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         .escola-titulo-elegante {
             font-family: 'Segoe UI Black', Arial, sans-serif;
@@ -96,7 +107,15 @@ st.markdown("""
             font-weight: 900;
             color: #1e4b8f;
             letter-spacing: 0.8px;
-            margin-top: 10px;
+            margin: 0;
+        }
+        .sidebar-aviso-branco {
+            color: #ffffff !important;
+            font-size: 0.9em;
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -247,7 +266,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.25 de 23/07/2026<br>
+        Versão: v.17.26 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -288,21 +307,22 @@ else:
         st.rerun()
 
     # ==========================================
-    # CENTRAL DE TRABALHOS: TÍTULOS E LOGO DA ESCOLA
+    # CENTRAL DE TRABALHOS: TÍTULOS ALINHADOS E LOGO DA ESCOLA
     # ==========================================
+    st.markdown('<div class="header-bloco-principal">', unsafe_allow_html=True)
     st.markdown('<p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>', unsafe_allow_html=True)
+    st.markdown('<div class="escola-bloco-flex">', unsafe_allow_html=True)
     
-    col_logo_esc, col_nome_esc = st.columns([0.08, 0.92])
-    with col_logo_esc:
-        try:
-            if os.path.exists("imagens/Logo da Escola.jpeg"):
-                st.image("imagens/Logo da Escola.jpeg", width=55)
-            else:
-                st.markdown("🏫")
-        except Exception:
+    try:
+        if os.path.exists("imagens/Logo da Escola.jpeg"):
+            st.image("imagens/Logo da Escola.jpeg", width=50)
+        else:
             st.markdown("🏫")
-    with col_nome_esc:
-        st.markdown('<p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>', unsafe_allow_html=True)
+    except Exception:
+        st.markdown("🏫")
+        
+    st.markdown('<p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>', unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -318,13 +338,12 @@ else:
         if not df_db_global.empty and "Ano Letivo" in df_db_global.columns:
             df_db_ano = df_db_global[df_db_global["Ano Letivo"].astype(str).str.strip() == str(ano_letivo_escolhido)].copy()
 
-        # REQUISITO 4: SE O ANO ESTIVER VAZIO, EXIBE APENAS IMPORTAÇÃO DE DADOS NO MENU
         st.sidebar.markdown("---")
         st.sidebar.title("🧭 Menu Corporativo")
         
-        if df_db_ano.empty and st.session_state["perfil_usuario"] == "Total":
+        if df_db_ano.empty:
+            st.sidebar.markdown(f'<div class="sidebar-aviso-branco">Ano {ano_letivo_escolhido} vazio. Utilize a Importação para cadastrar o lote inicial.</div>', unsafe_allow_html=True)
             opcoes_menu = ["📥 Importação de Dados"]
-            st.sidebar.info(f"Ano {ano_letivo_escolhido} vazio. Utilize a Importação para cadastrar o lote inicial.")
         else:
             opcoes_menu = ["📊 Painel de Controle de Conformidade e Indicadores de Alunos"]
             if st.session_state["perfil_usuario"] == "Total":
@@ -401,7 +420,6 @@ else:
                                     st.info("ℹ️ Nenhuma alteração detectada.")
                             except Exception as e: st.error(f"Erro: {e}")
 
-                # REQUISITO 3: SUB-MENU "Atualização de Dados" COM FILTRO INDIVIDUAL DE ALUNOS
                 elif sub_conformidade == "Atualização de Dados":
                     st.markdown(f"#### 🔍 Atualização e Edição Individual de Alunos ({ano_letivo_escolhido})")
                     lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
@@ -435,7 +453,12 @@ else:
         elif menu_principal == "📥 Importação de Dados":
             st.markdown(f"### 📥 Importação de Dados - Ano Letivo: {ano_letivo_escolhido}")
             sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
-            st.info(f"Sub-área '{sub_lote}' pronta para o ano letivo de {ano_letivo_escolhido}.")
+            
+            if sub_lote == "Importar Arquivo .TXT":
+                st.info(f"Carregue os arquivos .TXT correspondentes para popular o ano letivo de {ano_letivo_escolhido}.")
+                arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
+                if arquivos_escolhidos:
+                    st.success(f"{len(arquivos_escolhidos)} arquivo(s) carregado(s) com sucesso para processamento.")
 
         elif menu_principal == "📈 Relatórios":
             st.markdown(f"### 📈 Módulo de Relatórios Acadêmicos - Ano Letivo: {ano_letivo_escolhido}")
@@ -465,7 +488,6 @@ else:
 
                     df_db_ano["Turma_Formatada"] = df_db_ano.apply(formatar_turma_limpa, axis=1)
                     
-                    # REQUISITO 2: ADICIONADA A OPÇÃO "Todas as turmas" NO FILTRO
                     turmas_disponiveis = ["Selecione a Turma...", "Todas as turmas"] + sorted(list(df_db_ano["Turma_Formatada"].dropna().unique()))
                     turma_selecionada = st.selectbox("🎯 Filtrar por Turma / Período de Ensino:", turmas_disponiveis)
                     
@@ -493,10 +515,10 @@ else:
                                     "Com óculos(Esq)": "",
                                     "Estrabismo": "Não",
                                     "PBF": r.get("PBF", "Não"),
-                                    "Sem alteração": "Não",
-                                    "Alteração Moderada": "Não",
-                                    "Encaminhado": "Não",
-                                    "Não examinado": "Não",
+                                    "Sem Alteração": False,
+                                    "Alteração Moderada": False,
+                                    "Encaminhado": False,
+                                    "Não Examinado": False,
                                     "Uso do celular": "Não",
                                     "Observação": ""
                                 })
@@ -504,9 +526,9 @@ else:
                             df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
                             
                             escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
-                            opcoes_sim_nao = ["Não", "Sim"]
                             opcoes_celular = ["Não", "1h", "2h", "3h", "4h", "5h", "6h", "7h", "8h", "Mais de 8h"]
                             
+                            # CONFIGURAÇÃO COM CAIXAS DE SELEÇÃO EXCLUSIVAS (CHECKBOXES)
                             conf_colunas = {
                                 "Id.": st.column_config.NumberColumn("Id.", disabled=True),
                                 "Aluno": st.column_config.TextColumn("Aluno", disabled=True),
@@ -518,10 +540,10 @@ else:
                                 "Com óculos(Dir)": st.column_config.SelectboxColumn("Com óculos(Dir)", options=escala_visao, required=False),
                                 "Com óculos(Esq)": st.column_config.SelectboxColumn("Com óculos(Esq)", options=escala_visao, required=False),
                                 "Estrabismo": st.column_config.SelectboxColumn("Estrabismo", options=["Não", "Sim"], required=True),
-                                "Sem alteração": st.column_config.SelectboxColumn("Sem alter.", options=opcoes_sim_nao, required=True),
-                                "Alteração Moderada": st.column_config.SelectboxColumn("Alt. Mod.", options=opcoes_sim_nao, required=True),
-                                "Encaminhado": st.column_config.SelectboxColumn("Encaminhado", options=opcoes_sim_nao, required=True),
-                                "Não examinado": st.column_config.SelectboxColumn("Não exam.", options=opcoes_sim_nao, required=True),
+                                "Sem Alteração": st.column_config.CheckboxColumn("Sem Alteração", default=False),
+                                "Alteração Moderada": st.column_config.CheckboxColumn("Alteração Moderada", default=False),
+                                "Encaminhado": st.column_config.CheckboxColumn("Encaminhado", default=False),
+                                "Não Examinado": st.column_config.CheckboxColumn("Não Examinado", default=False),
                                 "Uso do celular": st.column_config.SelectboxColumn("Uso celular", options=opcoes_celular, required=True),
                                 "Observação": st.column_config.TextColumn("Observação", max_chars=500, default="")
                             }
@@ -534,21 +556,21 @@ else:
                                 key="editor_miguilim_horizontal"
                             )
                             
-                            # REQUISITO 1: VALIDAÇÃO CLÍNICA RIGOROSA BLINDADA NO SALVAMENTO
+                            # REQUISITO 4: VALIDAÇÃO RIGOROSA DA REGRA DE APENAS UMA OPÇÃO MARCADA
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
                                 try:
                                     erros_validacao = []
                                     for idx, row_m in df_miguilim_resultado.iterrows():
                                         aluno_nome = row_m["Aluno"]
-                                        sem_alt = str(row_m["Sem alteração"]) == "Sim"
-                                        alt_mod = str(row_m["Alteração Moderada"]) == "Sim"
-                                        encam = str(row_m["Encaminhado"]) == "Sim"
-                                        nao_exam = str(row_m["Não examinado"]) == "Sim"
+                                        sa = bool(row_m["Sem Alteração"])
+                                        am = bool(row_m["Alteração Moderada"])
+                                        enc = bool(row_m["Encaminhado"])
+                                        ne = bool(row_m["Não Examinado"])
                                         
-                                        if sem_alt and (alt_mod or encam):
-                                            erros_validacao.append(f"Aluno {aluno_nome}: Se 'Sem alteração' for 'Sim', as opções 'Alteração Moderada' e 'Encaminhado' devem ser 'Não'.")
-                                        if nao_exam and (sem_alt or alt_mod or encam):
-                                            erros_validacao.append(f"Aluno {aluno_nome}: 'Não examinado' só pode ser 'Sim' se nenhuma outra condição clínica estiver ativa.")
+                                        # Conta quantas das 4 opções principais estão marcadas como True
+                                        total_marcados = sum([sa, am, enc, ne])
+                                        if total_marcados > 1:
+                                            erros_validacao.append(f"Aluno {aluno_nome}: Apenas uma opção entre 'Sem Alteração', 'Alteração Moderada', 'Encaminhado' e 'Não Examinado' pode estar marcada por vez.")
 
                                     if erros_validacao:
                                         for e_val in erros_validacao:
@@ -562,8 +584,8 @@ else:
                                             aba_mig.append_row([
                                                 "Ano Letivo", "Turma", "Aluno", "CPF", "Mãe", 
                                                 "Sem óculos(Dir)", "Sem óculos(Esq)", "Com óculos(Dir)", "Com óculos(Esq)", 
-                                                "Estrabismo", "PBF", "Sem alteração", "Alteração Moderada", 
-                                                "Encaminhado", "Não examinado", "Uso do celular", "Observação", "Data_Hora"
+                                                "Estrabismo", "PBF", "Sem Alteração", "Alteração Moderada", 
+                                                "Encaminhado", "Não Examinado", "Uso do celular", "Observação", "Data_Hora"
                                             ])
                                         
                                         data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
@@ -582,10 +604,10 @@ else:
                                                 str(row_m["Com óculos(Esq)"]),
                                                 str(row_m["Estrabismo"]),
                                                 str(row_m["PBF"]),
-                                                str(row_m["Sem alteração"]),
+                                                str(row_m["Sem Alteração"]),
                                                 str(row_m["Alteração Moderada"]),
                                                 str(row_m["Encaminhado"]),
-                                                str(row_m["Não examinado"]),
+                                                str(row_m["Não Examinado"]),
                                                 str(row_m["Uso do celular"]),
                                                 str(row_m["Observação"])[:500],
                                                 data_hora_atual
@@ -599,20 +621,7 @@ else:
                                 except Exception as err_mig:
                                     st.error(f"Erro ao salvar triagens: {err_mig}")
 
-        elif menu_principal == "📥 Importação de Dados":
-            st.markdown(f"### 📥 Importação de Dados - Ano Letivo: {ano_letivo_escolhido}")
-            sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
-            st.info(f"Sub-área '{sub_lote}' pronta para o ano letivo de {ano_letivo_escolhido}.")
-
-        elif menu_principal == "📈 Relatórios":
-            st.markdown(f"### 📈 Módulo de Relatórios Acadêmicos - Ano Letivo: {ano_letivo_escolhido}")
-            sub_relatorios = st.sidebar.radio("Sub-menu:", ["Ficha Individual (PDF)", "Estatísticas PBF e AEE/CID"])
-            st.info(f"Sub-área '{sub_relatorios}' pronta.")
-
-        elif menu_principal == "👁️ Programa Miguilim":
-            st.markdown(f"### 👁️ Programa Miguilim - Saúde Visual e Auditiva ({ano_letivo_escolhido})")
-            sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
-            if sub_miguilim == "Encaminhamentos Clínicos":
+            elif sub_miguilim == "Encaminhamentos Clínicos":
                 st.markdown(f"### 📋 Encaminhamentos Clínicos — Programa Miguilim ({ano_letivo_escolhido})")
                 st.info(f"Painel analítico de encaminhamentos para o ano letivo de {ano_letivo_escolhido}.")
 
