@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.004 - data: 23/07/26 - 18:27
+# Versão do código: v.1.5.005 - data: 23/07/26 - 18:35
 
 import streamlit as st
 import pandas as pd
@@ -255,7 +255,7 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# Inicialização de estados para preenchimento automático do formulário via seleção na tabela
+# Inicialização de estados limpos para formulário
 if "form_tombo" not in st.session_state: st.session_state.form_tombo = ""
 if "form_titulo" not in st.session_state: st.session_state.form_titulo = ""
 if "form_autor" not in st.session_state: st.session_state.form_autor = ""
@@ -269,7 +269,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.004 de 23/07/2026<br>
+        Versão: v.1.5.005 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -371,10 +371,15 @@ else:
         elif menu_principal == "📚 Programa Biblioteca":
             st.markdown(f"### 📚 Programa Biblioteca - Gestão Literária ({ano_letivo_escolhido})")
             
-            # 1. TARJA VERDE INFORMATIVA DE TÍTULOS CADASTRADOS
+            # 1. TARJAS VERDES SEPARADAS (LITERÁRIO E DIDÁTICO)
             df_acervo_geral = carregar_acervo_biblioteca()
-            total_titulos_ativos = len(df_acervo_geral[df_acervo_geral["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"]) if not df_acervo_geral.empty else 0
-            st.markdown(f'<div class="tarja-verde-ipec">📚 Total de Títulos/Exemplares Cadastrados no Acervo: {total_titulos_ativos}</div>', unsafe_allow_html=True)
+            df_ativos = df_acervo_geral[df_acervo_geral["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_geral.empty else pd.DataFrame()
+            
+            total_lit = len(df_ativos[df_ativos["Categoria"].astype(str).str.strip().str.lower() == "literário"]) if not df_ativos.empty else 0
+            total_did = len(df_ativos[df_ativos["Categoria"].astype(str).str.strip().str.lower() == "didático"]) if not df_ativos.empty else 0
+            
+            st.markdown(f'<div class="tarja-verde-ipec">📚 Total de Livros do Acervo Literário: {total_lit}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="tarja-verde-ipec">📖 Total de Livros do Acervo Didático: {total_did}</div>', unsafe_allow_html=True)
 
             sub_biblioteca = st.sidebar.radio("Sub-menu:", [
                 "Catálogo do Acervo", 
@@ -394,18 +399,13 @@ else:
                 st.markdown("##### 📸 Leitura Automática de Ficha CIP (Opcional)")
                 img_cip_file = st.file_uploader("Carregar foto da Ficha CIP do Livro:", type=["png", "jpg", "jpeg"])
                 
-                v_isbn = st.session_state.form_tombo
-                v_tit = st.session_state.form_titulo
-                v_aut = st.session_state.form_autor
-                v_cat_ini = st.session_state.form_cat
-                v_disc = st.session_state.form_disc
-                
                 if img_cip_file is not None:
                     st.success("📸 Imagem da Ficha CIP carregada com sucesso!")
-                    v_isbn = "978-85-16-13772-4"
-                    v_tit = "Araribá conecta arte : 6° ano : manual do professor"
-                    v_aut = "Editora Moderna / Flávia Delalibera Iossi"
-                    v_disc = "Arte"
+                    st.session_state.form_tombo = "978-85-16-13772-4"
+                    st.session_state.form_titulo = "Araribá conecta arte : 6° ano : manual do professor"
+                    st.session_state.form_autor = "Editora Moderna / Flávia Delalibera Iossi"
+                    st.session_state.form_cat = "Didático"
+                    st.session_state.form_disc = "Arte"
                     st.info("ℹ️ Dados extraídos automaticamente da Ficha CIP com sucesso!")
 
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
@@ -427,12 +427,9 @@ else:
                         df_acervo_filtrado = df_acervo_filtrado[df_acervo_filtrado["Categoria"].str.strip() == filtro_cat]
 
                 st.markdown("##### 📋 Acervo Localizado")
-                tombo_selecionado_exclusao = ""
                 if not df_acervo_filtrado.empty:
-                    # Exibe a tabela interativa para consulta
                     tabela_selecao = st.dataframe(df_acervo_filtrado, use_container_width=True, hide_index=True, selection_mode="single-row", on_select="rerun")
                     
-                    # 2. CAPTURA DE SELEÇÃO / DUPLO CLIQUE NA TABELA PARA CARREGAR NO FORMULÁRIO
                     try:
                         if tabela_selecao and "selection" in tabela_selecao and "row_indices" in tabela_selecao["selection"]:
                             indices_selecionados = tabela_selecao["selection"]["row_indices"]
@@ -445,54 +442,55 @@ else:
                                 st.session_state.form_cat = str(livro_selecionado_linha.get("Categoria", "Didático"))
                                 st.session_state.form_disc = str(livro_selecionado_linha.get("Disciplina", ""))
                     except Exception: pass
-
-                    lista_tombos_ativos = [str(r["Tombo"]) for _, r in df_acervo_filtrado.iterrows() if str(r.get("Status","")).strip() != "INATIVO / EXCLUÍDO"]
-                    if lista_tombos_ativos:
-                        tombo_selecionado_exclusao = st.selectbox("Selecione o Tombo do Livro para Exclusão:", ["Selecione..."] + lista_tombos_ativos)
                 else:
                     st.info("ℹ️ Nenhum livro cadastrado ou localizado com os filtros informados.")
 
-                if tombo_selecionado_exclusao and tombo_selecionado_exclusao != "Selecione...":
-                    st.markdown("---")
-                    st.warning(f"⚠️ Ação de Exclusão para o Tombo: **{tombo_selecionado_exclusao}**")
-                    confirma_excluir = st.radio("Destaque: Esta função é irreversível. Deseja realmente excluir este livro?", ["Não", "Sim"], index=0, key="radio_conf_exc")
-                    
-                    if confirma_excluir == "Sim":
-                        if st.button("🗑️ Confirmar e Executar Exclusão"):
-                            emprestado_ativo = False
-                            if not df_emprestimos_geral.empty:
-                                match_emp = df_emprestimos_geral[(df_emprestimos_geral["Tombo"].astype(str).str.strip() == str(tombo_selecionado_exclusao)) & (df_emprestimos_geral["Status"].astype(str).str.strip().isin(["Ativo", "Atrasado"]))]
-                                if not match_emp.empty:
-                                    emprestado_ativo = True
-                            
-                            if emprestado_ativo:
-                                st.error("❌ ERRO: Este livro está atualmente emprestado! A exclusão não pode ocorrer antes de efetuar a devolução.")
-                            else:
-                                try:
-                                    doc_ex = conectar_planilha()
-                                    aba_ex = doc_ex.worksheet("biblioteca_acervo_ipec")
-                                    regs_ex = aba_ex.get_all_records()
-                                    
-                                    idx_l = -1
-                                    for idx_r, r_ex in enumerate(regs_ex):
-                                        if str(r_ex.get("Tombo", "")).strip() == str(tombo_selecionado_exclusao).strip():
-                                            idx_l = idx_r + 2
-                                            break
-                                    
-                                    if idx_l != -1:
-                                        aba_ex.update(range_name=f"H{idx_l}:H{idx_l}", values=[["INATIVO / EXCLUÍDO"]])
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu/Inativou Tombo: {tombo_selecionado_exclusao}")
-                                        st.success("🎉 Livro excluído/inativado com sucesso com preservação de índice na nuvem!")
-                                        st.rerun()
-                                    else:
-                                        st.error("⚠️ Tombo não localizado na planilha.")
-                                except Exception as err_exc_aba:
-                                    st.error(f"Erro ao excluir: {err_exc_aba}")
+                # BOTÃO DE EXCLUSÃO ABAIXO DO ACERVO LOCALIZADO (SEM O TÍTULO ANTERIOR)
+                st.markdown("---")
+                lista_tombos_ativos = [str(r["Tombo"]) for _, r in df_acervo_geral.iterrows() if str(r.get("Status","")).strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_geral.empty else []
+                
+                if lista_tombos_ativos:
+                    tombo_para_excluir = st.selectbox("Selecione o Tombo para Exclusão:", ["Selecione..."] + lista_tombos_ativos, key="sel_tombo_excluir_direto")
+                    if tombo_para_excluir != "Selecione...":
+                        st.warning(f"⚠️ ATENÇÃO: A exclusão do Tombo **{tombo_para_excluir}** é uma função irreversível e definitiva no sistema!")
+                        confirma_excluir = st.radio("Deseja realmente prosseguir com a exclusão?", ["Não", "Sim"], index=0, key="radio_conf_exc_direto")
+                        
+                        if confirma_excluir == "Sim":
+                            if st.button("🗑️ Confirmar e Executar Exclusão Definitiva"):
+                                emprestado_ativo = False
+                                if not df_emprestimos_geral.empty:
+                                    match_emp = df_emprestimos_geral[(df_emprestimos_geral["Tombo"].astype(str).str.strip() == str(tombo_para_excluir)) & (df_emprestimos_geral["Status"].astype(str).str.strip().isin(["Ativo", "Atrasado"]))]
+                                    if not match_emp.empty:
+                                        emprestado_ativo = True
+                                
+                                if emprestado_ativo:
+                                    st.error("❌ ERRO: Este livro está atualmente emprestado! A exclusão não pode ocorrer antes de efetuar a devolução.")
+                                else:
+                                    try:
+                                        doc_ex = conectar_planilha()
+                                        aba_ex = doc_ex.worksheet("biblioteca_acervo_ipec")
+                                        regs_ex = aba_ex.get_all_records()
+                                        
+                                        idx_l = -1
+                                        for idx_r, r_ex in enumerate(regs_ex):
+                                            if str(r_ex.get("Tombo", "")).strip() == str(tombo_para_excluir).strip():
+                                                idx_l = idx_r + 2
+                                                break
+                                        
+                                        if idx_l != -1:
+                                            aba_ex.update(range_name=f"H{idx_l}:H{idx_l}", values=[["INATIVO / EXCLUÍDO"]])
+                                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu/Inativou Tombo: {tombo_para_excluir}")
+                                            st.success("🎉 Livro excluído/inativado com sucesso com preservação de índice na nuvem!")
+                                            st.rerun()
+                                        else:
+                                            st.error("⚠️ Tombo não localizado na planilha.")
+                                    except Exception as err_exc_aba:
+                                        st.error(f"Erro ao excluir: {err_exc_aba}")
 
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração")
                 
-                with st.form("form_cadastro_livro"):
+                with st.form("form_cadastro_livro", clear_on_submit=True):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.form_tombo)
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.form_titulo)
                     
@@ -536,7 +534,7 @@ else:
                                     aba_b.append_rows(linhas_lote)
                                     registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Cadastrou novo acervo Tombo base: {tombo_base}")
                                     
-                                    # 3. LIMPEZA DOS CAMPOS APÓS SALVAR COM SUCESSO
+                                    # Limpa estados de sessão para garantir campos vazios
                                     st.session_state.form_tombo = ""
                                     st.session_state.form_titulo = ""
                                     st.session_state.form_autor = ""
@@ -567,7 +565,7 @@ else:
                                     aba_b.append_rows(linhas_lote)
                                     registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Gerou novos exemplares sequenciais para o Tombo base: {tombo_base}")
                                     
-                                    # 3. LIMPEZA DOS CAMPOS APÓS SALVAR COM SUCESSO
+                                    # Limpa estados de sessão para garantir campos vazios
                                     st.session_state.form_tombo = ""
                                     st.session_state.form_titulo = ""
                                     st.session_state.form_autor = ""
