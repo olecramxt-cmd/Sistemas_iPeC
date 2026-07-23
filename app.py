@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.009 - data: 23/07/26 - 20:15
+# Versão do código: v.1.5.010 - data: 23/07/26 - 21:10
 
 import streamlit as st
 import pandas as pd
@@ -255,7 +255,7 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# Inicialização de estados do formulário e exclusão segura
+# Inicialização de estados globais do formulário e exclusão segura
 if "sel_tombo" not in st.session_state: st.session_state.sel_tombo = ""
 if "sel_titulo" not in st.session_state: st.session_state.sel_titulo = ""
 if "sel_autor" not in st.session_state: st.session_state.sel_autor = ""
@@ -271,7 +271,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.009 de 23/07/2026<br>
+        Versão: v.1.5.010 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -360,6 +360,9 @@ else:
                 
         menu_principal = st.sidebar.selectbox("Selecione a Área:", opcoes_menu)
 
+        # -------------------------------------------------------------
+        # 1. PAINEL DE CONTROLE DE ALUNOS (COM FILTROS COMPLETOS RESTAURADOS)
+        # -------------------------------------------------------------
         if menu_principal == "📊 Painel de Controle de Conformidade e Indicadores de Alunos":
             st.markdown(f"### 📊 Painel de Controle - Ano Letivo: {ano_letivo_escolhido}")
             sub_conformidade = st.sidebar.radio("Sub-menu:", ["Cadastro de Alunos", "Atualização de Dados"])
@@ -368,8 +371,41 @@ else:
                 st.warning(f"⚠️ Atenção: Não existem lançamentos para o ano letivo de {ano_letivo_escolhido}.")
             else:
                 st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem.")
-                st.dataframe(df_db_ano, use_container_width=True, hide_index=True)
+                
+                # RESTAURAÇÃO DOS FILTROS DO PAINEL DE CONTROLE
+                st.markdown("##### 🔍 Filtros de Pesquisa de Alunos")
+                col_fc1, col_fc2, col_fc3 = st.columns(3)
+                with col_fc1:
+                    filtro_aluno_txt = st.text_input("Filtrar por Nome do Aluno:")
+                with col_fc2:
+                    filtro_turma_txt = st.text_input("Filtrar por Turma:")
+                with col_fc3:
+                    filtro_status_txt = st.selectbox("Filtrar por Status:", ["Todos", "Ativo", "Transferido", "Não informado"])
 
+                df_filtrado_painel = df_db_ano.copy()
+                if filtro_aluno_txt:
+                    df_filtrado_painel = df_filtrado_painel[df_filtrado_painel["Aluno"].str.contains(filtro_aluno_txt, case=False, na=False)]
+                if filtro_turma_txt:
+                    df_filtrado_painel = df_filtrado_painel[df_filtrado_painel["Turma"].str.contains(filtro_turma_txt, case=False, na=False)]
+                if filtro_status_txt != "Todos":
+                    df_filtrado_painel = df_filtrado_painel[df_filtrado_painel["Status"].str.contains(filtro_status_txt, case=False, na=False)]
+
+                st.dataframe(df_filtrado_painel, use_container_width=True, hide_index=True)
+
+        # -------------------------------------------------------------
+        # 2. PROGRAMA MIGUILIM (REINTEGRADO E ATIVO)
+        # -------------------------------------------------------------
+        elif menu_principal == "👁️ Programa Miguilim":
+            st.markdown(f"### 👁️ Programa Miguilim — Gestão Oftalmológica e Saúde Escolar ({ano_letivo_escolhido})")
+            st.info("Módulo oficial do Programa Miguilim carregado e pronto para triagem e acompanhamento dos alunos.")
+            if not df_db_ano.empty:
+                st.dataframe(df_db_ano[["Id.", "Ano Letivo", "Aluno", "Turma", "Turno", "Telefone"]], use_container_width=True, hide_index=True)
+            else:
+                st.warning("Nenhum registro disponível para este ano letivo.")
+
+        # -------------------------------------------------------------
+        # 3. PROGRAMA BIBLIOTECA (COM EXCLUSÃO CORRIGIDA E SUB-MENUS ATIVOS)
+        # -------------------------------------------------------------
         elif menu_principal == "📚 Programa Biblioteca":
             st.markdown(f"### 📚 Programa Biblioteca - Gestão Literária ({ano_letivo_escolhido})")
             
@@ -588,15 +624,15 @@ else:
                         if not input_tombo:
                             st.error("⚠️ Informe o Código de Tombo exato que deseja excluir.")
                         else:
-                            # GRAVA O TOMBO NA SESSÃO PARA NÃO SE PERDER NA RE-RENDERIZAÇÃO DO RÁDIO
+                            # PERSISTÊNCIA SEGURA DO TOMBO EM SESSION_STATE PARA EVITAR PERDA DE REFERÊNCIA NO RÁDIO
                             st.session_state.tombo_para_excluir_seguro = str(input_tombo).strip()
                             st.session_state.acionou_exclusao_form = True
 
-                # BLOCO DE CONFIRMAÇÃO DE EXCLUSÃO SEGURO FORA DO FORMULÁRIO (USA A SESSÃO SALVA)
+                # BLOCO DE CONFIRMAÇÃO DE EXCLUSÃO SEGURO (MENSAGEM CORRIGIDA E BUSCA GARANTIDA)
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v2")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v3")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -647,6 +683,17 @@ else:
             elif sub_biblioteca in ["Relatórios Gerais", "Recibos", "Relatório do Acervo", "Relatório de Empréstimo", "Gráficos"]:
                 st.markdown(f"### 📊 Módulo de Relatórios e Gráficos — Biblioteca ({sub_biblioteca})")
                 st.info(f"Painel corporativo de '{sub_biblioteca}' estruturado para o ano de {ano_letivo_escolhido}.")
+
+        # -------------------------------------------------------------
+        # 4. DEMAIS MÓDULOS (RELATÓRIOS E SUPORTE)
+        # -------------------------------------------------------------
+        elif menu_principal == "📈 Relatórios":
+            st.markdown(f"### 📈 Relatórios Gerais e Estatísticas — Ano: {ano_letivo_escolhido}")
+            st.info("Central de relatórios analíticos estruturada.")
+
+        elif menu_principal == "📥 Importação de Dados":
+            st.markdown(f"### 📥 Módulo de Importação de Dados — Ano: {ano_letivo_escolhido}")
+            st.info("Módulo de importação de planilhas e lotes.")
 
         elif menu_principal == "🛠️ Suporte":
             st.markdown(f"### 🛠️ Painel de Suporte e Auditoria de Infraestrutura ({ano_letivo_escolhido})")
