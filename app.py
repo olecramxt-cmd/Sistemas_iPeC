@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.32 - data: 23/07/26 - 15:23
+# Versão do código: v.17.33 - data: 23/07/26 - 15:29
 
 import streamlit as st
 import pandas as pd
@@ -284,7 +284,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.32 de 23/07/2026<br>
+        Versão: v.17.33 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -524,14 +524,12 @@ else:
                         else:
                             st.markdown(f"Exibindo {len(df_miguilim_filtrado)} aluno(s) para triagem visual ({ano_letivo_escolhido}).")
                             
-                            # CARREGA OS DADOS JÁ SALVOS NA NUVEM PARA RESTAURAR O ESTADO ANTERIOR
                             df_salvos_nuvem = carregar_dados_miguilim(ano_letivo_escolhido)
 
                             dados_tabela_mig = []
                             for _, r in df_miguilim_filtrado.iterrows():
                                 aluno_nome = str(r["Aluno"]).strip()
                                 
-                                # Valores padrão
                                 sa_bool = False
                                 am_bool = False
                                 enc_bool = False
@@ -611,7 +609,7 @@ else:
                                 key="editor_miguilim_horizontal"
                             )
                             
-                            # VALIDAÇÃO CLÍNICA COM ALERTA E SOBREPOSIÇÃO INTELIGENTE
+                            # VALIDAÇÃO CLÍNICA COM ALERTA E SALVAMENTO EM LOTE OTIMIZADO (SEM ESTOURAR QUOTA)
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
                                 try:
                                     erros_validacao = []
@@ -645,6 +643,7 @@ else:
                                         registros_existentes = aba_mig.get_all_records()
                                         data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
                                         
+                                        lote_para_adicionar = []
                                         atualizados = 0
                                         novos = 0
 
@@ -685,12 +684,16 @@ else:
                                                     break
                                             
                                             if encontrado_idx != -1:
+                                                # Atualização direta unitária para registros já existentes
                                                 aba_mig.update(range_name=f"A{encontrado_idx}:R{encontrado_idx}", values=[linha_dados])
                                                 atualizados += 1
                                             else:
-                                                aba_mig.append_row(linha_dados)
+                                                lote_para_adicionar.append(linha_dados)
                                                 novos += 1
-                                            time.sleep(0.2)
+
+                                        # Envio em lote (append_rows) único para todos os novos registros de uma vez só (evita estourar cota)
+                                        if lote_para_adicionar:
+                                            aba_mig.append_rows(lote_para_adicionar)
 
                                         registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada} (Novos: {novos}, Atualizados: {atualizados})")
                                         st.success(f"🎉 Triagens processadas com sucesso! ({novos} novo(s), {atualizados} atualizado(s) por sobreposição na nuvem).")
