@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.008 - data: 23/07/26 - 20:00
+# Versão do código: v.1.5.009 - data: 23/07/26 - 20:15
 
 import streamlit as st
 import pandas as pd
@@ -255,13 +255,15 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# Inicialização de estados do formulário
+# Inicialização de estados do formulário e exclusão segura
 if "sel_tombo" not in st.session_state: st.session_state.sel_tombo = ""
 if "sel_titulo" not in st.session_state: st.session_state.sel_titulo = ""
 if "sel_autor" not in st.session_state: st.session_state.sel_autor = ""
 if "sel_cat" not in st.session_state: st.session_state.sel_cat = "Didático"
 if "sel_disc" not in st.session_state: st.session_state.sel_disc = ""
 if "sel_total" not in st.session_state: st.session_state.sel_total = 1
+if "acionou_exclusao_form" not in st.session_state: st.session_state.acionou_exclusao_form = False
+if "tombo_para_excluir_seguro" not in st.session_state: st.session_state.tombo_para_excluir_seguro = ""
 
 try:
     st.sidebar.image("imagens/Logo_inovador_iPeC_com_circuito-removebg-preview.png", use_container_width=True)
@@ -269,7 +271,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.008 de 23/07/2026<br>
+        Versão: v.1.5.009 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -448,7 +450,6 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração")
                 
-                # RETORNO AO FORMATO DE FORMULÁRIO SEGURO ESTABELECIDO ANTERIORMENTE
                 with st.form("form_cadastro_livro"):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.sel_tombo)
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.sel_titulo)
@@ -587,13 +588,15 @@ else:
                         if not input_tombo:
                             st.error("⚠️ Informe o Código de Tombo exato que deseja excluir.")
                         else:
-                            st.session_state["acionou_exclusao_form"] = True
+                            # GRAVA O TOMBO NA SESSÃO PARA NÃO SE PERDER NA RE-RENDERIZAÇÃO DO RÁDIO
+                            st.session_state.tombo_para_excluir_seguro = str(input_tombo).strip()
+                            st.session_state.acionou_exclusao_form = True
 
-                # BLOCO DE CONFIRMAÇÃO DE EXCLUSÃO FORA DO FORMULÁRIO PARA EVITAR REQUISITOS DUPLICADOS
+                # BLOCO DE CONFIRMAÇÃO DE EXCLUSÃO SEGURO FORA DO FORMULÁRIO (USA A SESSÃO SALVA)
                 if st.session_state.get("acionou_exclusao_form", False):
-                    tombo_alvo_exc = st.session_state.sel_tombo
-                    st.warning(f"⚠️ ATENÇÃO: A exclusão do Tombo **{tombo_alvo_exc}** é uma função irreversível e definitiva no sistema!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro")
+                    tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
+                    st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v2")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -627,12 +630,13 @@ else:
                                         st.session_state.sel_cat = "Didático"
                                         st.session_state.sel_disc = ""
                                         st.session_state.sel_total = 1
-                                        st.session_state["acionou_exclusao_form"] = False
+                                        st.session_state.acionou_exclusao_form = False
+                                        st.session_state.tombo_para_excluir_seguro = ""
 
                                         st.success("🎉 Livro excluído/inativado com sucesso com preservação de índice na nuvem!")
                                         st.rerun()
                                     else:
-                                        st.error("⚠️ Tombo não localizado na planilha.")
+                                        st.error(f"⚠️ Tombo '{tombo_alvo_exc}' não localizado na planilha.")
                                 except Exception as err_exc_aba:
                                     st.error(f"Erro ao excluir: {err_exc_aba}")
 
