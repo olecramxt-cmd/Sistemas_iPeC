@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.27 - data: 23/07/26 - 14:20
+# Versão do código: v.17.28 - data: 23/07/26 - 14:35
 
 import streamlit as st
 import pandas as pd
@@ -81,11 +81,12 @@ st.markdown("""
             margin: 0 auto 1px auto;
             display: block;
         }
-        /* ALINHAMENTO INSTITUCIONAL UNIFICADO DA LOGO E TÍTULOS */
-        .header-bloco-principal {
+        /* ALINHAMENTO IMPECÁVEL DA LOGO À ESQUERDA DOS TÍTULOS EM BLOCO ÚNICO */
+        .header-bloco-institucional {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 18px;
+            margin-top: 5px;
             margin-bottom: 10px;
         }
         .header-textos-coluna {
@@ -98,7 +99,7 @@ st.markdown("""
             font-weight: 900;
             color: #0f2b5c;
             line-height: 1.1;
-            margin: 0 0 5px 0;
+            margin: 0 0 4px 0;
         }
         .escola-titulo-elegante {
             font-family: 'Segoe UI Black', Arial, sans-serif;
@@ -265,7 +266,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.27 de 23/07/2026<br>
+        Versão: v.17.28 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -306,13 +307,13 @@ else:
         st.rerun()
 
     # ==========================================
-    # CENTRAL DE TRABALHOS: LOGO E TÍTULOS PERFEITAMENTE ALINHADOS
+    # CENTRAL DE TRABALHOS: LOGO À ESQUERDA E TÍTULOS ALINHADOS
     # ==========================================
-    st.markdown('<div class="header-bloco-principal">', unsafe_allow_html=True)
+    st.markdown('<div class="header-bloco-institucional">', unsafe_allow_html=True)
     
     try:
         if os.path.exists("imagens/Logo da Escola.jpeg"):
-            st.image("imagens/Logo da Escola.jpeg", width=65)
+            st.image("imagens/Logo da Escola.jpeg", width=60)
         else:
             st.markdown("🏫")
     except Exception:
@@ -514,10 +515,10 @@ else:
                                     "Com óculos(Esq)": "",
                                     "Estrabismo": "Não",
                                     "PBF": r.get("PBF", "Não"),
-                                    "Sem Alteração": False,
-                                    "Alteração Moderada": False,
-                                    "Encaminhado": False,
-                                    "Não Examinado": False,
+                                    "Sem Alteração": "",
+                                    "Alteração Moderada": "",
+                                    "Encaminhado": "",
+                                    "Não Examinado": "",
                                     "Uso do celular": "Não",
                                     "Observação": ""
                                 })
@@ -526,7 +527,9 @@ else:
                             
                             escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
                             opcoes_celular = ["Não", "1h", "2h", "3h", "4h", "5h", "6h", "7h", "8h", "Mais de 8h"]
+                            opcoes_clinicas = ["", "Sem Alteração", "Alteração Moderada", "Encaminhado", "Não Examinado"]
                             
+                            # CONFIGURAÇÃO COM SELECTBOX EXCLUSIVO (ELIMINA BOOLEANOS TRUE/FALSE E GARANTE ESCOLHA ÚNICA)
                             conf_colunas = {
                                 "Id.": st.column_config.NumberColumn("Id.", disabled=True),
                                 "Aluno": st.column_config.TextColumn("Aluno", disabled=True),
@@ -538,10 +541,10 @@ else:
                                 "Com óculos(Dir)": st.column_config.SelectboxColumn("Com óculos(Dir)", options=escala_visao, required=False),
                                 "Com óculos(Esq)": st.column_config.SelectboxColumn("Com óculos(Esq)", options=escala_visao, required=False),
                                 "Estrabismo": st.column_config.SelectboxColumn("Estrabismo", options=["Não", "Sim"], required=True),
-                                "Sem Alteração": st.column_config.CheckboxColumn("Sem Alteração", default=False),
-                                "Alteração Moderada": st.column_config.CheckboxColumn("Alteração Moderada", default=False),
-                                "Encaminhado": st.column_config.CheckboxColumn("Encaminhado", default=False),
-                                "Não Examinado": st.column_config.CheckboxColumn("Não Examinado", default=False),
+                                "Sem Alteração": st.column_config.SelectboxColumn("Sem Alteração", options=opcoes_clinicas, required=False),
+                                "Alteração Moderada": st.column_config.SelectboxColumn("Alteração Moderada", options=opcoes_clinicas, required=False),
+                                "Encaminhado": st.column_config.SelectboxColumn("Encaminhado", options=opcoes_clinicas, required=False),
+                                "Não Examinado": st.column_config.SelectboxColumn("Não Examinado", options=opcoes_clinicas, required=False),
                                 "Uso do celular": st.column_config.SelectboxColumn("Uso celular", options=opcoes_celular, required=True),
                                 "Observação": st.column_config.TextColumn("Observação", max_chars=500, default="")
                             }
@@ -554,7 +557,6 @@ else:
                                 key="editor_miguilim_horizontal"
                             )
                             
-                            # ROTINA AUTOMÁTICA DE EXCLUSIVIDADE MÚTUA NAS CHECKBOXES (SEM MENSAGENS DE ERRO)
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
                                 try:
                                     doc_mig = conectar_planilha()
@@ -573,28 +575,6 @@ else:
                                     linhas_para_salvar = []
                                     
                                     for _, row_m in df_miguilim_resultado.iterrows():
-                                        sa = bool(row_m["Sem Alteração"])
-                                        am = bool(row_m["Alteração Moderada"])
-                                        enc = bool(row_m["Encaminhado"])
-                                        ne = bool(row_m["Não Examinado"])
-                                        
-                                        # GARANTIA MATEMÁTICA DE APENAS UMA OPÇÃO ATIVA (RESOLVE A DUPLICIDADE SILENCIOSAMENTE)
-                                        marcados = [sa, am, enc, ne]
-                                        if sum(marcados) > 1:
-                                            # Se mais de uma foi marcada na tela, prevalece apenas a primeira marcada e limpa as demais
-                                            primeiro = True
-                                            sa_final, am_final, enc_final, ne_final = False, False, False, False
-                                            if sa: 
-                                                sa_final = True
-                                            elif am and not sa: 
-                                                am_final = True
-                                            elif enc and not sa and not am: 
-                                                enc_final = True
-                                            elif ne and not sa and not am and not enc: 
-                                                ne_final = True
-                                        else:
-                                            sa_final, am_final, enc_final, ne_final = sa, am, enc, ne
-
                                         linhas_para_salvar.append([
                                             str(ano_letivo_escolhido),
                                             str(turma_selecionada),
@@ -607,10 +587,10 @@ else:
                                             str(row_m["Com óculos(Esq)"]),
                                             str(row_m["Estrabismo"]),
                                             str(row_m["PBF"]),
-                                            str(sa_final),
-                                            str(am_final),
-                                            str(enc_final),
-                                            str(ne_final),
+                                            str(row_m.get("Sem Alteração", "")),
+                                            str(row_m.get("Alteração Moderada", "")),
+                                            str(row_m.get("Encaminhado", "")),
+                                            str(row_m.get("Não Examinado", "")),
                                             str(row_m["Uso do celular"]),
                                             str(row_m["Observação"])[:500],
                                             data_hora_atual
