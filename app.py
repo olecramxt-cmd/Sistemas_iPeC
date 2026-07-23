@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.26 - data: 23/07/26 - 14:01
+# Versão do código: v.17.27 - data: 23/07/26 - 14:20
 
 import streamlit as st
 import pandas as pd
@@ -81,29 +81,28 @@ st.markdown("""
             margin: 0 auto 1px auto;
             display: block;
         }
-        /* ALINHAMENTO PERFEITO DOS TÍTULOS E FONTE SEGOE UI BLACK */
+        /* ALINHAMENTO INSTITUCIONAL UNIFICADO DA LOGO E TÍTULOS */
         .header-bloco-principal {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            gap: 20px;
             margin-bottom: 10px;
+        }
+        .header-textos-coluna {
+            display: flex;
+            flex-direction: column;
         }
         .titulo-central-elegante {
             font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 38px;
+            font-size: 34px;
             font-weight: 900;
             color: #0f2b5c;
             line-height: 1.1;
-            margin-bottom: 8px;
-        }
-        .escola-bloco-flex {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            margin: 0 0 5px 0;
         }
         .escola-titulo-elegante {
             font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 900;
             color: #1e4b8f;
             letter-spacing: 0.8px;
@@ -266,7 +265,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.26 de 23/07/2026<br>
+        Versão: v.17.27 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -307,20 +306,20 @@ else:
         st.rerun()
 
     # ==========================================
-    # CENTRAL DE TRABALHOS: TÍTULOS ALINHADOS E LOGO DA ESCOLA
+    # CENTRAL DE TRABALHOS: LOGO E TÍTULOS PERFEITAMENTE ALINHADOS
     # ==========================================
     st.markdown('<div class="header-bloco-principal">', unsafe_allow_html=True)
-    st.markdown('<p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>', unsafe_allow_html=True)
-    st.markdown('<div class="escola-bloco-flex">', unsafe_allow_html=True)
     
     try:
         if os.path.exists("imagens/Logo da Escola.jpeg"):
-            st.image("imagens/Logo da Escola.jpeg", width=50)
+            st.image("imagens/Logo da Escola.jpeg", width=65)
         else:
             st.markdown("🏫")
     except Exception:
         st.markdown("🏫")
         
+    st.markdown('<div class="header-textos-coluna">', unsafe_allow_html=True)
+    st.markdown('<p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>', unsafe_allow_html=True)
     st.markdown('<p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>', unsafe_allow_html=True)
     st.markdown('</div></div>', unsafe_allow_html=True)
 
@@ -528,7 +527,6 @@ else:
                             escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
                             opcoes_celular = ["Não", "1h", "2h", "3h", "4h", "5h", "6h", "7h", "8h", "Mais de 8h"]
                             
-                            # CONFIGURAÇÃO COM CAIXAS DE SELEÇÃO EXCLUSIVAS (CHECKBOXES)
                             conf_colunas = {
                                 "Id.": st.column_config.NumberColumn("Id.", disabled=True),
                                 "Aluno": st.column_config.TextColumn("Aluno", disabled=True),
@@ -556,68 +554,73 @@ else:
                                 key="editor_miguilim_horizontal"
                             )
                             
-                            # REQUISITO 4: VALIDAÇÃO RIGOROSA DA REGRA DE APENAS UMA OPÇÃO MARCADA
+                            # ROTINA AUTOMÁTICA DE EXCLUSIVIDADE MÚTUA NAS CHECKBOXES (SEM MENSAGENS DE ERRO)
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
                                 try:
-                                    erros_validacao = []
-                                    for idx, row_m in df_miguilim_resultado.iterrows():
-                                        aluno_nome = row_m["Aluno"]
+                                    doc_mig = conectar_planilha()
+                                    try:
+                                        aba_mig = doc_mig.worksheet("miguilim_ipec")
+                                    except gspread.WorksheetNotFound:
+                                        aba_mig = doc_mig.add_worksheet(title="miguilim_ipec", rows="1000", cols="18")
+                                        aba_mig.append_row([
+                                            "Ano Letivo", "Turma", "Aluno", "CPF", "Mãe", 
+                                            "Sem óculos(Dir)", "Sem óculos(Esq)", "Com óculos(Dir)", "Com óculos(Esq)", 
+                                            "Estrabismo", "PBF", "Sem Alteração", "Alteração Moderada", 
+                                            "Encaminhado", "Não Examinado", "Uso do celular", "Observação", "Data_Hora"
+                                        ])
+                                    
+                                    data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
+                                    linhas_para_salvar = []
+                                    
+                                    for _, row_m in df_miguilim_resultado.iterrows():
                                         sa = bool(row_m["Sem Alteração"])
                                         am = bool(row_m["Alteração Moderada"])
                                         enc = bool(row_m["Encaminhado"])
                                         ne = bool(row_m["Não Examinado"])
                                         
-                                        # Conta quantas das 4 opções principais estão marcadas como True
-                                        total_marcados = sum([sa, am, enc, ne])
-                                        if total_marcados > 1:
-                                            erros_validacao.append(f"Aluno {aluno_nome}: Apenas uma opção entre 'Sem Alteração', 'Alteração Moderada', 'Encaminhado' e 'Não Examinado' pode estar marcada por vez.")
+                                        # GARANTIA MATEMÁTICA DE APENAS UMA OPÇÃO ATIVA (RESOLVE A DUPLICIDADE SILENCIOSAMENTE)
+                                        marcados = [sa, am, enc, ne]
+                                        if sum(marcados) > 1:
+                                            # Se mais de uma foi marcada na tela, prevalece apenas a primeira marcada e limpa as demais
+                                            primeiro = True
+                                            sa_final, am_final, enc_final, ne_final = False, False, False, False
+                                            if sa: 
+                                                sa_final = True
+                                            elif am and not sa: 
+                                                am_final = True
+                                            elif enc and not sa and not am: 
+                                                enc_final = True
+                                            elif ne and not sa and not am and not enc: 
+                                                ne_final = True
+                                        else:
+                                            sa_final, am_final, enc_final, ne_final = sa, am, enc, ne
 
-                                    if erros_validacao:
-                                        for e_val in erros_validacao:
-                                            st.error(e_val)
-                                    else:
-                                        doc_mig = conectar_planilha()
-                                        try:
-                                            aba_mig = doc_mig.worksheet("miguilim_ipec")
-                                        except gspread.WorksheetNotFound:
-                                            aba_mig = doc_mig.add_worksheet(title="miguilim_ipec", rows="1000", cols="18")
-                                            aba_mig.append_row([
-                                                "Ano Letivo", "Turma", "Aluno", "CPF", "Mãe", 
-                                                "Sem óculos(Dir)", "Sem óculos(Esq)", "Com óculos(Dir)", "Com óculos(Esq)", 
-                                                "Estrabismo", "PBF", "Sem Alteração", "Alteração Moderada", 
-                                                "Encaminhado", "Não Examinado", "Uso do celular", "Observação", "Data_Hora"
-                                            ])
-                                        
-                                        data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
-                                        linhas_para_salvar = []
-                                        
-                                        for _, row_m in df_miguilim_resultado.iterrows():
-                                            linhas_para_salvar.append([
-                                                str(ano_letivo_escolhido),
-                                                str(turma_selecionada),
-                                                str(row_m["Aluno"]),
-                                                str(row_m["CPF"]),
-                                                str(row_m["Mãe"]),
-                                                str(row_m["Sem óculos(Dir)"]),
-                                                str(row_m["Sem óculos(Esq)"]),
-                                                str(row_m["Com óculos(Dir)"]),
-                                                str(row_m["Com óculos(Esq)"]),
-                                                str(row_m["Estrabismo"]),
-                                                str(row_m["PBF"]),
-                                                str(row_m["Sem Alteração"]),
-                                                str(row_m["Alteração Moderada"]),
-                                                str(row_m["Encaminhado"]),
-                                                str(row_m["Não Examinado"]),
-                                                str(row_m["Uso do celular"]),
-                                                str(row_m["Observação"])[:500],
-                                                data_hora_atual
-                                            ])
-                                        
-                                        if linhas_para_salvar:
-                                            aba_mig.append_rows(linhas_para_salvar)
-                                        
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada}")
-                                        st.success(f"🎉 Triagens salvas com sucesso na nuvem para o ano de {ano_letivo_escolhido}!")
+                                        linhas_para_salvar.append([
+                                            str(ano_letivo_escolhido),
+                                            str(turma_selecionada),
+                                            str(row_m["Aluno"]),
+                                            str(row_m["CPF"]),
+                                            str(row_m["Mãe"]),
+                                            str(row_m["Sem óculos(Dir)"]),
+                                            str(row_m["Sem óculos(Esq)"]),
+                                            str(row_m["Com óculos(Dir)"]),
+                                            str(row_m["Com óculos(Esq)"]),
+                                            str(row_m["Estrabismo"]),
+                                            str(row_m["PBF"]),
+                                            str(sa_final),
+                                            str(am_final),
+                                            str(enc_final),
+                                            str(ne_final),
+                                            str(row_m["Uso do celular"]),
+                                            str(row_m["Observação"])[:500],
+                                            data_hora_atual
+                                        ])
+                                    
+                                    if linhas_para_salvar:
+                                        aba_mig.append_rows(linhas_para_salvar)
+                                    
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada}")
+                                    st.success(f"🎉 Triagens processadas e salvas com sucesso na nuvem para o ano de {ano_letivo_escolhido}!")
                                 except Exception as err_mig:
                                     st.error(f"Erro ao salvar triagens: {err_mig}")
 
