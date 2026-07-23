@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.30 - data: 23/07/26 - 15:06
+# Versão do código: v.17.31 - data: 23/07/26 - 15:16
 
 import streamlit as st
 import pandas as pd
@@ -10,6 +10,7 @@ import time
 import gspread
 from google.oauth2.service_account import Credentials
 import os
+import base64
 
 # CONFIGURAÇÃO ESTRITA DA PÁGINA
 st.set_page_config(
@@ -81,15 +82,20 @@ st.markdown("""
             margin: 0 auto 1px auto;
             display: block;
         }
-        /* ALINHAMENTO IMPECÁVEL DA LOGO COLADA AO LADO ESQUERDO DOS TÍTULOS */
-        .header-bloco-colado {
+        /* CABEÇALHO UNIFICADO COM LOGO PERFEITAMENTE COLADA À ESQUERDA */
+        .header-container-unico {
             display: flex;
             align-items: center;
             gap: 15px;
             margin-top: 5px;
             margin-bottom: 10px;
         }
-        .header-textos-coluna {
+        .header-logo-img {
+            width: 55px;
+            height: auto;
+            border-radius: 4px;
+        }
+        .header-textos-bloco {
             display: flex;
             flex-direction: column;
         }
@@ -266,7 +272,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.30 de 23/07/2026<br>
+        Versão: v.17.31 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -307,21 +313,26 @@ else:
         st.rerun()
 
     # ==========================================
-    # CENTRAL DE TRABALHOS: LOGO COLADA AO LADO ESQUERDO DOS TÍTULOS
+    # CENTRAL DE TRABALHOS: LOGO PERFEITAMENTE COLADA AOS TÍTULOS VIA HTML ÚNICO
     # ==========================================
-    st.markdown('<div class="header-bloco-colado">', unsafe_allow_html=True)
+    logo_base64 = ""
     try:
-        if os.path.exists("imagens/Logo da Escola.jpeg"):
-            st.image("imagens/Logo da Escola.jpeg", width=55)
-        else:
-            st.markdown("🏫")
-    except Exception:
-        st.markdown("🏫")
-        
-    st.markdown('<div class="header-textos-coluna">', unsafe_allow_html=True)
-    st.markdown('<p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>', unsafe_allow_html=True)
-    st.markdown('<p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>', unsafe_allow_html=True)
-    st.markdown('</div></div>', unsafe_allow_html=True)
+        path_logo = "imagens/Logo da Escola.jpeg"
+        if os.path.exists(path_logo):
+            with open(path_logo, "rb") as f:
+                logo_base64 = base64.b64encode(f.read()).decode("utf-8")
+    except Exception: pass
+
+    html_cabecalho = f"""
+    <div class="header-container-unico">
+        <img src="data:image/jpeg;base64,{logo_base64}" class="header-logo-img">
+        <div class="header-textos-bloco">
+            <p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>
+            <p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>
+        </div>
+    </div>
+    """
+    st.markdown(html_cabecalho, unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -554,7 +565,7 @@ else:
                                 key="editor_miguilim_horizontal"
                             )
                             
-                            # VALIDAÇÃO CLÍNICA TRANSPARENTE COM ALERTA VERMELHO NO SALVAMENTO
+                            # VALIDAÇÃO CLÍNICA COM ALERTA E SOBREPOSIÇÃO INTELIGENTE (ATUALIZAÇÃO POR ALUNO)
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
                                 try:
                                     erros_validacao = []
@@ -565,7 +576,6 @@ else:
                                         enc = bool(row_m["Encaminhado"])
                                         ne = bool(row_m["Não Examinado"])
                                         
-                                        # Conta quantas opções principais estão marcadas como True
                                         total_marcados = sum([sa, am, enc, ne])
                                         if total_marcados > 1:
                                             erros_validacao.append(f"Aluno {aluno_nome}: Mais de uma opção clínica ('Sem Alteração', 'Alteração Moderada', 'Encaminhado', 'Não Examinado') foi marcada. Por favor, selecione apenas uma.")
@@ -586,19 +596,25 @@ else:
                                                 "Encaminhado", "Não Examinado", "Uso do celular", "Observação", "Data_Hora"
                                             ])
                                         
+                                        registros_existentes = aba_mig.get_all_records()
                                         data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
-                                        linhas_para_salvar = []
                                         
+                                        atualizados = 0
+                                        novos = 0
+
                                         for _, row_m in df_miguilim_resultado.iterrows():
+                                            aluno_atual = str(row_m["Aluno"]).strip()
+                                            ano_atual = str(ano_letivo_escolhido).strip()
+                                            
                                             sa_val = "Sem Alteração" if bool(row_m["Sem Alteração"]) else ""
                                             am_val = "Alteração Moderada" if bool(row_m["Alteração Moderada"]) else ""
                                             enc_val = "Encaminhado" if bool(row_m["Encaminhado"]) else ""
                                             ne_val = "Não Examinado" if bool(row_m["Não Examinado"]) else ""
 
-                                            linhas_para_salvar.append([
-                                                str(ano_letivo_escolhido),
+                                            linha_dados = [
+                                                ano_atual,
                                                 str(turma_selecionada),
-                                                str(row_m["Aluno"]),
+                                                aluno_atual,
                                                 str(row_m["CPF"]),
                                                 str(row_m["Mãe"]),
                                                 str(row_m["Sem óculos(Dir)"]),
@@ -614,13 +630,25 @@ else:
                                                 str(row_m["Uso do celular"]),
                                                 str(row_m["Observação"])[:500],
                                                 data_hora_atual
-                                            ])
-                                        
-                                        if linhas_para_salvar:
-                                            aba_mig.append_rows(linhas_para_salvar)
-                                        
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada}")
-                                        st.success(f"🎉 Triagens processadas e salvas com sucesso na nuvem para o ano de {ano_letivo_escolhido}!")
+                                            ]
+
+                                            # VERIFICA SOBREPOSIÇÃO (SE O ALUNO JÁ EXISTE NA ABA, ATUALIZA A LINHA; CASO CONTRÁRIO, INSERE)
+                                            encontrado_idx = -1
+                                            for idx_reg, reg in enumerate(registros_existentes):
+                                                if str(reg.get("Aluno", "")).strip() == aluno_atual and str(reg.get("Ano Letivo", "")).strip() == ano_atual:
+                                                    encontrado_idx = idx_reg + 2  # +2 por causa do cabeçalho e índice 0
+                                                    break
+                                            
+                                            if encontrado_idx != -1:
+                                                aba_mig.update(range_name=f"R{encontrado_idx}:R{encontrado_idx}" if False else f"A{encontrado_idx}:R{encontrado_idx}", values=[linha_dados])
+                                                atualizados += 1
+                                            else:
+                                                aba_mig.append_row(linha_dados)
+                                                novos += 1
+                                            time.sleep(0.2)
+
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada} (Novos: {novos}, Atualizados: {atualizados})")
+                                        st.success(f"🎉 Triagens processadas com sucesso! ({novos} novo(s), {atualizados} atualizado(s) por sobreposição na nuvem).")
                                 except Exception as err_mig:
                                     st.error(f"Erro ao salvar triagens: {err_mig}")
 
