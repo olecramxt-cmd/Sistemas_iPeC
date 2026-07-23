@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.002 - data: 23/07/26 - 17:41
+# Versão do código: v.1.5.003 - data: 23/07/26 - 18:05
 
 import streamlit as st
 import pandas as pd
@@ -33,9 +33,14 @@ st.markdown("""
             margin-top: -35px !important;
         }
         .stRadio > div {
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 8px;
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 10px;
             border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stRadio label {
+            color: #ffffff !important;
+            font-weight: 600 !important;
         }
         div.stButton > button:first-child {
             background-color: #1e4b8f;
@@ -48,15 +53,6 @@ st.markdown("""
         div.stButton > button:first-child:hover {
             background-color: #f7c325;
             color: #0f2b5c;
-        }
-        button[key*="excluir"], button:has(div:contains("Excluir")) {
-            background-color: #cc0000 !important;
-            color: white !important;
-            border: 1px solid #ff9999 !important;
-        }
-        button[key*="excluir"]:hover, button:has(div:contains("Excluir")):hover {
-            background-color: #ff1a1a !important;
-            color: white !important;
         }
         .sidebar-logo-footer {
             text-align: center;
@@ -254,7 +250,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.002 de 23/07/2026<br>
+        Versão: v.1.5.003 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -350,24 +346,8 @@ else:
             if df_db_ano.empty:
                 st.warning(f"⚠️ Atenção: Não existem lançamentos para o ano letivo de {ano_letivo_escolhido}.")
             else:
-                if "f_aluno" not in st.session_state: st.session_state.f_aluno = ""
-                if "f_mae" not in st.session_state: st.session_state.f_mae = ""
-                if "f_turma" not in st.session_state: st.session_state.f_turma = ""
-                if "f_turno" not in st.session_state: st.session_state.f_turno = ""
-                if "f_status" not in st.session_state: st.session_state.f_status = ""
-                if "f_pbf" not in st.session_state: st.session_state.f_pbf = ""
-
-                df_filtrado = df_db_ano.copy()
-                if st.session_state.f_aluno: df_filtrado = df_filtrado[df_filtrado["Aluno"].str.contains(st.session_state.f_aluno, case=False)]
-                if st.session_state.f_mae: df_filtrado = df_filtrado[df_filtrado["Mãe"].str.contains(st.session_state.f_mae, case=False)]
-                if st.session_state.f_turma: df_filtrado = df_filtrado[df_filtrado["Turma"].str.contains(st.session_state.f_turma, case=False)]
-                if st.session_state.f_turno: df_filtrado = df_filtrado[df_filtrado["Turno"].str.contains(st.session_state.f_turno, case=False)]
-                if st.session_state.f_status: df_filtrado = df_filtrado[df_filtrado["Status"].str.contains(st.session_state.f_status, case=False)]
-                if st.session_state.f_pbf: df_filtrado = df_filtrado[df_filtrado["PBF"].str.contains(st.session_state.f_pbf, case=False)]
-
-                if sub_conformidade == "Cadastro de Alunos":
-                    st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem.")
-                    st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+                st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem.")
+                st.dataframe(df_db_ano, use_container_width=True, hide_index=True)
 
         elif menu_principal == "📚 Programa Biblioteca":
             st.markdown(f"### 📚 Programa Biblioteca - Gestão Literária ({ano_letivo_escolhido})")
@@ -385,8 +365,8 @@ else:
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
                 
                 df_acervo = carregar_acervo_biblioteca()
+                df_emprestimos_geral = carregar_emprestimos_biblioteca()
                 
-                # LEITURA DE FICHA CIP POR IMAGEM (SIMULADA / OCR INTELIGENTE)
                 st.markdown("##### 📸 Leitura Automática de Ficha CIP (Opcional)")
                 img_cip_file = st.file_uploader("Carregar foto da Ficha CIP do Livro:", type=["png", "jpg", "jpeg"])
                 
@@ -397,7 +377,6 @@ else:
                 
                 if img_cip_file is not None:
                     st.success("📸 Imagem da Ficha CIP carregada com sucesso!")
-                    # Pré-preenchimento inteligente baseado na imagem de exemplo da Câmara Brasileira do Livro
                     v_isbn = "978-85-16-13772-4"
                     v_tit = "Araribá conecta arte : 6° ano : manual do professor"
                     v_aut = "Editora Moderna / Flávia Delalibera Iossi"
@@ -423,61 +402,133 @@ else:
                         df_acervo_filtrado = df_acervo_filtrado[df_acervo_filtrado["Categoria"].str.strip() == filtro_cat]
 
                 st.markdown("##### 📋 Acervo Localizado")
+                tombo_selecionado_exclusao = ""
                 if not df_acervo_filtrado.empty:
                     st.dataframe(df_acervo_filtrado, use_container_width=True, hide_index=True)
+                    
+                    lista_tombos_ativos = [str(r["Tombo"]) for _, r in df_acervo_filtrado.iterrows() if str(r.get("Status","")).strip() != "INATIVO / EXCLUÍDO"]
+                    if lista_tombos_ativos:
+                        tombo_selecionado_exclusao = st.selectbox("Selecione o Tombo do Livro para Exclusão:", ["Selecione..."] + lista_tombos_ativos)
                 else:
                     st.info("ℹ️ Nenhum livro cadastrado ou localizado com os filtros informados.")
 
+                # BOTÃO DE EXCLUSÃO ABAIXO DO ACERVO LOCALIZADO COM CONFIRMAÇÃO IRREVERSÍVEL
+                if tombo_selecionado_exclusao and tombo_selecionado_exclusao != "Selecione...":
+                    st.markdown("---")
+                    st.warning(f"⚠️ Ação de Exclusão para o Tombo: **{tombo_selecionado_exclusao}**")
+                    confirma_excluir = st.radio("Destaque: Esta função é irreversível. Deseja realmente excluir este livro?", ["Não", "Sim"], index=0, key="radio_conf_exc")
+                    
+                    if confirma_excluir == "Sim":
+                        if st.button("🗑️ Confirmar e Executar Exclusão"):
+                            # 2. Verifica se o livro está emprestado
+                            emprestado_ativo = False
+                            if not df_emprestimos_geral.empty:
+                                match_emp = df_emprestimos_geral[(df_emprestimos_geral["Tombo"].astype(str).str.strip() == str(tombo_selecionado_exclusao)) & (df_emprestimos_geral["Status"].astype(str).str.strip().isin(["Ativo", "Atrasado"]))]
+                                if not match_emp.empty:
+                                    emprestado_ativo = True
+                            
+                            if emprestado_ativo:
+                                st.error("❌ ERRO: Este livro está atualmente emprestado! A exclusão não pode ocorrer antes de efetuar a devolução.")
+                            else:
+                                try:
+                                    doc_ex = conectar_planilha()
+                                    aba_ex = doc_ex.worksheet("biblioteca_acervo_ipec")
+                                    regs_ex = aba_ex.get_all_records()
+                                    
+                                    idx_l = -1
+                                    for idx_r, r_ex in enumerate(regs_ex):
+                                        if str(r_ex.get("Tombo", "")).strip() == str(tombo_selecionado_exclusao).strip():
+                                            idx_l = idx_r + 2
+                                            break
+                                    
+                                    if idx_l != -1:
+                                        aba_ex.update(range_name=f"H{idx_l}:H{idx_l}", values=[["INATIVO / EXCLUÍDO"]])
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu/Inativou Tombo: {tombo_selecionado_exclusao}")
+                                        st.success("🎉 Livro excluído/inativado com sucesso com preservação de índice na nuvem!")
+                                        st.rerun()
+                                    else:
+                                        st.error("⚠️ Tombo não localizado na planilha.")
+                                except Exception as err_exc_aba:
+                                    st.error(f"Erro ao excluir: {err_exc_aba}")
+
                 st.markdown("---")
-                st.markdown("##### ✍️ Cadastro em Lote Sequencial, Alteração ou Exclusão")
+                st.markdown("##### ✍️ Cadastro de Livro e Alteração")
                 
                 with st.form("form_cadastro_livro"):
+                    input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=v_isbn)
+                    input_titulo = st.text_input("Título da Obra:", value=v_tit)
+                    
                     col_f1, col_f2 = st.columns(2)
                     with col_f1:
-                        input_tombo = st.text_input("Código Base de Tombo / ISBN:", value=v_isbn)
-                        input_titulo = st.text_input("Título da Obra:", value=v_tit)
                         input_autor = st.text_input("Autor / Organizador:", value=v_aut)
-                        input_cat = st.selectbox("Categoria:", ["Didático", "Literário"])
                     with col_f2:
-                        input_disc = st.text_input("Gênero / Disciplina:", value=v_disc)
-                        input_total = st.number_input("Total de Exemplares (Gera Tombo Sequencial):", min_value=1, value=1)
+                        input_cat = st.selectbox("Categoria:", ["Didático", "Literário"])
                     
-                    col_b1, col_b2, col_b3 = st.columns(3)
-                    btn_salvar_livro = col_b1.form_submit_button("💾 Salvar Lote de Livros")
+                    col_f3, col_f4 = st.columns(2)
+                    with col_f3:
+                        input_disc = st.text_input("Gênero / Disciplina:", value=v_disc)
+                    with col_f4:
+                        input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=1)
+                    
+                    col_b1, col_b2 = st.columns(2)
+                    btn_salvar_livro = col_b1.form_submit_button("💾 Salvar Livro / Novos Exemplares")
                     btn_alterar_livro = col_b2.form_submit_button("🔄 Alterar Livro Existente")
-                    btn_excluir_livro = col_b3.form_submit_button("🗑️ Excluir Livro (Inativar)")
 
                     if btn_salvar_livro:
                         if not input_tombo or not input_titulo:
-                            st.error("⚠️ Informe pelo menos o Código Base de Tombo/ISBN e o Título da Obra.")
+                            st.error("⚠️ Informe pelo menos o Código de Tombo / ISBN e o Título da Obra.")
                         else:
                             try:
                                 doc_b = conectar_planilha()
                                 aba_b = doc_b.worksheet("biblioteca_acervo_ipec")
+                                dados_atuais_acervo = aba_b.get_all_records()
                                 
-                                qtd_exemplares = int(input_total)
-                                linhas_lote = []
+                                tombo_base = str(input_tombo).strip()
+                                qtd_novos = int(input_total)
                                 
-                                # GERAÇÃO SEQUENCIAL INTELIGENTE DE TOMBO POR EXEMPLAR
-                                for i in range(1, qtd_exemplares + 1):
-                                    tombo_sequencial = f"{str(input_tombo).strip()}-{i:03d}" if qtd_exemplares > 1 else str(input_tombo).strip()
-                                    linhas_lote.append([
-                                        tombo_sequencial,
-                                        str(input_titulo).strip(),
-                                        str(input_autor).strip(),
-                                        str(input_cat).strip(),
-                                        str(input_disc).strip(),
-                                        1,
-                                        1,
-                                        "ATIVO"
-                                    ])
+                                # 5. e 6. VERIFICAÇÃO INTELIGENTE DE TOMBO BASE E GERAÇÃO SEQUENCIAL CORRETA (-002, -003...)
+                                tombos_existentes = [str(r.get("Tombo", "")).strip() for r in dados_atuais_acervo]
                                 
-                                aba_b.append_rows(linhas_lote)
-                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Cadastrou lote de {qtd_exemplares} exemplar(es) para o livro: {input_titulo}")
-                                st.success(f"🎉 Lote de {qtd_exemplares} exemplar(es) cadastrado com tombos sequenciais salvos na nuvem!")
-                                st.rerun()
+                                # Verifica se o tombo exato base já existe sem sufixo ou com sufixos
+                                matches_existentes = [t for t in tombos_existentes if t == tombo_base or t.startswith(tombo_base + "-")]
+                                
+                                if not matches_existentes:
+                                    # Se não existe absolutamente nada com esse tombo base, cria o primeiro ou lote a partir dele
+                                    linhas_lote = []
+                                    for i in range(1, qtd_novos + 1):
+                                        t_novo = f"{tombo_base}-{i:03d}" if qtd_novos > 1 or "-" in tombo_base else tombo_base
+                                        linhas_lote.append([t_novo, str(input_titulo).strip(), str(input_autor).strip(), str(input_cat).strip(), str(input_disc).strip(), 1, 1, "ATIVO"])
+                                    aba_b.append_rows(linhas_lote)
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Cadastrou novo acervo Tombo base: {tombo_base}")
+                                    st.success(f"🎉 Livro(s) cadastrado(s) com sucesso na nuvem!")
+                                    st.rerun()
+                                else:
+                                    # Já existe! Descobre qual é o maior sufixo numérico existente para continuar a sequência exata (-002 -> gera -003, -004...)
+                                    maior_sufixo = 0
+                                    for t_ex in matches_existentes:
+                                        parts = t_ex.rsplit("-", 1)
+                                        if len(parts) == 2 and parts[1].isdigit():
+                                            num_suf = int(parts[1])
+                                            if num_suf > maior_sufixo:
+                                                maior_sufixo = num_suf
+                                    
+                                    if maior_sufixo == 0:
+                                        # Significa que existe exatamente o tombo base sem sufixo
+                                        maior_sufixo = 1
+                                    
+                                    linhas_lote = []
+                                    for j in range(1, qtd_novos + 1):
+                                        proximo_num = maior_sufixo + j
+                                        t_novo_seq = f"{tombo_base}-{proximo_num:03d}"
+                                        linhas_lote.append([t_novo_seq, str(input_titulo).strip(), str(input_autor).strip(), str(input_cat).strip(), str(input_disc).strip(), 1, 1, "ATIVO"])
+                                    
+                                    aba_b.append_rows(linhas_lote)
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Gerou novos exemplares sequenciais para o Tombo base: {tombo_base}")
+                                    st.success(f"🎉 {qtd_novos} novo(s) exemplar(es) gerado(s) sequencialmente a partir do código existente!")
+                                    st.rerun()
+
                             except Exception as err_l:
-                                st.error(f"Erro ao salvar lote de livros: {err_l}")
+                                st.error(f"Erro ao salvar: {err_l}")
 
                     if btn_alterar_livro:
                         if not input_tombo:
@@ -513,31 +564,6 @@ else:
                                     st.error("⚠️ Código de Tombo não localizado no acervo para alteração.")
                             except Exception as err_alt:
                                 st.error(f"Erro ao alterar livro: {err_alt}")
-
-                    if btn_excluir_livro:
-                        if not input_tombo:
-                            st.error("⚠️ Informe o Código de Tombo exato que deseja excluir.")
-                        else:
-                            try:
-                                doc_b = conectar_planilha()
-                                aba_b = doc_b.worksheet("biblioteca_acervo_ipec")
-                                registros = aba_b.get_all_records()
-                                
-                                idx_encontrado = -1
-                                for i, r in enumerate(registros):
-                                    if str(r.get("Tombo", "")).strip() == str(input_tombo).strip():
-                                        idx_encontrado = i + 2
-                                        break
-                                
-                                if idx_encontrado != -1:
-                                    aba_b.update(range_name=f"H{idx_encontrado}:H{idx_encontrado}", values=[["INATIVO / EXCLUÍDO"]])
-                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Inativou/Excluiu livro Tombo: {input_tombo}")
-                                    st.success("🗑️ Livro inativado/excluído com segurança, preservando os índices do arquivo!")
-                                    st.rerun()
-                                else:
-                                    st.error("⚠️ Código de Tombo não localizado para exclusão.")
-                            except Exception as err_exc:
-                                st.error(f"Erro ao excluir livro: {err_exc}")
 
             elif sub_biblioteca == "Empréstimos e Devoluções":
                 st.markdown(f"#### 🔄 Controle de Empréstimos e Devoluções — Ano: {ano_letivo_escolhido}")
