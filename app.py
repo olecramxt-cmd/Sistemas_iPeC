@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.31 - data: 23/07/26 - 15:16
+# Versão do código: v.17.32 - data: 23/07/26 - 15:23
 
 import streamlit as st
 import pandas as pd
@@ -82,7 +82,6 @@ st.markdown("""
             margin: 0 auto 1px auto;
             display: block;
         }
-        /* CABEÇALHO UNIFICADO COM LOGO PERFEITAMENTE COLADA À ESQUERDA */
         .header-container-unico {
             display: flex;
             align-items: center;
@@ -224,6 +223,19 @@ def carregar_banco_dados_virtual():
         return df_bruto[COLUNAS_OFICIAIS]
     except Exception: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
+def carregar_dados_miguilim(ano_escolhido):
+    try:
+        doc = conectar_planilha()
+        try:
+            aba_mig = doc.worksheet("miguilim_ipec")
+            registros = aba_mig.get_all_records()
+            df_mig = pd.DataFrame(registros)
+            if not df_mig.empty and "Ano Letivo" in df_mig.columns:
+                return df_mig[df_mig["Ano Letivo"].astype(str).str.strip() == str(ano_escolhido)]
+        except Exception: pass
+    except Exception: pass
+    return pd.DataFrame()
+
 def registrar_log_auditoria(usuario, perfil, acao):
     try:
         doc = conectar_planilha()
@@ -272,7 +284,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.31 de 23/07/2026<br>
+        Versão: v.17.32 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -512,25 +524,59 @@ else:
                         else:
                             st.markdown(f"Exibindo {len(df_miguilim_filtrado)} aluno(s) para triagem visual ({ano_letivo_escolhido}).")
                             
+                            # CARREGA OS DADOS JÁ SALVOS NA NUVEM PARA RESTAURAR O ESTADO ANTERIOR
+                            df_salvos_nuvem = carregar_dados_miguilim(ano_letivo_escolhido)
+
                             dados_tabela_mig = []
                             for _, r in df_miguilim_filtrado.iterrows():
+                                aluno_nome = str(r["Aluno"]).strip()
+                                
+                                # Valores padrão
+                                sa_bool = False
+                                am_bool = False
+                                enc_bool = False
+                                ne_bool = False
+                                uso_cel = "Não"
+                                obs_txt = ""
+                                sem_dir = ""
+                                sem_esq = ""
+                                com_dir = ""
+                                com_esq = ""
+                                estrab = "Não"
+
+                                if not df_salvos_nuvem.empty:
+                                    match_aluno = df_salvos_nuvem[df_salvos_nuvem["Aluno"].astype(str).str.strip() == aluno_nome]
+                                    if not match_aluno.empty:
+                                        reg_aluno = match_aluno.iloc[0]
+                                        sa_bool = str(reg_aluno.get("Sem Alteração", "")).strip() == "Sem Alteração"
+                                        am_bool = str(reg_aluno.get("Alteração Moderada", "")).strip() == "Alteração Moderada"
+                                        enc_bool = str(reg_aluno.get("Encaminhado", "")).strip() == "Encaminhado"
+                                        ne_bool = str(reg_aluno.get("Não Examinado", "")).strip() == "Não Examinado"
+                                        uso_cel = str(reg_aluno.get("Uso do celular", "Não"))
+                                        obs_txt = str(reg_aluno.get("Observação", ""))
+                                        sem_dir = str(reg_aluno.get("Sem óculos(Dir)", ""))
+                                        sem_esq = str(reg_aluno.get("Sem óculos(Esq)", ""))
+                                        com_dir = str(reg_aluno.get("Com óculos(Dir)", ""))
+                                        com_esq = str(reg_aluno.get("Com óculos(Esq)", ""))
+                                        estrab = str(reg_aluno.get("Estrabismo", "Não"))
+
                                 dados_tabela_mig.append({
                                     "Id.": r["Id."],
                                     "Aluno": r["Aluno"],
                                     "CPF": r["CPF"],
                                     "Mãe": r["Mãe"],
-                                    "Sem óculos(Dir)": "",
-                                    "Sem óculos(Esq)": "",
-                                    "Com óculos(Dir)": "",
-                                    "Com óculos(Esq)": "",
-                                    "Estrabismo": "Não",
+                                    "Sem óculos(Dir)": sem_dir,
+                                    "Sem óculos(Esq)": sem_esq,
+                                    "Com óculos(Dir)": com_dir,
+                                    "Com óculos(Esq)": com_esq,
+                                    "Estrabismo": estrab,
                                     "PBF": r.get("PBF", "Não"),
-                                    "Sem Alteração": False,
-                                    "Alteração Moderada": False,
-                                    "Encaminhado": False,
-                                    "Não Examinado": False,
-                                    "Uso do celular": "Não",
-                                    "Observação": ""
+                                    "Sem Alteração": sa_bool,
+                                    "Alteração Moderada": am_bool,
+                                    "Encaminhado": enc_bool,
+                                    "Não Examinado": ne_bool,
+                                    "Uso do celular": uso_cel,
+                                    "Observação": obs_txt
                                 })
                             
                             df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
@@ -565,7 +611,7 @@ else:
                                 key="editor_miguilim_horizontal"
                             )
                             
-                            # VALIDAÇÃO CLÍNICA COM ALERTA E SOBREPOSIÇÃO INTELIGENTE (ATUALIZAÇÃO POR ALUNO)
+                            # VALIDAÇÃO CLÍNICA COM ALERTA E SOBREPOSIÇÃO INTELIGENTE
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
                                 try:
                                     erros_validacao = []
@@ -632,15 +678,14 @@ else:
                                                 data_hora_atual
                                             ]
 
-                                            # VERIFICA SOBREPOSIÇÃO (SE O ALUNO JÁ EXISTE NA ABA, ATUALIZA A LINHA; CASO CONTRÁRIO, INSERE)
                                             encontrado_idx = -1
                                             for idx_reg, reg in enumerate(registros_existentes):
                                                 if str(reg.get("Aluno", "")).strip() == aluno_atual and str(reg.get("Ano Letivo", "")).strip() == ano_atual:
-                                                    encontrado_idx = idx_reg + 2  # +2 por causa do cabeçalho e índice 0
+                                                    encontrado_idx = idx_reg + 2
                                                     break
                                             
                                             if encontrado_idx != -1:
-                                                aba_mig.update(range_name=f"R{encontrado_idx}:R{encontrado_idx}" if False else f"A{encontrado_idx}:R{encontrado_idx}", values=[linha_dados])
+                                                aba_mig.update(range_name=f"A{encontrado_idx}:R{encontrado_idx}", values=[linha_dados])
                                                 atualizados += 1
                                             else:
                                                 aba_mig.append_row(linha_dados)
