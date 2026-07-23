@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.17.28 - data: 23/07/26 - 14:35
+# Versão do código: v.17.29 - data: 23/07/26 - 14:48
 
 import streamlit as st
 import pandas as pd
@@ -81,21 +81,9 @@ st.markdown("""
             margin: 0 auto 1px auto;
             display: block;
         }
-        /* ALINHAMENTO IMPECÁVEL DA LOGO À ESQUERDA DOS TÍTULOS EM BLOCO ÚNICO */
-        .header-bloco-institucional {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            margin-top: 5px;
-            margin-bottom: 10px;
-        }
-        .header-textos-coluna {
-            display: flex;
-            flex-direction: column;
-        }
         .titulo-central-elegante {
             font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 34px;
+            font-size: 32px;
             font-weight: 900;
             color: #0f2b5c;
             line-height: 1.1;
@@ -103,7 +91,7 @@ st.markdown("""
         }
         .escola-titulo-elegante {
             font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 20px;
+            font-size: 19px;
             font-weight: 900;
             color: #1e4b8f;
             letter-spacing: 0.8px;
@@ -266,7 +254,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.17.28 de 23/07/2026<br>
+        Versão: v.17.29 de 23/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -307,22 +295,20 @@ else:
         st.rerun()
 
     # ==========================================
-    # CENTRAL DE TRABALHOS: LOGO À ESQUERDA E TÍTULOS ALINHADOS
+    # CENTRAL DE TRABALHOS: LOGO À ESQUERDA ALINHADA VIA COLUNAS NATIVAS
     # ==========================================
-    st.markdown('<div class="header-bloco-institucional">', unsafe_allow_html=True)
-    
-    try:
-        if os.path.exists("imagens/Logo da Escola.jpeg"):
-            st.image("imagens/Logo da Escola.jpeg", width=60)
-        else:
+    col_img, col_tit = st.columns([0.10, 0.90])
+    with col_img:
+        try:
+            if os.path.exists("imagens/Logo da Escola.jpeg"):
+                st.image("imagens/Logo da Escola.jpeg", width=65)
+            else:
+                st.markdown("🏫")
+        except Exception:
             st.markdown("🏫")
-    except Exception:
-        st.markdown("🏫")
-        
-    st.markdown('<div class="header-textos-coluna">', unsafe_allow_html=True)
-    st.markdown('<p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>', unsafe_allow_html=True)
-    st.markdown('<p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>', unsafe_allow_html=True)
-    st.markdown('</div></div>', unsafe_allow_html=True)
+    with col_tit:
+        st.markdown('<p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>', unsafe_allow_html=True)
+        st.markdown('<p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>', unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -515,10 +501,10 @@ else:
                                     "Com óculos(Esq)": "",
                                     "Estrabismo": "Não",
                                     "PBF": r.get("PBF", "Não"),
-                                    "Sem Alteração": "",
-                                    "Alteração Moderada": "",
-                                    "Encaminhado": "",
-                                    "Não Examinado": "",
+                                    "Sem Alteração": False,
+                                    "Alteração Moderada": False,
+                                    "Encaminhado": False,
+                                    "Não Examinado": False,
                                     "Uso do celular": "Não",
                                     "Observação": ""
                                 })
@@ -527,9 +513,7 @@ else:
                             
                             escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
                             opcoes_celular = ["Não", "1h", "2h", "3h", "4h", "5h", "6h", "7h", "8h", "Mais de 8h"]
-                            opcoes_clinicas = ["", "Sem Alteração", "Alteração Moderada", "Encaminhado", "Não Examinado"]
                             
-                            # CONFIGURAÇÃO COM SELECTBOX EXCLUSIVO (ELIMINA BOOLEANOS TRUE/FALSE E GARANTE ESCOLHA ÚNICA)
                             conf_colunas = {
                                 "Id.": st.column_config.NumberColumn("Id.", disabled=True),
                                 "Aluno": st.column_config.TextColumn("Aluno", disabled=True),
@@ -541,10 +525,10 @@ else:
                                 "Com óculos(Dir)": st.column_config.SelectboxColumn("Com óculos(Dir)", options=escala_visao, required=False),
                                 "Com óculos(Esq)": st.column_config.SelectboxColumn("Com óculos(Esq)", options=escala_visao, required=False),
                                 "Estrabismo": st.column_config.SelectboxColumn("Estrabismo", options=["Não", "Sim"], required=True),
-                                "Sem Alteração": st.column_config.SelectboxColumn("Sem Alteração", options=opcoes_clinicas, required=False),
-                                "Alteração Moderada": st.column_config.SelectboxColumn("Alteração Moderada", options=opcoes_clinicas, required=False),
-                                "Encaminhado": st.column_config.SelectboxColumn("Encaminhado", options=opcoes_clinicas, required=False),
-                                "Não Examinado": st.column_config.SelectboxColumn("Não Examinado", options=opcoes_clinicas, required=False),
+                                "Sem Alteração": st.column_config.CheckboxColumn("Sem Alteração", default=False),
+                                "Alteração Moderada": st.column_config.CheckboxColumn("Alteração Moderada", default=False),
+                                "Encaminhado": st.column_config.CheckboxColumn("Encaminhado", default=False),
+                                "Não Examinado": st.column_config.CheckboxColumn("Não Examinado", default=False),
                                 "Uso do celular": st.column_config.SelectboxColumn("Uso celular", options=opcoes_celular, required=True),
                                 "Observação": st.column_config.TextColumn("Observação", max_chars=500, default="")
                             }
@@ -557,6 +541,7 @@ else:
                                 key="editor_miguilim_horizontal"
                             )
                             
+                            # ROTINA AUTOMÁTICA DE EXCLUSIVIDADE MÚTUA (GRAVAÇÃO LIMPA SEM TRUE/FALSE E SEM MENSAGENS DE ERRO)
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
                                 try:
                                     doc_mig = conectar_planilha()
@@ -575,6 +560,23 @@ else:
                                     linhas_para_salvar = []
                                     
                                     for _, row_m in df_miguilim_resultado.iterrows():
+                                        sa = bool(row_m["Sem Alteração"])
+                                        am = bool(row_m["Alteração Moderada"])
+                                        enc = bool(row_m["Encaminhado"])
+                                        ne = bool(row_m["Não Examinado"])
+                                        
+                                        # GARANTIA MATEMÁTICA SILENCIOSA DE APENAS UMA OPÇÃO ATIVA (SEM TRUE/FALSE NA PLANILHA)
+                                        sa_val, am_val, enc_val, ne_val = "", "", "", ""
+                                        
+                                        if sa:
+                                            sa_val = "Sem Alteração"
+                                        elif am:
+                                            am_val = "Alteração Moderada"
+                                        elif enc:
+                                            enc_val = "Encaminhado"
+                                        elif ne:
+                                            ne_val = "Não Examinado"
+
                                         linhas_para_salvar.append([
                                             str(ano_letivo_escolhido),
                                             str(turma_selecionada),
@@ -587,10 +589,10 @@ else:
                                             str(row_m["Com óculos(Esq)"]),
                                             str(row_m["Estrabismo"]),
                                             str(row_m["PBF"]),
-                                            str(row_m.get("Sem Alteração", "")),
-                                            str(row_m.get("Alteração Moderada", "")),
-                                            str(row_m.get("Encaminhado", "")),
-                                            str(row_m.get("Não Examinado", "")),
+                                            sa_val,
+                                            am_val,
+                                            enc_val,
+                                            ne_val,
                                             str(row_m["Uso do celular"]),
                                             str(row_m["Observação"])[:500],
                                             data_hora_atual
