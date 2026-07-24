@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.012 - data: 23/07/26 - 21:55
+# Versão do código: v.1.5.013 - data: 24/07/26 - 05:03
 
 import streamlit as st
 import pandas as pd
@@ -268,7 +268,7 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# Inicialização de estados do formulário sem st.form para permitir reatividade instantânea via tabela
+# Inicialização de estados reativos do formulário de acervo
 if "sel_tombo" not in st.session_state: st.session_state.sel_tombo = ""
 if "sel_titulo" not in st.session_state: st.session_state.sel_titulo = ""
 if "sel_autor" not in st.session_state: st.session_state.sel_autor = ""
@@ -284,7 +284,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.012 de 23/07/2026<br>
+        Versão: v.1.5.013 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -383,10 +383,21 @@ else:
                 st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem.")
                 st.dataframe(df_db_ano, use_container_width=True, hide_index=True)
 
+        elif menu_principal == "📥 Importação de Dados":
+            st.markdown(f"### 📥 Módulo de Importação de Dados — Ano: {ano_letivo_escolhido}")
+            sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
+            if sub_lote == "Importar Arquivo .TXT":
+                st.info(f"Carregue os arquivos .TXT para popular o ano letivo de {ano_letivo_escolhido}.")
+            else:
+                st.markdown("#### 📜 Histórico de Lotes Importados")
+
+        elif menu_principal == "📈 Relatórios":
+            st.markdown(f"### 📈 Relatórios Gerais e Estatísticas — Ano: {ano_letivo_escolhido}")
+            st.info("Central de relatórios analíticos estruturada.")
+
         elif menu_principal == "👁️ Programa Miguilim":
             st.markdown(f"### 👁️ Programa Miguilim — Gestão Oftalmológica e Saúde Escolar ({ano_letivo_escolhido})")
             sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
-            
             if sub_miguilim == "Triagem de Acuidade":
                 st.markdown(f"#### 📋 Triagem de Acuidade Visual em Lote - {ano_letivo_escolhido}")
                 if df_db_ano.empty:
@@ -425,18 +436,6 @@ else:
                 
                 df_emprestimos_geral = carregar_emprestimos_biblioteca()
                 
-                st.markdown("##### 📸 Leitura Automática de Ficha CIP (Opcional)")
-                img_cip_file = st.file_uploader("Carregar foto da Ficha CIP do Livro:", type=["png", "jpg", "jpeg"])
-                
-                if img_cip_file is not None:
-                    st.success("📸 Imagem da Ficha CIP carregada com sucesso!")
-                    st.session_state.sel_tombo = "978-85-16-13772-4"
-                    st.session_state.sel_titulo = "Araribá conecta arte : 6° ano : manual do professor"
-                    st.session_state.sel_autor = "Editora Moderna / Flávia Delalibera Iossi"
-                    st.session_state.sel_cat = "Didático"
-                    st.session_state.sel_disc = "Arte"
-                    st.rerun()
-
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
@@ -455,7 +454,7 @@ else:
                     if filtro_cat != "Todas":
                         df_acervo_filtrado = df_acervo_filtrado[df_acervo_filtrado["Categoria"].str.strip() == filtro_cat]
 
-                st.markdown("##### 📋 Acervo Localizado")
+                st.markdown("##### 📋 Acervo Localizado (Clique na linha para carregar no formulário abaixo)")
                 if not df_acervo_filtrado.empty:
                     tabela_selecao = st.dataframe(df_acervo_filtrado, use_container_width=True, hide_index=True, selection_mode="single-row", on_select="rerun")
                     
@@ -476,24 +475,24 @@ else:
                     st.info("ℹ️ Nenhum livro cadastrado ou localizado com os filtros informados.")
 
                 st.markdown("---")
-                st.markdown("##### ✍️ Cadastro de Livro e Alteração (Sem bloqueio de formulário)")
+                st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                # CAMPOS FORA DE ST.FORM PARA PERMITIR POPULAÇÃO INSTANTÂNEA VIA CLIQUE NA TABELA ACIMA
-                input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.sel_tombo)
-                input_titulo = st.text_input("Título da Obra:", value=st.session_state.sel_titulo)
+                # CAMPOS FORA DE ST.FORM ATRELADOS AO SESSION_STATE PARA PREENCHIMENTO INSTANTÂNEO
+                input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.sel_tombo, key="input_tombo_ui")
+                input_titulo = st.text_input("Título da Obra:", value=st.session_state.sel_titulo, key="input_titulo_ui")
                 
                 col_f1, col_f2 = st.columns(2)
                 with col_f1:
-                    input_autor = st.text_input("Autor / Organizador:", value=st.session_state.sel_autor)
+                    input_autor = st.text_input("Autor / Organizador:", value=st.session_state.sel_autor, key="input_autor_ui")
                 with col_f2:
                     cat_idx = 0 if st.session_state.sel_cat == "Didático" else 1
-                    input_cat = st.selectbox("Categoria:", ["Didático", "Literário"], index=cat_idx)
+                    input_cat = st.selectbox("Categoria:", ["Didático", "Literário"], index=cat_idx, key="input_cat_ui")
                 
                 col_f3, col_f4 = st.columns(2)
                 with col_f3:
-                    input_disc = st.text_input("Gênero / Disciplina:", value=st.session_state.sel_disc)
+                    input_disc = st.text_input("Gênero / Disciplina:", value=st.session_state.sel_disc, key="input_disc_ui")
                 with col_f4:
-                    input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=st.session_state.sel_total)
+                    input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=st.session_state.sel_total, key="input_total_ui")
                 
                 st.markdown("---")
                 st.markdown("##### ⚙️ Ações e Gerenciamento do Livro")
@@ -673,14 +672,6 @@ else:
             elif sub_biblioteca in ["Relatórios Gerais", "Recibos", "Relatório do Acervo", "Relatório de Empréstimo", "Gráficos"]:
                 st.markdown(f"### 📊 Módulo de Relatórios e Gráficos — Biblioteca ({sub_biblioteca})")
                 st.info(f"Painel corporativo de '{sub_biblioteca}' estruturado para o ano de {ano_letivo_escolhido}.")
-
-        elif menu_principal == "📈 Relatórios":
-            st.markdown(f"### 📈 Relatórios Gerais e Estatísticas — Ano: {ano_letivo_escolhido}")
-            st.info("Central de relatórios analíticos estruturada.")
-
-        elif menu_principal == "📥 Importação de Dados":
-            st.markdown(f"### 📥 Módulo de Importação de Dados — Ano: {ano_letivo_escolhido}")
-            st.info("Módulo de importação de planilhas e lotes.")
 
         elif menu_principal == "🛠️ Suporte":
             st.markdown(f"### 🛠️ Painel de Suporte e Auditoria de Infraestrutura ({ano_letivo_escolhido})")
