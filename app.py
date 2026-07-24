@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.015 - data: 24/07/26 - 05:32
+# Versão do código: v.1.5.016 - data: 24/07/26 - 05:46
 
 import streamlit as st
 import pandas as pd
@@ -284,7 +284,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.015 de 24/07/2026<br>
+        Versão: v.1.5.016 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -429,8 +429,13 @@ else:
             df_acervo_geral = carregar_acervo_biblioteca()
             df_ativos = df_acervo_geral[df_acervo_geral["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_geral.empty else pd.DataFrame()
             
-            total_lit = len(df_ativos[df_ativos["Categoria"].astype(str).str.strip().str.lower() == "literário"]) if not df_ativos.empty else 0
-            total_did = len(df_ativos[df_ativos["Categoria"].astype(str).str.strip().str.lower() == "didático"]) if not df_ativos.empty else 0
+            # CÁLCULO BLINDADO DAS TARJAS VERDES
+            total_lit = 0
+            total_did = 0
+            if not df_ativos.empty and "Categoria" in df_ativos.columns:
+                cats = df_ativos["Categoria"].astype(str).str.strip().str.lower()
+                total_lit = len(df_ativos[cats == "literário"])
+                total_did = len(df_ativos[cats == "didático"])
             
             st.markdown(f'<div class="tarja-verde-ipec">📚 Total de Livros do Acervo Literário: {total_lit}</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="tarja-verde-ipec">📖 Total de Livros do Acervo Didático: {total_did}</div>', unsafe_allow_html=True)
@@ -476,7 +481,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_selecao_v3"
+                        key="tabela_acervo_selecao_v4"
                     )
                     
                     try:
@@ -491,7 +496,6 @@ else:
                             st.session_state["input_cat_ui"] = str(livro_selecionado_linha.get("Categoria", "Didático"))
                             st.session_state["input_disc_ui"] = str(livro_selecionado_linha.get("Disciplina", ""))
                             st.session_state["input_total_ui"] = 1
-                            st.rerun()
                     except Exception: pass
                 else:
                     st.info("ℹ️ Nenhum livro cadastrado ou localizado com os filtros informados.")
@@ -641,7 +645,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v3")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v4")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
