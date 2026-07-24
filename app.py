@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.025 - data: 24/07/26 - 08:31
+# Versão do código: v.1.5.026 - data: 24/07/26 - 08:31
 
 import streamlit as st
 import pandas as pd
@@ -319,7 +319,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.025 de 24/07/2026<br>
+        Versão: v.1.5.026 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -445,7 +445,7 @@ else:
                         st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
                     st.markdown("#### 📋 Tabela de Registros (Edição Geral)")
-                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v25")
+                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v26")
 
                     if st.session_state["perfil_usuario"] == "Total":
                         if st.button("💾 Salvar Alterações Gerais"):
@@ -485,7 +485,7 @@ else:
                         
                         if not df_aluno_ind.empty:
                             st.markdown("##### Dados Atuais do Aluno Selecionado:")
-                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v25_{id_alvo_ind}")
+                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v26_{id_alvo_ind}")
                             
                             if st.button("💾 Salvar Alteração Individual deste Aluno"):
                                 try:
@@ -578,11 +578,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v25")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v26")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v25")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v26")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v25")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v26")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -602,7 +602,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v25"
+                        key="tabela_acervo_v26"
                     )
                     
                     try:
@@ -637,7 +637,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v25", clear_on_submit=False):
+                with st.form("form_biblioteca_v26", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.lib_tombo)
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.lib_titulo)
                     
@@ -754,7 +754,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v25")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v26")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -797,24 +797,23 @@ else:
                 df_emprestimos = carregar_emprestimos_biblioteca()
                 df_reservas = carregar_reservas_biblioteca()
                 
-                # Verificador e Atualizador de Status de Atraso
                 hoje_dt = obter_horario_unai().date()
                 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v25")
+                # Declaração global segura da lista de livros para evitar NameError em qualquer sub-aba
+                df_livros_ativos_global = df_acervo_disp[df_acervo_disp["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_disp.empty else pd.DataFrame()
+                lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
+                lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
+
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v26")
                 
                 if sub_aba_emp == "Novo Empréstimo":
                     st.markdown("##### 📥 Tela de Inclusão de Empréstimo")
                     
-                    lista_alunos_op = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
-                    df_livros_ativos = df_acervo_disp[df_acervo_disp["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_disp.empty else pd.DataFrame()
-                    lista_livros_op = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos.iterrows()]
-
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op, key="sel_leitor_v25")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op, key="sel_livro_v25")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v26")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v26")
                     
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v25")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v26")
                     
-                    # Cálculo inteligente de data de devolução (Didático = Fixo 15/12/2026 | Literário = 14 dias)
                     data_prev_calc = data_emp + timedelta(days=14)
                     cat_livro_atual = "Literário"
                     
@@ -827,17 +826,16 @@ else:
                     with col_p1:
                         st.info(f"Categoria detectada: **{cat_livro_atual}**")
                     with col_p2:
-                        data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v25")
+                        data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v26")
                     
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v25")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v26")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v25"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v26"):
                         if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                             st.error("⚠️ Selecione o leitor e o livro para efetuar o empréstimo.")
                         else:
                             tombo_alvo = livro_emp_sel.split(" - ")[0].replace("Tombo: ", "").strip()
                             
-                            # VALIDAÇÃO ANTIDUPLICAÇÃO RIGOROSA
                             livro_ja_emprestado = False
                             aluno_responsavel = ""
                             data_devolucao_prevista_atual = ""
@@ -885,7 +883,6 @@ else:
                         df_emp_ano = df_emprestimos[df_emprestimos["AnoLetivo"].astype(str).str.strip() == str(ano_letivo_escolhido)].copy()
                         
                         if not df_emp_ano.empty:
-                            # Atualiza status para Atrasado se a data atual passou da prevista e ainda está Ativo
                             for idx_df, row_em in df_emp_ano.iterrows():
                                 st_atual = str(row_em.get("Status", "")).strip()
                                 dt_prev_str = str(row_em.get("DataPrevista", "")).strip()
@@ -903,7 +900,7 @@ else:
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução) ou Renovar:", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v25")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução) ou Renovar:", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v26")
                                 
                                 col_ba1, col_ba2 = st.columns(2)
                                 btn_devolver = col_ba1.button("✅ Confirmar Devolução (Baixa)")
@@ -951,7 +948,6 @@ else:
                                                 break
                                         
                                         if idx_reg_alvo_r != -1:
-                                            # Calcula nova data prevista a partir da antiga ou de hoje
                                             base_dt = datetime.strptime(dt_antiga_str, "%d/%m/%Y").date() if dt_antiga_str else hoje_dt
                                             if base_dt < hoje_dt: base_dt = hoje_dt
                                             nova_dt_prev = base_dt + timedelta(days=14)
@@ -975,12 +971,9 @@ else:
                 elif sub_aba_emp == "Reservas de Livros":
                     st.markdown(f"#### 📌 Módulo de Reserva de Livros — Ano: {ano_letivo_escolhido}")
                     
-                    lista_alunos_res = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
-                    lista_livros_res = [f"Tombo: {r['Tombo']} - {r['Titulo']}" for _, r in df_acervo_disp.iterrows() if str(r.get("Status","")).strip() != "INATIVO / EXCLUÍDO"]
-
-                    with st.form("form_nova_reserva_v25"):
-                        aluno_res_sel = st.selectbox("Selecione o Aluno Interessado:", ["Selecione..."] + lista_alunos_res)
-                        livro_res_sel = st.selectbox("Selecione o Livro para Reserva:", ["Selecione..."] + lista_livros_op)
+                    with st.form("form_nova_reserva_v26"):
+                        aluno_res_sel = st.selectbox("Selecione o Aluno Interessado:", ["Selecione..."] + lista_alunos_op_global)
+                        livro_res_sel = st.selectbox("Selecione o Livro para Reserva:", ["Selecione..."] + lista_livros_op_global)
                         
                         btn_salvar_res = st.form_submit_button("📌 Registrar Reserva")
                         
