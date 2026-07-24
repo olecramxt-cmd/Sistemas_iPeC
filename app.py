@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.016 - data: 24/07/26 - 05:46
+# Versão do código: v.1.5.017 - data: 24/07/26 - 06:10
 
 import streamlit as st
 import pandas as pd
@@ -268,13 +268,13 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# Inicialização segura dos estados reativos do formulário de acervo
-if "input_tombo_ui" not in st.session_state: st.session_state.input_tombo_ui = ""
-if "input_titulo_ui" not in st.session_state: st.session_state.input_titulo_ui = ""
-if "input_autor_ui" not in st.session_state: st.session_state.input_autor_ui = ""
-if "input_cat_ui" not in st.session_state: st.session_state.input_cat_ui = "Didático"
-if "input_disc_ui" not in st.session_state: st.session_state.input_disc_ui = ""
-if "input_total_ui" not in st.session_state: st.session_state.input_total_ui = 1
+# Inicialização limpa e segura dos estados de seleção do acervo
+if "sel_tombo_reg" not in st.session_state: st.session_state.sel_tombo_reg = ""
+if "sel_titulo_reg" not in st.session_state: st.session_state.sel_titulo_reg = ""
+if "sel_autor_reg" not in st.session_state: st.session_state.sel_autor_reg = ""
+if "sel_cat_reg" not in st.session_state: st.session_state.sel_cat_reg = "Didático"
+if "sel_disc_reg" not in st.session_state: st.session_state.sel_disc_reg = ""
+if "sel_total_reg" not in st.session_state: st.session_state.sel_total_reg = 1
 if "acionou_exclusao_form" not in st.session_state: st.session_state.acionou_exclusao_form = False
 if "tombo_para_excluir_seguro" not in st.session_state: st.session_state.tombo_para_excluir_seguro = ""
 
@@ -284,7 +284,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.016 de 24/07/2026<br>
+        Versão: v.1.5.017 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -429,7 +429,6 @@ else:
             df_acervo_geral = carregar_acervo_biblioteca()
             df_ativos = df_acervo_geral[df_acervo_geral["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_geral.empty else pd.DataFrame()
             
-            # CÁLCULO BLINDADO DAS TARJAS VERDES
             total_lit = 0
             total_did = 0
             if not df_ativos.empty and "Categoria" in df_ativos.columns:
@@ -481,7 +480,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_selecao_v4"
+                        key="tabela_acervo_selecao_v5"
                     )
                     
                     try:
@@ -490,12 +489,12 @@ else:
                             idx_sel = linhas_selecionadas[0]
                             livro_selecionado_linha = df_acervo_filtrado.iloc[idx_sel]
                             
-                            st.session_state["input_tombo_ui"] = str(livro_selecionado_linha.get("Tombo", ""))
-                            st.session_state["input_titulo_ui"] = str(livro_selecionado_linha.get("Titulo", ""))
-                            st.session_state["input_autor_ui"] = str(livro_selecionado_linha.get("Autor", ""))
-                            st.session_state["input_cat_ui"] = str(livro_selecionado_linha.get("Categoria", "Didático"))
-                            st.session_state["input_disc_ui"] = str(livro_selecionado_linha.get("Disciplina", ""))
-                            st.session_state["input_total_ui"] = 1
+                            st.session_state.sel_tombo_reg = str(livro_selecionado_linha.get("Tombo", ""))
+                            st.session_state.sel_titulo_reg = str(livro_selecionado_linha.get("Titulo", ""))
+                            st.session_state.sel_autor_reg = str(livro_selecionado_linha.get("Autor", ""))
+                            st.session_state.sel_cat_reg = str(livro_selecionado_linha.get("Categoria", "Didático"))
+                            st.session_state.sel_disc_reg = str(livro_selecionado_linha.get("Disciplina", ""))
+                            st.session_state.sel_total_reg = 1
                     except Exception: pass
                 else:
                     st.info("ℹ️ Nenhum livro cadastrado ou localizado com os filtros informados.")
@@ -503,20 +502,22 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                input_tombo = st.text_input("Código de Tombo / ISBN Base:", key="input_tombo_ui")
-                input_titulo = st.text_input("Título da Obra:", key="input_titulo_ui")
+                # Campos reativos alimentados diretamente pelas variáveis de seleção da sessão (sem conflito de key)
+                input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.sel_tombo_reg, key="input_tombo_ui")
+                input_titulo = st.text_input("Título da Obra:", value=st.session_state.sel_titulo_reg, key="input_titulo_ui")
                 
                 col_f1, col_f2 = st.columns(2)
                 with col_f1:
-                    input_autor = st.text_input("Autor / Organizador:", key="input_autor_ui")
+                    input_autor = st.text_input("Autor / Organizador:", value=st.session_state.sel_autor_reg, key="input_autor_ui")
                 with col_f2:
-                    input_cat = st.selectbox("Categoria:", ["Didático", "Literário"], key="input_cat_ui")
+                    cat_idx_val = 0 if st.session_state.sel_cat_reg == "Didático" else 1
+                    input_cat = st.selectbox("Categoria:", ["Didático", "Literário"], index=cat_idx_val, key="input_cat_ui")
                 
                 col_f3, col_f4 = st.columns(2)
                 with col_f3:
-                    input_disc = st.text_input("Gênero / Disciplina:", key="input_disc_ui")
+                    input_disc = st.text_input("Gênero / Disciplina:", value=st.session_state.sel_disc_reg, key="input_disc_ui")
                 with col_f4:
-                    input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, key="input_total_ui")
+                    input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=st.session_state.sel_total_reg, key="input_total_ui")
                 
                 st.markdown("---")
                 st.markdown("##### ⚙️ Ações e Gerenciamento do Livro")
@@ -549,12 +550,12 @@ else:
                                 aba_b.append_rows(linhas_lote)
                                 registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Cadastrou novo acervo Tombo base: {tombo_base}")
                                 
-                                st.session_state.input_tombo_ui = ""
-                                st.session_state.input_titulo_ui = ""
-                                st.session_state.input_autor_ui = ""
-                                st.session_state.input_cat_ui = "Didático"
-                                st.session_state.input_disc_ui = ""
-                                st.session_state.input_total_ui = 1
+                                st.session_state.sel_tombo_reg = ""
+                                st.session_state.sel_titulo_reg = ""
+                                st.session_state.sel_autor_reg = ""
+                                st.session_state.sel_cat_reg = "Didático"
+                                st.session_state.sel_disc_reg = ""
+                                st.session_state.sel_total_reg = 1
 
                                 st.success("🎉 Livro(s) cadastrado(s) com sucesso na nuvem!")
                                 st.rerun()
@@ -579,12 +580,12 @@ else:
                                 aba_b.append_rows(linhas_lote)
                                 registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Gerou novos exemplares sequenciais para o Tombo base: {tombo_base}")
                                 
-                                st.session_state.input_tombo_ui = ""
-                                st.session_state.input_titulo_ui = ""
-                                st.session_state.input_autor_ui = ""
-                                st.session_state.input_cat_ui = "Didático"
-                                st.session_state.input_disc_ui = ""
-                                st.session_state.input_total_ui = 1
+                                st.session_state.sel_tombo_reg = ""
+                                st.session_state.sel_titulo_reg = ""
+                                st.session_state.sel_autor_reg = ""
+                                st.session_state.sel_cat_reg = "Didático"
+                                st.session_state.sel_disc_reg = ""
+                                st.session_state.sel_total_reg = 1
 
                                 st.success(f"🎉 {qtd_novos} novo(s) exemplar(es) gerado(s) sequencialmente a partir do código existente!")
                                 st.rerun()
@@ -621,12 +622,12 @@ else:
                                 aba_b.update(range_name=f"A{idx_encontrado}:H{idx_encontrado}", values=[linha_alt])
                                 registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Alterou livro Tombo: {input_tombo}")
                                 
-                                st.session_state.input_tombo_ui = ""
-                                st.session_state.input_titulo_ui = ""
-                                st.session_state.input_autor_ui = ""
-                                st.session_state.input_cat_ui = "Didático"
-                                st.session_state.input_disc_ui = ""
-                                st.session_state.input_total_ui = 1
+                                st.session_state.sel_tombo_reg = ""
+                                st.session_state.sel_titulo_reg = ""
+                                st.session_state.sel_autor_reg = ""
+                                st.session_state.sel_cat_reg = "Didático"
+                                st.session_state.sel_disc_reg = ""
+                                st.session_state.sel_total_reg = 1
 
                                 st.success("🎉 Livro alterado com sucesso na nuvem!")
                                 st.rerun()
@@ -645,7 +646,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v4")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v5")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -673,12 +674,12 @@ else:
                                         aba_ex.update(range_name=f"H{idx_l}:H{idx_l}", values=[["INATIVO / EXCLUÍDO"]])
                                         registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Excluiu/Inativou Tombo: {tombo_alvo_exc}")
                                         
-                                        st.session_state.input_tombo_ui = ""
-                                        st.session_state.input_titulo_ui = ""
-                                        st.session_state.input_autor_ui = ""
-                                        st.session_state.input_cat_ui = "Didático"
-                                        st.session_state.input_disc_ui = ""
-                                        st.session_state.input_total_ui = 1
+                                        st.session_state.sel_tombo_reg = ""
+                                        st.session_state.sel_titulo_reg = ""
+                                        st.session_state.sel_autor_reg = ""
+                                        st.session_state.sel_cat_reg = "Didático"
+                                        st.session_state.sel_disc_reg = ""
+                                        st.session_state.sel_total_reg = 1
                                         st.session_state.acionou_exclusao_form = False
                                         st.session_state.tombo_para_excluir_seguro = ""
 
