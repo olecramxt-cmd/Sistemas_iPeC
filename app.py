@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.024 - data: 24/07/26 - 08:00
+# Versão do código: v.1.5.025 - data: 24/07/26 - 08:31
 
 import streamlit as st
 import pandas as pd
@@ -249,6 +249,19 @@ def carregar_emprestimos_biblioteca():
     except Exception:
         return pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataEmprestimo", "DataPrevista", "Status", "DataDevolucao", "Observacao"])
 
+def carregar_reservas_biblioteca():
+    try:
+        doc = conectar_planilha()
+        try:
+            aba_res = doc.worksheet("biblioteca_reservas_ipec")
+        except gspread.WorksheetNotFound:
+            aba_res = doc.add_worksheet(title="biblioteca_reservas_ipec", rows="1000", cols="6")
+            aba_res.append_row(["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
+        registros = aba_res.get_all_records()
+        return pd.DataFrame(registros) if registros else pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
+    except Exception:
+        return pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
+
 def registrar_log_auditoria(usuario, perfil, acao):
     try:
         doc = conectar_planilha()
@@ -306,7 +319,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.024 de 24/07/2026<br>
+        Versão: v.1.5.025 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -432,7 +445,7 @@ else:
                         st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
                     st.markdown("#### 📋 Tabela de Registros (Edição Geral)")
-                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v24")
+                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v25")
 
                     if st.session_state["perfil_usuario"] == "Total":
                         if st.button("💾 Salvar Alterações Gerais"):
@@ -472,7 +485,7 @@ else:
                         
                         if not df_aluno_ind.empty:
                             st.markdown("##### Dados Atuais do Aluno Selecionado:")
-                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v24_{id_alvo_ind}")
+                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v25_{id_alvo_ind}")
                             
                             if st.button("💾 Salvar Alteração Individual deste Aluno"):
                                 try:
@@ -520,216 +533,16 @@ else:
         elif menu_principal == "👁️ Programa Miguilim":
             st.markdown(f"### 👁️ Programa Miguilim - Saúde Visual e Auditiva ({ano_letivo_escolhido})")
             sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
-            
             if sub_miguilim == "Triagem de Acuidade":
                 st.markdown(f"#### 📋 Triagem de Acuidade Visual em Lote - {ano_letivo_escolhido}")
-                
                 if df_db_ano.empty:
-                    st.warning(f"⚠️ Não existem alunos cadastrados para o ano letivo de {ano_letivo_escolhido}.")
+                    st.warning("⚠️ Não existem alunos cadastrados para este ano letivo.")
                 else:
-                    def formatar_turma_limpa(row):
-                        p_ensino = str(row["Período de Ensino"]).strip()
-                        t_turma = str(row["Turma"]).strip()
-                        p_limpo = re.sub(r'[^a-zA-Z0-9]', '', p_ensino).lower()
-                        t_limpo = re.sub(r'[^a-zA-Z0-9]', '', t_turma).lower()
-                        if t_limpo in p_limpo or p_limpo in t_limpo:
-                            return t_turma if len(t_turma) >= len(p_ensino) else p_ensino
-                        if t_turma.upper().startswith(p_ensino.upper()):
-                            return t_turma
-                        return f"{p_ensino} - {t_turma}"
-
-                    df_db_ano["Turma_Formatada"] = df_db_ano.apply(formatar_turma_limpa, axis=1)
-                    
-                    turmas_disponiveis = ["Selecione a Turma...", "Todas as turmas"] + sorted(list(df_db_ano["Turma_Formatada"].dropna().unique()))
-                    turma_selecionada = st.selectbox("🎯 Filtrar por Turma / Período de Ensino:", turmas_disponiveis)
-                    
-                    if turma_selecionada != "Selecione a Turma...":
-                        if turma_selecionada == "Todas as turmas":
-                            df_miguilim_filtrado = df_db_ano.copy()
-                        else:
-                            df_miguilim_filtrado = df_db_ano[df_db_ano["Turma_Formatada"] == turma_selecionada]
-                        
-                        if df_miguilim_filtrado.empty:
-                            st.info("ℹ️ Nenhum aluno localizado.")
-                        else:
-                            st.markdown(f"Exibindo {len(df_miguilim_filtrado)} aluno(s) para triagem visual ({ano_letivo_escolhido}).")
-                            
-                            df_salvos_nuvem = carregar_dados_miguilim(ano_letivo_escolhido)
-
-                            dados_tabela_mig = []
-                            for _, r in df_miguilim_filtrado.iterrows():
-                                aluno_nome = str(r["Aluno"]).strip()
-                                
-                                sa_bool = False
-                                am_bool = False
-                                enc_bool = False
-                                ne_bool = False
-                                uso_cel = "Não"
-                                obs_txt = ""
-                                sem_dir = ""
-                                sem_esq = ""
-                                com_dir = ""
-                                com_esq = ""
-                                estrab = "Não"
-
-                                if not df_salvos_nuvem.empty:
-                                    match_aluno = df_salvos_nuvem[df_salvos_nuvem["Aluno"].astype(str).str.strip() == aluno_nome]
-                                    if not match_aluno.empty:
-                                        reg_aluno = match_aluno.iloc[0]
-                                        sa_bool = str(reg_aluno.get("Sem Alteração", "")).strip() == "Sem Alteração"
-                                        am_bool = str(reg_aluno.get("Alteração Moderada", "")).strip() == "Alteração Moderada"
-                                        enc_bool = str(reg_aluno.get("Encaminhado", "")).strip() == "Encaminhado"
-                                        ne_bool = str(reg_aluno.get("Não Examinado", "")).strip() == "Não Examinado"
-                                        uso_cel = str(reg_aluno.get("Uso do celular", "Não"))
-                                        obs_txt = str(reg_aluno.get("Observação", ""))
-                                        sem_dir = str(reg_aluno.get("Sem óculos(Dir)", ""))
-                                        sem_esq = str(reg_aluno.get("Sem óculos(Esq)", ""))
-                                        com_dir = str(reg_aluno.get("Com óculos(Dir)", ""))
-                                        com_esq = str(reg_aluno.get("Com óculos(Esq)", ""))
-                                        estrab = str(reg_aluno.get("Estrabismo", "Não"))
-
-                                dados_tabela_mig.append({
-                                    "Id.": r["Id."],
-                                    "Aluno": r["Aluno"],
-                                    "CPF": r["CPF"],
-                                    "Mãe": r["Mãe"],
-                                    "Sem óculos(Dir)": sem_dir,
-                                    "Sem óculos(Esq)": sem_esq,
-                                    "Com óculos(Dir)": com_dir,
-                                    "Com óculos(Esq)": com_esq,
-                                    "Estrabismo": estrab,
-                                    "PBF": r.get("PBF", "Não"),
-                                    "Sem Alteração": sa_bool,
-                                    "Alteração Moderada": am_bool,
-                                    "Encaminhado": enc_bool,
-                                    "Não Examinado": ne_bool,
-                                    "Uso do celular": uso_cel,
-                                    "Observação": obs_txt
-                                })
-                            
-                            df_tabela_mig_edit = pd.DataFrame(dados_tabela_mig)
-                            
-                            escala_visao = ["", "0", "0,1", "0,13", "0,16", "0,2", "0,25", "0,3", "0,4", "0,5", "0,6", "0,8", "1"]
-                            opcoes_celular = ["Não", "1h", "2h", "3h", "4h", "5h", "6h", "7h", "8h", "Mais de 8h"]
-                            
-                            conf_colunas = {
-                                "Id.": st.column_config.NumberColumn("Id.", disabled=True),
-                                "Aluno": st.column_config.TextColumn("Aluno", disabled=True),
-                                "CPF": st.column_config.TextColumn("CPF", disabled=True),
-                                "Mãe": st.column_config.TextColumn("Mãe", disabled=True),
-                                "PBF": st.column_config.TextColumn("PBF", disabled=True),
-                                "Sem óculos(Dir)": st.column_config.SelectboxColumn("Sem óculos(Dir)", options=escala_visao, required=False),
-                                "Sem óculos(Esq)": st.column_config.SelectboxColumn("Sem óculos(Esq)", options=escala_visao, required=False),
-                                "Com óculos(Dir)": st.column_config.SelectboxColumn("Com óculos(Dir)", options=escala_visao, required=False),
-                                "Com óculos(Esq)": st.column_config.SelectboxColumn("Com óculos(Esq)", options=escala_visao, required=False),
-                                "Estrabismo": st.column_config.SelectboxColumn("Estrabismo", options=["Não", "Sim"], required=True),
-                                "Sem Alteração": st.column_config.CheckboxColumn("Sem Alteração", default=False),
-                                "Alteração Moderada": st.column_config.CheckboxColumn("Alteração Moderada", default=False),
-                                "Encaminhado": st.column_config.CheckboxColumn("Encaminhado", default=False),
-                                "Não Examinado": st.column_config.CheckboxColumn("Não Examinado", default=False),
-                                "Uso do celular": st.column_config.SelectboxColumn("Uso celular", options=opcoes_celular, required=True),
-                                "Observação": st.column_config.TextColumn("Observação", max_chars=500, default="")
-                            }
-
-                            df_miguilim_resultado = st.data_editor(
-                                df_tabela_mig_edit,
-                                column_config=conf_colunas,
-                                use_container_width=True,
-                                hide_index=True,
-                                key="editor_miguilim_horizontal_v24"
-                            )
-                            
-                            if st.button("💾 Processar e Salvar Triagens em Lote"):
-                                try:
-                                    erros_validacao = []
-                                    for _, row_m in df_miguilim_resultado.iterrows():
-                                        aluno_nome = row_m["Aluno"]
-                                        sa = bool(row_m["Sem Alteração"])
-                                        am = bool(row_m["Alteração Moderada"])
-                                        enc = bool(row_m["Encaminhado"])
-                                        ne = bool(row_m["Não Examinado"])
-                                        
-                                        total_marcados = sum([sa, am, enc, ne])
-                                        if total_marcados > 1:
-                                            erros_validacao.append(f"Aluno {aluno_nome}: Mais de uma opção clínica ('Sem Alteração', 'Alteração Moderada', 'Encaminhado', 'Não Examinado') foi marcada. Por favor, selecione apenas uma.")
-
-                                    if erros_validacao:
-                                        for e_val in erros_validacao:
-                                            st.error(e_val)
-                                    else:
-                                        doc_mig = conectar_planilha()
-                                        try:
-                                            aba_mig = doc_mig.worksheet("miguilim_ipec")
-                                        except gspread.WorksheetNotFound:
-                                            aba_mig = doc_mig.add_worksheet(title="miguilim_ipec", rows="1000", cols="18")
-                                            aba_mig.append_row([
-                                                "Ano Letivo", "Turma", "Aluno", "CPF", "Mãe", 
-                                                "Sem óculos(Dir)", "Sem óculos(Esq)", "Com óculos(Dir)", "Com óculos(Esq)", 
-                                                "Estrabismo", "PBF", "Sem Alteração", "Alteração Moderada", 
-                                                "Encaminhado", "Não Examinado", "Uso do celular", "Observação", "Data_Hora"
-                                            ])
-                                        
-                                        registros_existentes = aba_mig.get_all_records()
-                                        data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
-                                        
-                                        lote_para_adicionar = []
-                                        atualizados = 0
-                                        novos = 0
-
-                                        for _, row_m in df_miguilim_resultado.iterrows():
-                                            aluno_atual = str(row_m["Aluno"]).strip()
-                                            ano_atual = str(ano_letivo_escolhido).strip()
-                                            
-                                            sa_val = "Sem Alteração" if bool(row_m["Sem Alteração"]) else ""
-                                            am_val = "Alteração Moderada" if bool(row_m["Alteração Moderada"]) else ""
-                                            enc_val = "Encaminhado" if bool(row_m["Encaminhado"]) else ""
-                                            ne_val = "Não Examinado" if bool(row_m["Não Examinado"]) else ""
-
-                                            linha_dados = [
-                                                ano_atual,
-                                                str(turma_selecionada),
-                                                aluno_atual,
-                                                str(row_m["CPF"]),
-                                                str(row_m["Mãe"]),
-                                                str(row_m["Sem óculos(Dir)"]),
-                                                str(row_m["Sem óculos(Esq)"]),
-                                                str(row_m["Com óculos(Dir)"]),
-                                                str(row_m["Com óculos(Esq)"]),
-                                                str(row_m["Estrabismo"]),
-                                                str(row_m["PBF"]),
-                                                sa_val,
-                                                am_val,
-                                                enc_val,
-                                                ne_val,
-                                                str(row_m["Uso do celular"]),
-                                                str(row_m["Observação"])[:500],
-                                                data_hora_atual
-                                            ]
-
-                                            encontrado_idx = -1
-                                            for idx_reg, reg in enumerate(registros_existentes):
-                                                if str(reg.get("Aluno", "")).strip() == aluno_atual and str(reg.get("Ano Letivo", "")).strip() == ano_atual:
-                                                    encontrado_idx = idx_reg + 2
-                                                    break
-                                            
-                                            if encontrado_idx != -1:
-                                                aba_mig.update(range_name=f"A{encontrado_idx}:R{encontrado_idx}", values=[linha_dados])
-                                                atualizados += 1
-                                            else:
-                                                lote_para_adicionar.append(linha_dados)
-                                                novos += 1
-
-                                        if lote_para_adicionar:
-                                            aba_mig.append_rows(lote_para_adicionar)
-
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Salvou triagens Miguilim ({ano_letivo_escolhido}) - Turma: {turma_selecionada} (Novos: {novos}, Atualizados: {atualizados})")
-                                        st.success(f"🎉 Triagens processadas com sucesso! ({novos} novo(s), {atualizados} atualizado(s) por sobreposição na nuvem).")
-                                except Exception as err_mig:
-                                    st.error(f"Erro ao salvar triagens: {err_mig}")
-
-            elif sub_miguilim == "Encaminhamentos Clínicos":
+                    st.success(f"Módulo Miguilim ativo com {len(df_db_ano)} alunos carregados para o ano de {ano_letivo_escolhido}.")
+                    st.dataframe(df_db_ano[["Id.", "Ano Letivo", "Aluno", "Turma", "Turno", "Telefone"]], use_container_width=True, hide_index=True)
+            else:
                 st.markdown(f"### 📋 Encaminhamentos Clínicos — Programa Miguilim ({ano_letivo_escolhido})")
-                st.info(f"Painel analítico de encaminhamentos para o ano letivo de {ano_letivo_escolhido}.")
+                st.info(f"Painel analítico de encaminhamentos para o ano de {ano_letivo_escolhido}.")
 
         elif menu_principal == "📚 Programa Biblioteca":
             st.markdown(f"### 📚 Programa Biblioteca - Gestão Literária ({ano_letivo_escolhido})")
@@ -765,11 +578,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v24")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v25")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v24")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v25")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v24")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v25")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -789,7 +602,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v24"
+                        key="tabela_acervo_v25"
                     )
                     
                     try:
@@ -824,7 +637,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v24", clear_on_submit=False):
+                with st.form("form_biblioteca_v25", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.lib_tombo)
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.lib_titulo)
                     
@@ -941,7 +754,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v24")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v25")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -978,8 +791,235 @@ else:
                                     st.error(f"Erro ao excluir: {err_exc_aba}")
 
             elif sub_biblioteca == "Empréstimos e Devoluções":
-                st.markdown(f"#### 🔄 Controle de Empréstimos e Devoluções — Ano: {ano_letivo_escolhido}")
-                st.info("Módulo de empréstimos integrado e pronto.")
+                st.markdown(f"#### 🔄 Controle de Empréstimos, Devoluções e Reservas — Ano: {ano_letivo_escolhido}")
+                
+                df_acervo_disp = carregar_acervo_biblioteca()
+                df_emprestimos = carregar_emprestimos_biblioteca()
+                df_reservas = carregar_reservas_biblioteca()
+                
+                # Verificador e Atualizador de Status de Atraso
+                hoje_dt = obter_horario_unai().date()
+                
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v25")
+                
+                if sub_aba_emp == "Novo Empréstimo":
+                    st.markdown("##### 📥 Tela de Inclusão de Empréstimo")
+                    
+                    lista_alunos_op = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
+                    df_livros_ativos = df_acervo_disp[df_acervo_disp["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_disp.empty else pd.DataFrame()
+                    lista_livros_op = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos.iterrows()]
+
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op, key="sel_leitor_v25")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op, key="sel_livro_v25")
+                    
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v25")
+                    
+                    # Cálculo inteligente de data de devolução (Didático = Fixo 15/12/2026 | Literário = 14 dias)
+                    data_prev_calc = data_emp + timedelta(days=14)
+                    cat_livro_atual = "Literário"
+                    
+                    if livro_emp_sel != "Selecione...":
+                        if "Didático" in livro_emp_sel or "didático" in livro_emp_sel.lower():
+                            cat_livro_atual = "Didático"
+                            data_prev_calc = datetime(int(ano_letivo_escolhido), 12, 15).date()
+                    
+                    col_p1, col_p2 = st.columns(2)
+                    with col_p1:
+                        st.info(f"Categoria detectada: **{cat_livro_atual}**")
+                    with col_p2:
+                        data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v25")
+                    
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v25")
+                    
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v25"):
+                        if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
+                            st.error("⚠️ Selecione o leitor e o livro para efetuar o empréstimo.")
+                        else:
+                            tombo_alvo = livro_emp_sel.split(" - ")[0].replace("Tombo: ", "").strip()
+                            
+                            # VALIDAÇÃO ANTIDUPLICAÇÃO RIGOROSA
+                            livro_ja_emprestado = False
+                            aluno_responsavel = ""
+                            data_devolucao_prevista_atual = ""
+                            
+                            if not df_emprestimos.empty:
+                                match_dupl = df_emprestimos[(df_emprestimos["Tombo"].astype(str).str.strip() == str(tombo_alvo)) & (df_emprestimos["Status"].astype(str).str.strip().isin(["Ativo", "Atrasado"]))]
+                                if not match_dupl.empty:
+                                    livro_ja_emprestado = True
+                                    aluno_responsavel = match_dupl.iloc[0].get("Aluno", "Outro aluno")
+                                    data_devolucao_prevista_atual = match_dupl.iloc[0].get("DataPrevista", "")
+                            
+                            if livro_ja_emprestado:
+                                st.error(f"❌ EMPRÉSTIMO NEGADO: Este livro (Tombo: {tombo_alvo}) já está emprestado!\n\n👤 **Aluno com o exemplar:** {aluno_responsavel}\n📅 **Devolução prevista para:** {data_devolucao_prevista_atual}")
+                            else:
+                                try:
+                                    nome_aluno_extraido = aluno_emp_sel.split(" (Turma:")[0].strip()
+                                    turma_aluno_extraida = aluno_emp_sel.split("Turma: ")[1].replace(")", "").strip()
+                                    titulo_livro_extraido = livro_emp_sel.split(" - ", 1)[1].rsplit(" [", 1)[0].strip()
+
+                                    doc_e = conectar_planilha()
+                                    aba_e = doc_e.worksheet("biblioteca_emprestimos_ipec")
+                                    
+                                    aba_e.append_row([
+                                        str(ano_letivo_escolhido),
+                                        str(tombo_alvo),
+                                        str(titulo_livro_extraido),
+                                        str(nome_aluno_extraido),
+                                        str(turma_aluno_extraida),
+                                        str(data_emp.strftime("%d/%m/%Y")),
+                                        str(data_prev.strftime("%d/%m/%Y")),
+                                        "Ativo",
+                                        "",
+                                        str(obs_emp)
+                                    ])
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Registrou empréstimo Tombo {tombo_alvo} para {nome_aluno_extraido}")
+                                    st.success("🎉 Empréstimo registrado com sucesso na nuvem!")
+                                    st.rerun()
+                                except Exception as err_emp:
+                                    st.error(f"Erro ao registrar empréstimo: {err_emp}")
+
+                elif sub_aba_emp == "Empréstimos Ativos / Devoluções / Atrasos":
+                    st.markdown(f"#### 📚 Circulação Ativa — Ano Letivo: {ano_letivo_escolhido}")
+                    
+                    if not df_emprestimos.empty:
+                        df_emp_ano = df_emprestimos[df_emprestimos["AnoLetivo"].astype(str).str.strip() == str(ano_letivo_escolhido)].copy()
+                        
+                        if not df_emp_ano.empty:
+                            # Atualiza status para Atrasado se a data atual passou da prevista e ainda está Ativo
+                            for idx_df, row_em in df_emp_ano.iterrows():
+                                st_atual = str(row_em.get("Status", "")).strip()
+                                dt_prev_str = str(row_em.get("DataPrevista", "")).strip()
+                                if st_atual == "Ativo" and dt_prev_str:
+                                    try:
+                                        dt_prev_obj = datetime.strptime(dt_prev_str, "%d/%m/%Y").date()
+                                        if hoje_dt > dt_prev_obj:
+                                            df_emp_ano.loc[idx_df, "Status"] = "Atrasado"
+                                    except Exception: pass
+
+                            st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
+                            
+                            st.markdown("---")
+                            st.markdown("##### 🔄 Devolução ou Renovação de Exemplar")
+                            lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
+                            
+                            if lista_emp_ativos:
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução) ou Renovar:", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v25")
+                                
+                                col_ba1, col_ba2 = st.columns(2)
+                                btn_devolver = col_ba1.button("✅ Confirmar Devolução (Baixa)")
+                                btn_renovar = col_ba2.button("🔁 Renovar Empréstimo (+14 Dias)")
+                                
+                                if btn_devolver and emp_selecionado_acao != "Selecione...":
+                                    tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
+                                    aluno_dev = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
+                                    try:
+                                        doc_d = conectar_planilha()
+                                        aba_d = doc_d.worksheet("biblioteca_emprestimos_ipec")
+                                        regs_d = aba_d.get_all_records()
+                                        
+                                        idx_reg_alvo = -1
+                                        for i_d, r_d in enumerate(regs_d):
+                                            if str(r_d.get("Tombo", "")).strip() == tombo_dev and str(r_d.get("Aluno", "")).strip() == aluno_dev and str(r_d.get("Status", "")).strip() in ["Ativo", "Atrasado"]:
+                                                idx_reg_alvo = i_d + 2
+                                                break
+                                        
+                                        if idx_reg_alvo != -1:
+                                            data_hoje_str = hoje_dt.strftime("%d/%m/%Y")
+                                            aba_d.update(range_name=f"H{idx_reg_alvo}:I{idx_reg_alvo}", values=[["Devolvido", data_hoje_str]])
+                                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Registrou devolução Tombo {tombo_dev} - {aluno_dev}")
+                                            st.success("🎉 Devolução registrada com sucesso!")
+                                            st.rerun()
+                                        else:
+                                            st.error("⚠️ Registro de empréstimo ativo não localizado na nuvem.")
+                                    except Exception as err_dev:
+                                        st.error(f"Erro ao devolver: {err_dev}")
+
+                                if btn_renovar and emp_selecionado_acao != "Selecione...":
+                                    tombo_ren = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
+                                    aluno_ren = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
+                                    try:
+                                        doc_r = conectar_planilha()
+                                        aba_r = doc_r.worksheet("biblioteca_emprestimos_ipec")
+                                        regs_r = aba_r.get_all_records()
+                                        
+                                        idx_reg_alvo_r = -1
+                                        dt_antiga_str = ""
+                                        for i_r, r_r in enumerate(regs_r):
+                                            if str(r_r.get("Tombo", "")).strip() == tombo_ren and str(r_r.get("Aluno", "")).strip() == aluno_ren and str(r_r.get("Status", "")).strip() in ["Ativo", "Atrasado"]:
+                                                idx_reg_alvo_r = i_r + 2
+                                                dt_antiga_str = str(r_r.get("DataPrevista", ""))
+                                                break
+                                        
+                                        if idx_reg_alvo_r != -1:
+                                            # Calcula nova data prevista a partir da antiga ou de hoje
+                                            base_dt = datetime.strptime(dt_antiga_str, "%d/%m/%Y").date() if dt_antiga_str else hoje_dt
+                                            if base_dt < hoje_dt: base_dt = hoje_dt
+                                            nova_dt_prev = base_dt + timedelta(days=14)
+                                            nova_dt_str = nova_dt_prev.strftime("%d/%m/%Y")
+                                            
+                                            aba_r.update(range_name=f"G{idx_reg_alvo_r}:H{idx_reg_alvo_r}", values=[[nova_dt_str, "Ativo"]])
+                                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Renovou empréstimo Tombo {tombo_ren} para {aluno_ren}")
+                                            st.success(f"🎉 Empréstimo renovado com sucesso até {nova_dt_str}!")
+                                            st.rerun()
+                                        else:
+                                            st.error("⚠️ Registro ativo não localizado para renovação.")
+                                    except Exception as err_ren:
+                                        st.error(f"Erro ao renovar: {err_ren}")
+                            else:
+                                st.info("ℹ️ Não há empréstimos ativos para realizar baixa ou renovação no momento.")
+                        else:
+                            st.info("ℹ️ Nenhum empréstimo registrado para este ano.")
+                    else:
+                        st.info("ℹ️ Base de empréstimos vazia.")
+
+                elif sub_aba_emp == "Reservas de Livros":
+                    st.markdown(f"#### 📌 Módulo de Reserva de Livros — Ano: {ano_letivo_escolhido}")
+                    
+                    lista_alunos_res = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
+                    lista_livros_res = [f"Tombo: {r['Tombo']} - {r['Titulo']}" for _, r in df_acervo_disp.iterrows() if str(r.get("Status","")).strip() != "INATIVO / EXCLUÍDO"]
+
+                    with st.form("form_nova_reserva_v25"):
+                        aluno_res_sel = st.selectbox("Selecione o Aluno Interessado:", ["Selecione..."] + lista_alunos_res)
+                        livro_res_sel = st.selectbox("Selecione o Livro para Reserva:", ["Selecione..."] + lista_livros_op)
+                        
+                        btn_salvar_res = st.form_submit_button("📌 Registrar Reserva")
+                        
+                        if btn_salvar_res:
+                            if aluno_res_sel == "Selecione..." or livro_res_sel == "Selecione...":
+                                st.error("⚠️ Selecione o aluno e o livro para registrar a reserva.")
+                            else:
+                                try:
+                                    n_aluno = aluno_res_sel.split(" (Turma:")[0].strip()
+                                    t_aluno = aluno_res_sel.split("Turma: ")[1].replace(")", "").strip()
+                                    t_tombo = livro_res_sel.split(" - ")[0].replace("Tombo: ", "").strip()
+                                    t_titulo = livro_res_sel.split(" - ", 1)[1].rsplit(" [", 1)[0].strip()
+
+                                    doc_res = conectar_planilha()
+                                    aba_res = doc_res.worksheet("biblioteca_reservas_ipec")
+                                    
+                                    aba_res.append_row([
+                                        str(ano_letivo_escolhido),
+                                        str(t_tombo),
+                                        str(t_titulo),
+                                        str(n_aluno),
+                                        str(t_aluno),
+                                        hoje_dt.strftime("%d/%m/%Y")
+                                    ])
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Registrou reserva Tombo {t_tombo} para {n_aluno}")
+                                    st.success("🎉 Livro reservado com sucesso na fila de espera!")
+                                    st.rerun()
+                                except Exception as err_res:
+                                    st.error(f"Erro ao registrar reserva: {err_res}")
+
+                    st.markdown("##### 📋 Lista de Reservas Ativas")
+                    if not df_reservas.empty:
+                        df_res_ano = df_reservas[df_reservas["AnoLetivo"].astype(str).str.strip() == str(ano_letivo_escolhido)]
+                        if not df_res_ano.empty:
+                            st.dataframe(df_res_ano, use_container_width=True, hide_index=True)
+                        else:
+                            st.info("ℹ️ Nenhuma reserva registrada para este ano.")
+                    else:
+                        st.info("ℹ️ Nenhuma reserva cadastrada no sistema.")
 
             elif sub_biblioteca in ["Relatórios Gerais", "Recibos", "Relatório do Acervo", "Relatório de Empréstimo", "Gráficos"]:
                 st.markdown(f"### 📊 Módulo de Relatórios e Gráficos — Biblioteca ({sub_biblioteca})")
