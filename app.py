@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.027 - data: 24/07/26 - 09:38
+# Versão do código: v.1.5.028 - data: 24/07/26 - 09:46
 
 import streamlit as st
 import pandas as pd
@@ -78,37 +78,49 @@ st.markdown("""
             margin: 0 auto 1px auto;
             display: block;
         }
-        .header-container-unico {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 5px;
-            margin-bottom: 10px;
-        }
-        .header-logo-img {
-            width: 55px;
-            height: auto;
-            border-radius: 4px;
-        }
-        .header-textos-bloco {
+        /* CABEÇALHO CENTRALIZADO E PROPORCIONAL AO LAYOUT DA TELA */
+        .header-container-centralizado {
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 10px;
+            border: 1px solid rgba(30, 75, 143, 0.2);
         }
-        .titulo-central-elegante {
+        .header-logo-img-cent {
+            width: 75px;
+            height: auto;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .titulo-central-proporcional {
             font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 32px;
+            font-size: 2.2vw;
             font-weight: 900;
             color: #0f2b5c;
-            line-height: 1.1;
-            margin: 0 0 3px 0;
+            line-height: 1.2;
+            margin: 0 0 5px 0;
         }
-        .escola-titulo-elegante {
+        @media (max-width: 900px) {
+            .titulo-central-proporcional { font-size: 26px; }
+        }
+        .escola-titulo-proporcional {
             font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 19px;
+            font-size: 1.3vw;
             font-weight: 900;
             color: #1e4b8f;
-            letter-spacing: 0.8px;
+            letter-spacing: 1px;
             margin: 0;
+        }
+        @media (max-width: 900px) {
+            .escola-titulo-proporcional { font-size: 16px; }
         }
         .sidebar-aviso-branco {
             color: #ffffff !important;
@@ -249,6 +261,19 @@ def carregar_emprestimos_biblioteca():
     except Exception:
         return pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataEmprestimo", "DataPrevista", "Status", "DataDevolucao", "Observacao"])
 
+def carregar_reservas_biblioteca():
+    try:
+        doc = conectar_planilha()
+        try:
+            aba_res = doc.worksheet("biblioteca_reservas_ipec")
+        except gspread.WorksheetNotFound:
+            aba_res = doc.add_worksheet(title="biblioteca_reservas_ipec", rows="1000", cols="6")
+            aba_res.append_row(["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
+        registros = aba_res.get_all_records()
+        return pd.DataFrame(registros) if registros else pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
+    except Exception:
+        return pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
+
 def carregar_config_biblioteca():
     try:
         doc = conectar_planilha()
@@ -328,7 +353,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.027 de 24/07/2026<br>
+        Versão: v.1.5.028 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -376,13 +401,12 @@ else:
                 logo_base64 = base64.b64encode(f.read()).decode("utf-8")
     except Exception: pass
 
+    # CABEÇALHO CENTRALIZADO E PROPORCIONAL
     html_cabecalho = f"""
-    <div class="header-container-unico">
-        <img src="data:image/jpeg;base64,{logo_base64}" class="header-logo-img">
-        <div class="header-textos-bloco">
-            <p class="titulo-central-elegante">🏫 SISTEMAS iPeC - Central de Trabalhos</p>
-            <p class="escola-titulo-elegante">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>
-        </div>
+    <div class="header-container-centralizado">
+        <img src="data:image/jpeg;base64,{logo_base64}" class="header-logo-img-cent">
+        <p class="titulo-central-proporcional">🏫 SISTEMAS iPeC - Central de Trabalhos</p>
+        <p class="escola-titulo-proporcional">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>
     </div>
     """
     st.markdown(html_cabecalho, unsafe_allow_html=True)
@@ -454,7 +478,7 @@ else:
                         st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
                     st.markdown("#### 📋 Tabela de Registros (Edição Geral)")
-                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v27")
+                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v28")
 
                     if st.session_state["perfil_usuario"] == "Total":
                         if st.button("💾 Salvar Alterações Gerais"):
@@ -494,7 +518,7 @@ else:
                         
                         if not df_aluno_ind.empty:
                             st.markdown("##### Dados Atuais do Aluno Selecionado:")
-                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v27_{id_alvo_ind}")
+                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v28_{id_alvo_ind}")
                             
                             if st.button("💾 Salvar Alteração Individual deste Aluno"):
                                 try:
@@ -658,7 +682,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_horizontal_v27"
+                                key="editor_miguilim_horizontal_v28"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -673,7 +697,7 @@ else:
                                         
                                         total_marcados = sum([sa, am, enc, ne])
                                         if total_marcados > 1:
-                                            erros_validacao.append(f"Aluno {aluno_nome}: Mais de uma opção clínica foi marcada. Selecione apenas uma.")
+                                            erros_validacao.append(f"Aluno {aluno_nome}: Mais de una opção clínica foi marcada. Selecione apenas uma.")
 
                                     if erros_validacao:
                                         for e_val in erros_validacao:
@@ -788,11 +812,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v27")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v28")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v27")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v28")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v27")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v28")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -812,7 +836,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v27"
+                        key="tabela_acervo_v28"
                     )
                     
                     try:
@@ -847,7 +871,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v27", clear_on_submit=False):
+                with st.form("form_biblioteca_v28", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.lib_tombo)
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.lib_titulo)
                     
@@ -964,7 +988,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v27")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v28")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -1004,7 +1028,7 @@ else:
                 st.markdown(f"#### ⚙️ Configuração de Prazos de Empréstimo — Biblioteca")
                 cfg_atuais = carregar_config_biblioteca()
                 
-                with st.form("form_config_biblioteca_v27"):
+                with st.form("form_config_biblioteca_v28"):
                     prazo_lit = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("Literário", 14)))
                     prazo_did = st.number_input("Prazo padrão para Livros Didáticos (em dias):", min_value=1, value=int(cfg_atuais.get("Didático", 30)))
                     
@@ -1044,18 +1068,16 @@ else:
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v27")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v28")
                 
                 if sub_aba_emp == "Novo Empréstimo":
                     st.markdown("##### 📥 Tela de Inclusão de Empréstimo")
                     
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v27")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v27")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v28")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v28")
                     
-                    # Formatação da data em formato amigável PT-BR (Streamlit nativo PT)
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v27", format="DD/MM/YYYY")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v28", format="DD/MM/YYYY")
                     
-                    # Extração automática do prazo configurado
                     cat_livro_atual = "Literário"
                     dias_prazo = cfg_prazos.get("Literário", 14)
                     
@@ -1070,11 +1092,11 @@ else:
                     with col_p1:
                         st.info(f"Categoria: **{cat_livro_atual}** | Prazo configurado: **{dias_prazo} dias**")
                     with col_p2:
-                        data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v27", format="DD/MM/YYYY")
+                        data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v28", format="DD/MM/YYYY")
                     
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v27")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v28")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v27"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v28"):
                         if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                             st.error("⚠️ Selecione o leitor e o livro para efetuar o empréstimo.")
                         else:
@@ -1144,7 +1166,7 @@ else:
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução) ou Renovar:", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v27")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução) ou Renovar:", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v28")
                                 
                                 col_ba1, col_ba2 = st.columns(2)
                                 btn_devolver = col_ba1.button("✅ Confirmar Devolução (Baixa)")
@@ -1215,7 +1237,7 @@ else:
                 elif sub_aba_emp == "Reservas de Livros":
                     st.markdown(f"#### 📌 Módulo de Reserva de Livros — Ano: {ano_letivo_escolhido}")
                     
-                    with st.form("form_nova_reserva_v27"):
+                    with st.form("form_nova_reserva_v28"):
                         aluno_res_sel = st.selectbox("Selecione o Aluno Interessado:", ["Selecione..."] + lista_alunos_op_global)
                         livro_res_sel = st.selectbox("Selecione o Livro para Reserva:", ["Selecione..."] + lista_livros_op_global)
                         
