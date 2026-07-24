@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.020 - data: 24/07/26 - 06:25
+# Versão do código: v.1.5.021 - data: 24/07/26 - 06:54
 
 import streamlit as st
 import pandas as pd
@@ -187,19 +187,6 @@ def carregar_banco_dados_virtual():
         return df_bruto[COLUNAS_OFICIAIS]
     except Exception: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
 
-def carregar_dados_miguilim(ano_escolhido):
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_mig = doc.worksheet("miguilim_ipec")
-            registros = aba_mig.get_all_records()
-            df_mig = pd.DataFrame(registros)
-            if not df_mig.empty and "Ano Letivo" in df_mig.columns:
-                return df_mig[df_mig["Ano Letivo"].astype(str).str.strip() == str(ano_escolhido)]
-        except Exception: pass
-    except Exception: pass
-    return pd.DataFrame()
-
 def carregar_acervo_biblioteca():
     try:
         doc = conectar_planilha()
@@ -268,6 +255,13 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
+# Estados de controle persistente da biblioteca
+if "edit_tombo" not in st.session_state: st.session_state.edit_tombo = ""
+if "edit_titulo" not in st.session_state: st.session_state.edit_titulo = ""
+if "edit_autor" not in st.session_state: st.session_state.edit_autor = ""
+if "edit_cat" not in st.session_state: st.session_state.edit_cat = "Didático"
+if "edit_disc" not in st.session_state: st.session_state.edit_disc = ""
+if "edit_total" not in st.session_state: st.session_state.edit_total = 1
 if "acionou_exclusao_form" not in st.session_state: st.session_state.acionou_exclusao_form = False
 if "tombo_para_excluir_seguro" not in st.session_state: st.session_state.tombo_para_excluir_seguro = ""
 
@@ -277,7 +271,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.020 de 24/07/2026<br>
+        Versão: v.1.5.021 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -450,11 +444,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="filtro_tit_bib")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="filtro_tit_bib_v9")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="filtro_aut_bib")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="filtro_aut_bib_v9")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="filtro_cat_bib")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="filtro_cat_bib_v9")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -467,13 +461,6 @@ else:
 
                 st.markdown("##### 📋 Acervo Localizado (Clique na linha para carregar no formulário abaixo)")
                 
-                val_t = ""
-                val_tit = ""
-                val_aut = ""
-                val_cat_idx = 0
-                val_disc = ""
-                val_tot = 1
-
                 if not df_acervo_filtrado.empty:
                     tabela_evento = st.dataframe(
                         df_acervo_filtrado, 
@@ -481,22 +468,21 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_selecao_v8"
+                        key="tabela_acervo_selecao_v9"
                     )
                     
                     try:
                         linhas_selecionadas = tabela_evento.get("selection", {}).get("rows", [])
                         if linhas_selecionadas:
                             idx_sel = linhas_selecionadas[0]
-                            livro_selecionado_linha = df_acervo_filtrado.iloc[idx_sel]
+                            livro_sel = df_acervo_filtrado.iloc[idx_sel]
                             
-                            val_t = str(livro_selecionado_linha.get("Tombo", ""))
-                            val_tit = str(livro_selecionado_linha.get("Titulo", ""))
-                            val_aut = str(livro_selecionado_linha.get("Autor", ""))
-                            val_cat_linha = str(livro_selecionado_linha.get("Categoria", "Didático"))
-                            val_cat_idx = 0 if val_cat_linha.strip().lower() == "didático" else 1
-                            val_disc = str(livro_selecionado_linha.get("Disciplina", ""))
-                            val_tot = 1
+                            st.session_state.edit_tombo = str(livro_sel.get("Tombo", ""))
+                            st.session_state.edit_titulo = str(livro_sel.get("Titulo", ""))
+                            st.session_state.edit_autor = str(livro_sel.get("Autor", ""))
+                            st.session_state.edit_cat = str(livro_sel.get("Categoria", "Didático"))
+                            st.session_state.edit_disc = str(livro_sel.get("Disciplina", ""))
+                            st.session_state.edit_total = 1
                     except Exception: pass
                 else:
                     st.info("ℹ️ Nenhum livro cadastrado ou localizado com os filtros informados.")
@@ -504,21 +490,23 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_cadastro_alteracao_livro_limpo", clear_on_submit=False):
-                    input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=val_t)
-                    input_titulo = st.text_input("Título da Obra:", value=val_tit)
+                # Formulário sincronizado com o session_state limpo
+                with st.form("form_biblioteca_v9", clear_on_submit=False):
+                    input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.edit_tombo)
+                    input_titulo = st.text_input("Título da Obra:", value=st.session_state.edit_titulo)
                     
                     col_f1, col_f2 = st.columns(2)
                     with col_f1:
-                        input_autor = st.text_input("Autor / Organizador:", value=val_aut)
+                        input_autor = st.text_input("Autor / Organizador:", value=st.session_state.edit_autor)
                     with col_f2:
-                        input_cat = st.selectbox("Categoria:", ["Didático", "Literário"], index=val_cat_idx)
+                        cat_idx = 0 if st.session_state.edit_cat.strip().lower() == "didático" else 1
+                        input_cat = st.selectbox("Categoria:", ["Didático", "Literário"], index=cat_idx)
                     
                     col_f3, col_f4 = st.columns(2)
                     with col_f3:
-                        input_disc = st.text_input("Gênero / Disciplina:", value=val_disc)
+                        input_disc = st.text_input("Gênero / Disciplina:", value=st.session_state.edit_disc)
                     with col_f4:
-                        input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=val_tot)
+                        input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=st.session_state.edit_total)
                     
                     st.markdown("---")
                     st.markdown("##### ⚙️ Ações e Gerenciamento do Livro")
@@ -620,7 +608,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v8")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v9")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
