@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.013 - data: 24/07/26 - 05:03
+# Versão do código: v.1.5.014 - data: 24/07/26 - 05:05
 
 import streamlit as st
 import pandas as pd
@@ -284,7 +284,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.013 de 24/07/2026<br>
+        Versão: v.1.5.014 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -387,13 +387,27 @@ else:
             st.markdown(f"### 📥 Módulo de Importação de Dados — Ano: {ano_letivo_escolhido}")
             sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
             if sub_lote == "Importar Arquivo .TXT":
-                st.info(f"Carregue os arquivos .TXT para popular o ano letivo de {ano_letivo_escolhido}.")
+                st.info(f"Carregue os arquivos .TXT correspondentes para popular o ano letivo de {ano_letivo_escolhido}.")
+                arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
+                if arquivos_escolhidos:
+                    st.success(f"{len(arquivos_escolhidos)} arquivo(s) carregado(s) com sucesso para processamento.")
             else:
                 st.markdown("#### 📜 Histórico de Lotes Importados")
+                try:
+                    doc_h = conectar_planilha()
+                    aba_h = doc_h.worksheet("historico_importacao_ipec")
+                    df_hist = pd.DataFrame(aba_h.get_all_records())
+                    if not df_hist.empty:
+                        st.dataframe(df_hist, use_container_width=True)
+                    else:
+                        st.info("ℹ️ Nenhum histórico de envio registrado até o momento.")
+                except Exception:
+                    st.info("ℹ️ Aba de histórico de importação vazia ou não inicializada.")
 
         elif menu_principal == "📈 Relatórios":
             st.markdown(f"### 📈 Relatórios Gerais e Estatísticas — Ano: {ano_letivo_escolhido}")
-            st.info("Central de relatórios analíticos estruturada.")
+            sub_relatorios = st.sidebar.radio("Sub-menu:", ["Ficha Individual (PDF)", "Estatísticas PBF e AEE/CID"])
+            st.info(f"Sub-área '{sub_relatorios}' pronta.")
 
         elif menu_principal == "👁️ Programa Miguilim":
             st.markdown(f"### 👁️ Programa Miguilim — Gestão Oftalmológica e Saúde Escolar ({ano_letivo_escolhido})")
@@ -477,7 +491,6 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                # CAMPOS FORA DE ST.FORM ATRELADOS AO SESSION_STATE PARA PREENCHIMENTO INSTANTÂNEO
                 input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.sel_tombo, key="input_tombo_ui")
                 input_titulo = st.text_input("Título da Obra:", value=st.session_state.sel_titulo, key="input_titulo_ui")
                 
