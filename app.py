@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.017 - data: 24/07/26 - 06:10
+# Versão do código: v.1.5.018 - data: 24/07/26 - 06:19
 
 import streamlit as st
 import pandas as pd
@@ -268,7 +268,7 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# Inicialização limpa e segura dos estados de seleção do acervo
+# Inicialização limpa e vazia dos estados de seleção do acervo para garantir campos em branco se não houver clique
 if "sel_tombo_reg" not in st.session_state: st.session_state.sel_tombo_reg = ""
 if "sel_titulo_reg" not in st.session_state: st.session_state.sel_titulo_reg = ""
 if "sel_autor_reg" not in st.session_state: st.session_state.sel_autor_reg = ""
@@ -284,7 +284,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.017 de 24/07/2026<br>
+        Versão: v.1.5.018 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -480,7 +480,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_selecao_v5"
+                        key="tabela_acervo_selecao_v6"
                     )
                     
                     try:
@@ -495,14 +495,28 @@ else:
                             st.session_state.sel_cat_reg = str(livro_selecionado_linha.get("Categoria", "Didático"))
                             st.session_state.sel_disc_reg = str(livro_selecionado_linha.get("Disciplina", ""))
                             st.session_state.sel_total_reg = 1
-                    except Exception: pass
+                        else:
+                            # Se nenhuma linha estiver selecionada, garante que os campos fiquem absolutamente em branco
+                            st.session_state.sel_tombo_reg = ""
+                            st.session_state.sel_titulo_reg = ""
+                            st.session_state.sel_autor_reg = ""
+                            st.session_state.sel_cat_reg = "Didático"
+                            st.session_state.sel_disc_reg = ""
+                            st.session_state.sel_total_reg = 1
+                    except Exception: 
+                        st.session_state.sel_tombo_reg = ""
+                        st.session_state.sel_titulo_reg = ""
+                        st.session_state.sel_autor_reg = ""
+                        st.session_state.sel_cat_reg = "Didático"
+                        st.session_state.sel_disc_reg = ""
+                        st.session_state.sel_total_reg = 1
                 else:
                     st.info("ℹ️ Nenhum livro cadastrado ou localizado com os filtros informados.")
 
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                # Campos reativos alimentados diretamente pelas variáveis de seleção da sessão (sem conflito de key)
+                # Campos reativos alimentados pelas variáveis da sessão (garantindo limpeza total se não houver seleção)
                 input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.sel_tombo_reg, key="input_tombo_ui")
                 input_titulo = st.text_input("Título da Obra:", value=st.session_state.sel_titulo_reg, key="input_titulo_ui")
                 
@@ -646,7 +660,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v5")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_form_seguro_v6")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
