@@ -1,5 +1,5 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do código: v.1.5.022 - data: 24/07/26 - 07:18
+# Versão do código: v.1.5.023 - data: 24/07/26 - 07:53
 
 import streamlit as st
 import pandas as pd
@@ -142,6 +142,27 @@ COLUNAS_OFICIAIS = [
 def obter_horario_unai():
     return datetime.utcnow() - timedelta(hours=3)
 
+def calcular_idade_extenso(data_nasc_str):
+    if not data_nasc_str or pd.isna(data_nasc_str) or str(data_nasc_str).strip() in ["Não informado", ""]:
+        return "Não informado"
+    try:
+        match = re.search(r"(\d{2})/(\d{2})/(\d{4})", str(data_nasc_str))
+        if match:
+            dia, mes, ano = map(int, match.groups())
+            data_nasc = datetime(ano, mes, dia).date()
+            hoje = obter_horario_unai().date()
+            anos = hoje.year - data_nasc.year
+            meses = hoje.month - data_nasc.month
+            if hoje.month < data_nasc.month or (hoje.month == data_nasc.month and hoje.day < data_nasc.day):
+                anos -= 1
+                meses = 12 + (hoje.month - data_nasc.month)
+            if hoje.day < data_nasc.day and meses > 0:
+                meses -= 1
+            if anos < 0: anos = 0
+            return f"{anos} anos" if meses == 0 else f"{anos} anos e {meses} meses"
+    except Exception: pass
+    return "Não informado"
+
 def conectar_planilha():
     escopos = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credenciais_dict = st.secrets["gcp_service_account"]
@@ -179,6 +200,8 @@ def carregar_banco_dados_virtual():
             df_bruto["Ano Letivo"] = df_bruto["Ano Letivo"].astype(str).str.strip()
             df_bruto.loc[df_bruto["Ano Letivo"].isin(["", "nan", "NaN", "None", "Não informado"]), "Ano Letivo"] = "2026"
 
+        if "Nascimento" in df_bruto.columns:
+            df_bruto["Idade"] = df_bruto["Nascimento"].apply(calcular_idade_extenso)
         for col in COLUNAS_OFICIAIS:
             if col not in df_bruto.columns:
                 df_bruto[col] = "Não informado" if col != "PBF" else "Não"
@@ -268,7 +291,6 @@ if "autenticado" not in st.session_state:
     st.session_state["email_usuario"] = ""
     st.session_state["foto_usuario"] = ""
 
-# Estados limpos para a biblioteca
 if "lib_tombo" not in st.session_state: st.session_state.lib_tombo = ""
 if "lib_titulo" not in st.session_state: st.session_state.lib_titulo = ""
 if "lib_autor" not in st.session_state: st.session_state.lib_autor = ""
@@ -284,7 +306,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.022 de 24/07/2026<br>
+        Versão: v.1.5.023 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -380,8 +402,94 @@ else:
             if df_db_ano.empty:
                 st.warning(f"⚠️ Atenção: Não existem lançamentos para o ano letivo de {ano_letivo_escolhido}.")
             else:
-                st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem.")
-                st.dataframe(df_db_ano, use_container_width=True, hide_index=True)
+                if "f_aluno" not in st.session_state: st.session_state.f_aluno = ""
+                if "f_mae" not in st.session_state: st.session_state.f_mae = ""
+                if "f_turma" not in st.session_state: st.session_state.f_turma = ""
+                if "f_turno" not in st.session_state: st.session_state.f_turno = ""
+                if "f_status" not in st.session_state: st.session_state.f_status = ""
+                if "f_pbf" not in st.session_state: st.session_state.f_pbf = ""
+
+                df_filtrado = df_db_ano.copy()
+                if st.session_state.f_aluno: df_filtrado = df_filtrado[df_filtrado["Aluno"].str.contains(st.session_state.f_aluno, case=False)]
+                if st.session_state.f_mae: df_filtrado = df_filtrado[df_filtrado["Mãe"].str.contains(st.session_state.f_mae, case=False)]
+                if st.session_state.f_turma: df_filtrado = df_filtrado[df_filtrado["Turma"].str.contains(st.session_state.f_turma, case=False)]
+                if st.session_state.f_turno: df_filtrado = df_filtrado[df_filtrado["Turno"].str.contains(st.session_state.f_turno, case=False)]
+                if st.session_state.f_status: df_filtrado = df_filtrado[df_filtrado["Status"].str.contains(st.session_state.f_status, case=False)]
+                if st.session_state.f_pbf: df_filtrado = df_filtrado[df_filtrado["PBF"].str.contains(st.session_state.f_pbf, case=False)]
+
+                if sub_conformidade == "Cadastro de Alunos":
+                    st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem.")
+                    
+                    st.markdown("#### 🛠️ Filtros de Coluna Simultâneos")
+                    filtro_cols = st.columns(2)
+                    with filtro_cols[0]:
+                        st.session_state.f_aluno = st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno)
+                        st.session_state.f_mae = st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae)
+                        st.session_state.f_turma = st.text_input("Filtrar por Turma:", value=st.session_state.f_turma)
+                    with filtro_cols[1]:
+                        st.session_state.f_turno = st.text_input("Filtrar por Turno:", value=st.session_state.f_turno)
+                        st.session_state.f_status = st.text_input("Filtrar por Status:", value=st.session_state.f_status)
+                        st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
+
+                    st.markdown("#### 📋 Tabela de Registros (Edição Geral)")
+                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v23")
+
+                    if st.session_state["perfil_usuario"] == "Total":
+                        if st.button("💾 Salvar Alterações Gerais"):
+                            try:
+                                doc_w = conectar_planilha()
+                                aba_w = doc_w.get_worksheet(0)
+                                alteracoes = 0
+                                for _, row_edit in df_editavel.iterrows():
+                                    id_reg = row_edit["Id."]
+                                    original_match = df_db_ano[df_db_ano["Id."] == id_reg]
+                                    if not original_match.empty:
+                                        row_orig = original_match.iloc[0]
+                                        if any(str(row_edit.get(c, "")) != str(row_orig.get(c, "")) for c in COLUNAS_OFICIAIS if c != "Idade"):
+                                            linha_planilha = int(id_reg) + 1
+                                            row_edit["Idade"] = calcular_idade_extenso(row_edit["Nascimento"])
+                                            valores_alinhados = [str(row_edit.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                            aba_w.update(range_name=f"A{linha_planilha}:Z{linha_planilha}", values=[valores_alinhados])
+                                            alteracoes += 1
+                                            time.sleep(0.3)
+                                if alteracoes > 0:
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou {alteracoes} registros em {ano_letivo_escolhido}.")
+                                    st.success(f"🎉 {alteracoes} registro(s) atualizado(s) com sucesso na nuvem!")
+                                    st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                    st.rerun()
+                                else:
+                                    st.info("ℹ️ Nenhuma alteração detectada.")
+                            except Exception as e: st.error(f"Erro: {e}")
+
+                elif sub_conformidade == "Atualização de Dados":
+                    st.markdown(f"#### 🔍 Atualização e Edição Individual de Alunos ({ano_letivo_escolhido})")
+                    lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
+                    aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados)
+                    
+                    if aluno_selecionado_busca != "Selecione o Aluno...":
+                        id_alvo_ind = int(aluno_selecionado_busca.split(" - ")[0])
+                        df_aluno_ind = df_db_ano[df_db_ano["Id."] == id_alvo_ind]
+                        
+                        if not df_aluno_ind.empty:
+                            st.markdown("##### Dados Atuais do Aluno Selecionado:")
+                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v23_{id_alvo_ind}")
+                            
+                            if st.button("💾 Salvar Alteração Individual deste Aluno"):
+                                try:
+                                    doc_ind = conectar_planilha()
+                                    aba_ind = doc_ind.get_worksheet(0)
+                                    row_edit_ind = df_individual_edit.iloc[0]
+                                    linha_planilha_ind = int(id_alvo_ind) + 1
+                                    row_edit_ind["Idade"] = calcular_idade_extenso(row_edit_ind["Nascimento"])
+                                    valores_ind = [str(row_edit_ind.get(c, "")) for c in COLUNAS_OFICIAIS]
+                                    aba_ind.update(range_name=f"A{linha_planilha_ind}:Z{linha_planilha_ind}", values=[valores_ind])
+                                    
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou individualmente o aluno ID {id_alvo_ind} em {ano_letivo_escolhido}.")
+                                    st.success("🎉 Aluno atualizado individualmente com sucesso na nuvem!")
+                                    st.session_state["dados_banco"] = carregar_banco_dados_virtual()
+                                    st.rerun()
+                                except Exception as err_ind:
+                                    st.error(f"Erro ao salvar alteração individual: {err_ind}")
 
         elif menu_principal == "📥 Importação de Dados":
             st.markdown(f"### 📥 Módulo de Importação de Dados — Ano: {ano_letivo_escolhido}")
@@ -457,11 +565,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v22")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v23")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v22")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v23")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v22")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v23")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -481,7 +589,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v22"
+                        key="tabela_acervo_v23"
                     )
                     
                     try:
@@ -516,7 +624,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v22", clear_on_submit=False):
+                with st.form("form_biblioteca_v23", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.lib_tombo)
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.lib_titulo)
                     
@@ -633,7 +741,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v22")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v23")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
