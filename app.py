@@ -1,14 +1,5 @@
-# ==============================================================================
-# QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
-# ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do Código: v.1.5.035
-# Data de Atualização: 25/07/2026 - 08:31
-# Descrição das Alterações:
-#   - Restauração completa e definitiva de todos os módulos operacionais (Biblioteca,
-#     Miguilim, Importação de Dados e Painel de Conformidade/Edição Individual).
-#   - Remoção de todos os st.info "pronto" genéricos, reativando a lógica corporativa real.
-# ==============================================================================
+# Versão do código: v.1.5.030 - data: 24/07/26 - 10:11
 
 import streamlit as st
 import pandas as pd
@@ -116,6 +107,9 @@ st.markdown("""
             line-height: 1.2;
             margin: 0 0 5px 0;
         }
+        @media (max-width: 900px) {
+            .titulo-central-proporcional { font-size: 26px; }
+        }
         .escola-titulo-proporcional {
             font-family: 'Segoe UI Black', Arial, sans-serif;
             font-size: 1.3vw;
@@ -123,6 +117,9 @@ st.markdown("""
             color: #1e4b8f;
             letter-spacing: 1px;
             margin: 0;
+        }
+        @media (max-width: 900px) {
+            .escola-titulo-proporcional { font-size: 16px; }
         }
         .sidebar-aviso-branco {
             color: #ffffff !important;
@@ -132,6 +129,7 @@ st.markdown("""
             border-radius: 6px;
             margin-bottom: 10px;
         }
+        /* TARJAS DESTAQUE LARGURA TOTAL (100%) */
         .tarja-verde-ipec {
             background-color: #2e7d32;
             color: white;
@@ -291,14 +289,23 @@ def carregar_config_biblioteca():
             aba_cfg.append_row(["DataFixaDidatico", "15/12/2026"])
             aba_cfg.append_row(["LimiteLiterario", 2])
         registros = aba_cfg.get_all_records()
-        cfg_dict = {"PrazoLiterarioDias": 14, "DataFixaDidatico": "15/12/2026", "LimiteLiterario": 2}
+        cfg_dict = {
+            "PrazoLiterarioDias": 14,
+            "DataFixaDidatico": "15/12/2026",
+            "LimiteLiterario": 2
+        }
         for r in registros:
             chave = str(r.get("Chave", "")).strip()
             valor = r.get("Valor", "")
-            if chave: cfg_dict[chave] = valor
+            if chave:
+                cfg_dict[chave] = valor
         return cfg_dict
     except Exception:
-        return {"PrazoLiterarioDias": 14, "DataFixaDidatico": "15/12/2026", "LimiteLiterario": 2}
+        return {
+            "PrazoLiterarioDias": 14,
+            "DataFixaDidatico": "15/12/2026",
+            "LimiteLiterario": 2
+        }
 
 def registrar_log_auditoria(usuario, perfil, acao):
     try:
@@ -357,7 +364,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.035 de 25/07/2026<br>
+        Versão: v.1.5.030 de 24/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -481,7 +488,7 @@ else:
                         st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
                     st.markdown("#### 📋 Tabela de Registros (Edição Geral)")
-                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v35")
+                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v30")
 
                     if st.session_state["perfil_usuario"] == "Total":
                         if st.button("💾 Salvar Alterações Gerais"):
@@ -513,22 +520,17 @@ else:
                 elif sub_conformidade == "Atualização de Dados":
                     st.markdown(f"#### 🔍 Atualização e Edição Individual de Alunos ({ano_letivo_escolhido})")
                     lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                    aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_ind_v35")
+                    aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados)
                     
                     if aluno_selecionado_busca != "Selecione o Aluno...":
                         id_alvo_ind = int(aluno_selecionado_busca.split(" - ")[0])
-                        df_aluno_ind = df_db_ano[df_db_ano["Id."] == id_alvo_ind].copy()
+                        df_aluno_ind = df_db_ano[df_db_ano["Id."] == id_alvo_ind]
                         
                         if not df_aluno_ind.empty:
                             st.markdown("##### Dados Atuais do Aluno Selecionado:")
-                            df_individual_edit = st.data_editor(
-                                df_aluno_ind, 
-                                use_container_width=True, 
-                                hide_index=True, 
-                                key=f"editor_ind_v35_{id_alvo_ind}"
-                            )
+                            df_individual_edit = st.data_editor(df_aluno_ind, use_container_width=True, hide_index=True, key=f"editor_ind_v30_{id_alvo_ind}")
                             
-                            if st.button("💾 Salvar Alteração Individual deste Aluno", key=f"btn_salvar_ind_v35_{id_alvo_ind}"):
+                            if st.button("💾 Salvar Alteração Individual deste Aluno"):
                                 try:
                                     doc_ind = conectar_planilha()
                                     aba_ind = doc_ind.get_worksheet(0)
@@ -690,7 +692,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_horizontal_v35"
+                                key="editor_miguilim_horizontal_v30"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -798,6 +800,7 @@ else:
                 total_lit = len(df_ativos[cats == "literário"])
                 total_did = len(df_ativos[cats == "didático"])
             
+            # TARJAS DESTAQUE LARGURA TOTAL (100%)
             st.markdown(f'<div class="tarja-verde-ipec">📚 Total de Livros do Acervo Literário: {total_lit}</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="tarja-verde-ipec">📖 Total de Livros do Acervo Didático: {total_did}</div>', unsafe_allow_html=True)
 
@@ -810,7 +813,7 @@ else:
                 "Relatório do Acervo", 
                 "Relatório de Empréstimo", 
                 "Gráficos"
-            ], key="sub_bib_v35")
+            ])
             
             if sub_biblioteca == "Catálogo do Acervo":
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
@@ -820,11 +823,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v35")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v30")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v35")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v30")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v35")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v30")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -844,7 +847,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v35"
+                        key="tabela_acervo_v30"
                     )
                     
                     try:
@@ -879,7 +882,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v35", clear_on_submit=False):
+                with st.form("form_biblioteca_v30", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.lib_tombo)
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.lib_titulo)
                     
@@ -934,7 +937,8 @@ else:
                                         parts = t_ex.rsplit("-", 1)
                                         if len(parts) == 2 and parts[1].isdigit():
                                             num_suf = int(parts[1])
-                                            if num_suf > maior_sufixo: maior_sufixo = num_suf
+                                            if num_suf > maior_sufixo:
+                                                maior_sufixo = num_suf
                                     if maior_sufixo == 0: maior_sufixo = 1
                                     
                                     linhas_lote = []
@@ -972,7 +976,9 @@ else:
                                         str(input_autor).strip(),
                                         str(input_cat).strip(),
                                         str(input_disc).strip(),
-                                        1, 1, "ATIVO"
+                                        1,
+                                        1,
+                                        "ATIVO"
                                     ]
                                     aba_b.update(range_name=f"A{idx_encontrado}:H{idx_encontrado}", values=[linha_alt])
                                     registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Alterou livro Tombo: {input_tombo}")
@@ -993,14 +999,15 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v35")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v30")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
                             emprestado_ativo = False
                             if not df_emprestimos_geral.empty:
                                 match_emp = df_emprestimos_geral[(df_emprestimos_geral["Tombo"].astype(str).str.strip() == str(tombo_alvo_exc)) & (df_emprestimos_geral["Status"].astype(str).str.strip().isin(["Ativo", "Atrasado"]))]
-                                if not match_emp.empty: emprestado_ativo = True
+                                if not match_emp.empty:
+                                    emprestado_ativo = True
                             
                             if emprestado_ativo:
                                 st.error("❌ ERRO: Este livro está atualmente emprestado! A exclusão não pode ocorrer antes de efetuar a devolução.")
@@ -1031,65 +1038,93 @@ else:
             elif sub_biblioteca == "Configuração":
                 st.markdown(f"#### ⚙️ Configuração de Prazos e Limites de Empréstimo — Biblioteca")
                 cfg_atuais = carregar_config_biblioteca()
+                
                 dt_fixa_str = cfg_atuais.get("DataFixaDidatico", "15/12/2026")
-                try: dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
-                except: dt_fixa_obj = datetime(2026, 12, 15).date()
+                try:
+                    dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
+                except:
+                    dt_fixa_obj = datetime(2026, 12, 15).date()
 
-                with st.form("form_config_biblioteca_v35"):
+                with st.form("form_config_biblioteca_v30"):
                     prazo_lit_dias = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("PrazoLiterarioDias", 14)))
                     data_did_fixa = st.date_input("Data Fixa de Devolução para Livros Didáticos:", value=dt_fixa_obj, format="DD/MM/YYYY")
                     limite_lit = st.number_input("Limite Máximo de Empréstimos Simultâneos de Livros Literários por Aluno:", min_value=1, value=int(cfg_atuais.get("LimiteLiterario", 2)))
                     
                     btn_salvar_cfg = st.form_submit_button("💾 Salvar Configurações da Biblioteca")
+                    
                     if btn_salvar_cfg:
                         try:
                             doc_cfg = conectar_planilha()
-                            aba_cfg = doc_cfg.worksheet("biblioteca_config_ipec")
+                            try:
+                                aba_cfg = doc_cfg.worksheet("biblioteca_config_ipec")
+                            except gspread.WorksheetNotFound:
+                                aba_cfg = doc_cfg.add_worksheet(title="biblioteca_config_ipec", rows="10", cols="3")
+                                aba_cfg.append_row(["Chave", "Valor"])
+                            
                             aba_cfg.clear()
                             aba_cfg.append_row(["Chave", "Valor"])
                             aba_cfg.append_row(["PrazoLiterarioDias", int(prazo_lit_dias)])
                             aba_cfg.append_row(["DataFixaDidatico", data_did_fixa.strftime("%d/%m/%Y")])
                             aba_cfg.append_row(["LimiteLiterario", int(limite_lit)])
-                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Atualizou configurações da biblioteca")
+                            
+                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Atualizou configurações da biblioteca (Prazo Lit: {prazo_lit_dias}d, Data Didática: {data_did_fixa.strftime('%d/%m/%Y')}, Limite Lit: {limite_lit})")
                             st.success("🎉 Configurações salvas com sucesso na nuvem!")
                             st.rerun()
-                        except Exception as err_cfg: st.error(f"Erro ao salvar configurações: {err_cfg}")
+                        except Exception as err_cfg:
+                            st.error(f"Erro ao salvar configurações: {err_cfg}")
 
             elif sub_biblioteca == "Empréstimos e Devoluções":
                 st.markdown(f"#### 🔄 Controle de Empréstimos, Devoluções e Reservas — Ano: {ano_letivo_escolhido}")
+                
                 df_acervo_disp = carregar_acervo_biblioteca()
                 df_emprestimos = carregar_emprestimos_biblioteca()
                 df_reservas = carregar_reservas_biblioteca()
                 cfg_prazos = carregar_config_biblioteca()
+                
                 hoje_dt = obter_horario_unai().date()
                 
                 df_livros_ativos_global = df_acervo_disp[df_acervo_disp["Status"].astype(str).str.strip() != "INATIVO / EXCLUÍDO"] if not df_acervo_disp.empty else pd.DataFrame()
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v35")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v30")
                 
                 if sub_aba_emp == "Novo Empréstimo":
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v35")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v35")
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v35", format="DD/MM/YYYY")
+                    st.markdown("##### 📥 Tela de Inclusão de Empréstimo")
+                    
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v30")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v30")
+                    
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v30", format="DD/MM/YYYY")
                     
                     cat_livro_atual = "Literário"
                     dias_prazo_lit = int(cfg_prazos.get("PrazoLiterarioDias", 14))
                     data_did_fixa_str = cfg_prazos.get("DataFixaDidatico", "15/12/2026")
-                    try: data_did_obj = datetime.strptime(data_did_fixa_str, "%d/%m/%Y").date()
-                    except: data_did_obj = datetime(2026, 12, 15).date()
+                    
+                    try:
+                        data_did_obj = datetime.strptime(data_did_fixa_str, "%d/%m/%Y").date()
+                    except:
+                        data_did_obj = datetime(2026, 12, 15).date()
 
                     data_prev_calc = data_emp + timedelta(days=dias_prazo_lit)
+                    
                     if livro_emp_sel != "Selecione...":
                         if "Didático" in livro_emp_sel or "didático" in livro_emp_sel.lower():
                             cat_livro_atual = "Didático"
                             data_prev_calc = data_did_obj
                     
-                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v35", format="DD/MM/YYYY")
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v35")
+                    col_p1, col_p2 = st.columns(2)
+                    with col_p1:
+                        if cat_livro_atual == "Literário":
+                            st.info(f"Categoria: **Literário** | Prazo: **{dias_prazo_lit} dias**")
+                        else:
+                            st.info(f"Categoria: **Didático** | Data Fixa Configurada: **{data_did_fixa_str}**")
+                    with col_p2:
+                        data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v30", format="DD/MM/YYYY")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v35"):
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v30")
+                    
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v30"):
                         if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                             st.error("⚠️ Selecione o aluno e o livro para efetuar o empréstimo.")
                         else:
@@ -1098,44 +1133,211 @@ else:
                             turma_aluno_extraida = aluno_emp_sel.split("Turma: ")[1].replace(")", "").strip()
                             titulo_livro_extraido = livro_emp_sel.split(" - ", 1)[1].rsplit(" [", 1)[0].strip()
                             
-                            try:
-                                doc_e = conectar_planilha()
-                                aba_e = doc_e.worksheet("biblioteca_emprestimos_ipec")
-                                aba_e.append_row([
-                                    str(ano_letivo_escolhido), str(tombo_alvo), str(titulo_livro_extraido),
-                                    str(nome_aluno_extraido), str(turma_aluno_extraida),
-                                    str(data_emp.strftime("%d/%m/%Y")), str(data_prev.strftime("%d/%m/%Y")),
-                                    "Ativo", "", str(obs_emp)
-                                ])
-                                registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Registrou empréstimo Tombo {tombo_alvo}")
-                                st.success("🎉 Empréstimo registrado com sucesso na nuvem!")
-                                st.rerun()
-                            except Exception as err_emp: st.error(f"Erro: {err_emp}")
+                            limite_lit_permitido = int(cfg_prazos.get("LimiteLiterario", 2))
+                            livros_literarios_ativos_aluno = 0
+                            
+                            if not df_emprestimos.empty:
+                                for _, r_emp in df_emprestimos.iterrows():
+                                    if str(r_emp.get("Aluno", "")).strip() == nome_aluno_extraido and str(r_emp.get("Status", "")).strip() in ["Ativo", "Atrasado"]:
+                                        t_emp = str(r_emp.get("Tombo", "")).strip()
+                                        match_acervo = df_acervo_disp[df_acervo_disp["Tombo"].astype(str).str.strip() == t_emp]
+                                        if not match_acervo.empty:
+                                            cat_acervo = str(match_acervo.iloc[0].get("Categoria", "")).strip().lower()
+                                            if cat_acervo == "literário":
+                                                livros_literarios_ativos_aluno += 1
+
+                            livro_ja_emprestado = False
+                            aluno_responsavel = ""
+                            data_devolucao_prevista_atual = ""
+                            
+                            if not df_emprestimos.empty:
+                                match_dupl = df_emprestimos[(df_emprestimos["Tombo"].astype(str).str.strip() == str(tombo_alvo)) & (df_emprestimos["Status"].astype(str).str.strip().isin(["Ativo", "Atrasado"]))]
+                                if not match_dupl.empty:
+                                    livro_ja_emprestado = True
+                                    aluno_responsavel = match_dupl.iloc[0].get("Aluno", "Outro aluno")
+                                    data_devolucao_prevista_atual = match_dupl.iloc[0].get("DataPrevista", "")
+
+                            if livro_ja_emprestado:
+                                st.error(f"❌ EMPRÉSTIMO NEGADO: Este livro (Tombo: {tombo_alvo}) já está emprestado!\n\n👤 **Aluno com o exemplar:** {aluno_responsavel}\n📅 **Devolução prevista para:** {data_devolucao_prevista_atual}")
+                            elif cat_livro_atual == "Literário" and livros_literarios_ativos_aluno >= limite_lit_permitido:
+                                st.error(f"❌ EMPRÉSTIMO NEGADO: O aluno **{nome_aluno_extraido}** atingiu o limite máximo de livros literários emprestados simultaneamente ({limite_lit_permitido} livro(s))!")
+                            else:
+                                try:
+                                    doc_e = conectar_planilha()
+                                    aba_e = doc_e.worksheet("biblioteca_emprestimos_ipec")
+                                    
+                                    aba_e.append_row([
+                                        str(ano_letivo_escolhido),
+                                        str(tombo_alvo),
+                                        str(titulo_livro_extraido),
+                                        str(nome_aluno_extraido),
+                                        str(turma_aluno_extraida),
+                                        str(data_emp.strftime("%d/%m/%Y")),
+                                        str(data_prev.strftime("%d/%m/%Y")),
+                                        "Ativo",
+                                        "",
+                                        str(obs_emp)
+                                    ])
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Registrou empréstimo Tombo {tombo_alvo} para {nome_aluno_extraido}")
+                                    st.success("🎉 Empréstimo registrado com sucesso na nuvem!")
+                                    st.rerun()
+                                except Exception as err_emp:
+                                    st.error(f"Erro ao registrar empréstimo: {err_emp}")
+
+                elif sub_aba_emp == "Consulta de Empréstimos por Aluno":
+                    st.markdown(f"#### 🔍 Consulta de Histórico de Empréstimos por Aluno ({ano_letivo_escolhido})")
+                    aluno_cons_sel = st.selectbox("Selecione o Aluno para Consulta:", ["Selecione..."] + lista_alunos_op_global, key="sel_cons_aluno_v30")
+                    
+                    if aluno_cons_sel != "Selecione...":
+                        nome_aluno_consulta = aluno_cons_sel.split(" (Turma:")[0].strip()
+                        st.markdown(f"##### Histórico de Exemplares do Aluno: **{nome_aluno_consulta}**")
+                        
+                        if not df_emprestimos.empty:
+                            df_aluno_hist = df_emprestimos[df_emprestimos["Aluno"].astype(str).str.strip() == nome_aluno_consulta]
+                            if not df_aluno_hist.empty:
+                                st.dataframe(df_aluno_hist, use_container_width=True, hide_index=True)
+                            else:
+                                st.info("ℹ️ Nenhum registro de empréstimo encontrado para este aluno.")
+                        else:
+                            st.info("ℹ️ Base de empréstimos vazia.")
 
                 elif sub_aba_emp == "Empréstimos Ativos / Devoluções / Atrasos":
-                    st.markdown(f"### 📚 Circulação Ativa — Ano Letivo: {ano_letivo_escolhido}")
+                    st.markdown(f"#### 📚 Circulação Ativa — Ano Letivo: {ano_letivo_escolhido}")
+                    
                     if not df_emprestimos.empty:
                         df_emp_ano = df_emprestimos[df_emprestimos["AnoLetivo"].astype(str).str.strip() == str(ano_letivo_escolhido)].copy()
+                        
                         if not df_emp_ano.empty:
+                            for idx_df, row_em in df_emp_ano.iterrows():
+                                st_atual = str(row_em.get("Status", "")).strip()
+                                dt_prev_str = str(row_em.get("DataPrevista", "")).strip()
+                                if st_atual == "Ativo" and dt_prev_str:
+                                    try:
+                                        dt_prev_obj = datetime.strptime(dt_prev_str, "%d/%m/%Y").date()
+                                        if hoje_dt > dt_prev_obj:
+                                            df_emp_ano.loc[idx_df, "Status"] = "Atrasado"
+                                    except Exception: pass
+
                             st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
+                            
+                            st.markdown("---")
+                            st.markdown("##### 🔄 Devolução ou Renovação de Exemplar")
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
+                            
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v35")
-                                if st.button("✅ Confirmar Devolução (Baixa)") and emp_selecionado_acao != "Selecione...":
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução) ou Renovar:", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v30")
+                                
+                                col_ba1, col_ba2 = st.columns(2)
+                                btn_devolver = col_ba1.button("✅ Confirmar Devolução (Baixa)")
+                                btn_renovar = col_ba2.button("🔁 Renovar Empréstimo")
+                                
+                                if btn_devolver and emp_selecionado_acao != "Selecione...":
                                     tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
                                     aluno_dev = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
                                     try:
                                         doc_d = conectar_planilha()
                                         aba_d = doc_d.worksheet("biblioteca_emprestimos_ipec")
                                         regs_d = aba_d.get_all_records()
+                                        
+                                        idx_reg_alvo = -1
                                         for i_d, r_d in enumerate(regs_d):
                                             if str(r_d.get("Tombo", "")).strip() == tombo_dev and str(r_d.get("Aluno", "")).strip() == aluno_dev and str(r_d.get("Status", "")).strip() in ["Ativo", "Atrasado"]:
-                                                aba_d.update(range_name=f"H{i_d+2}:I{i_d+2}", values=[["Devolvido", hoje_dt.strftime("%d/%m/%Y")]])
+                                                idx_reg_alvo = i_d + 2
                                                 break
-                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Devolveu Tombo {tombo_dev}")
-                                        st.success("🎉 Devolução registrada!")
-                                        st.rerun()
-                                    except Exception as e: st.error(f"Erro: {e}")
+                                        
+                                        if idx_reg_alvo != -1:
+                                            data_hoje_str = hoje_dt.strftime("%d/%m/%Y")
+                                            aba_d.update(range_name=f"H{idx_reg_alvo}:I{idx_reg_alvo}", values=[["Devolvido", data_hoje_str]])
+                                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Registrou devolução Tombo {tombo_dev} - {aluno_dev}")
+                                            st.success("🎉 Devolução registrada com sucesso!")
+                                            st.rerun()
+                                        else:
+                                            st.error("⚠️ Registro de empréstimo ativo não localizado na nuvem.")
+                                    except Exception as err_dev:
+                                        st.error(f"Erro ao devolver: {err_dev}")
+
+                                if btn_renovar and emp_selecionado_acao != "Selecione...":
+                                    tombo_ren = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
+                                    aluno_ren = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
+                                    try:
+                                        doc_r = conectar_planilha()
+                                        aba_r = doc_r.worksheet("biblioteca_emprestimos_ipec")
+                                        regs_r = aba_r.get_all_records()
+                                        
+                                        idx_reg_alvo_r = -1
+                                        dt_antiga_str = ""
+                                        for i_r, r_r in enumerate(regs_r):
+                                            if str(r_r.get("Tombo", "")).strip() == tombo_ren and str(r_r.get("Aluno", "")).strip() == aluno_ren and str(r_r.get("Status", "")).strip() in ["Ativo", "Atrasado"]:
+                                                idx_reg_alvo_r = i_r + 2
+                                                dt_antiga_str = str(r_r.get("DataPrevista", ""))
+                                                break
+                                        
+                                        if idx_reg_alvo_r != -1:
+                                            base_dt = datetime.strptime(dt_antiga_str, "%d/%m/%Y").date() if dt_antiga_str else hoje_dt
+                                            if base_dt < hoje_dt: base_dt = hoje_dt
+                                            nova_dt_prev = base_dt + timedelta(days=int(cfg_prazos.get("PrazoLiterarioDias", 14)))
+                                            nova_dt_str = nova_dt_prev.strftime("%d/%m/%Y")
+                                            
+                                            aba_r.update(range_name=f"G{idx_reg_alvo_r}:H{idx_reg_alvo_r}", values=[[nova_dt_str, "Ativo"]])
+                                            registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Renovou empréstimo Tombo {tombo_ren} para {aluno_ren}")
+                                            st.success(f"🎉 Empréstimo renovado com sucesso até {nova_dt_str}!")
+                                            st.rerun()
+                                        else:
+                                            st.error("⚠️ Registro ativo não localizado para renovação.")
+                                    except Exception as err_ren:
+                                        st.error(f"Erro ao renovar: {err_ren}")
+                            else:
+                                st.info("ℹ️ Não há empréstimos ativos para realizar baixa ou renovação no momento.")
+                        else:
+                            st.info("ℹ️ Nenhum empréstimo registrado para este ano.")
+                    else:
+                        st.info("ℹ️ Base de empréstimos vazia.")
+
+                elif sub_aba_emp == "Reservas de Livros":
+                    st.markdown(f"#### 📌 Módulo de Reserva de Livros — Ano: {ano_letivo_escolhido}")
+                    
+                    with st.form("form_nova_reserva_v30"):
+                        aluno_res_sel = st.selectbox("Selecione o Aluno Interessado:", ["Selecione..."] + lista_alunos_op_global)
+                        livro_res_sel = st.selectbox("Selecione o Livro para Reserva:", ["Selecione..."] + lista_livros_op_global)
+                        
+                        btn_salvar_res = st.form_submit_button("📌 Registrar Reserva")
+                        
+                        if btn_salvar_res:
+                            if aluno_res_sel == "Selecione..." or livro_res_sel == "Selecione...":
+                                st.error("⚠️ Selecione o aluno e o livro para registrar a reserva.")
+                            else:
+                                try:
+                                    n_aluno = aluno_res_sel.split(" (Turma:")[0].strip()
+                                    t_aluno = aluno_res_sel.split("Turma: ")[1].replace(")", "").strip()
+                                    t_tombo = livro_res_sel.split(" - ")[0].replace("Tombo: ", "").strip()
+                                    t_titulo = livro_res_sel.split(" - ", 1)[1].rsplit(" [", 1)[0].strip()
+
+                                    doc_res = conectar_planilha()
+                                    aba_res = doc_res.worksheet("biblioteca_reservas_ipec")
+                                    
+                                    aba_res.append_row([
+                                        str(ano_letivo_escolhido),
+                                        str(t_tombo),
+                                        str(t_titulo),
+                                        str(n_aluno),
+                                        str(t_aluno),
+                                        hoje_dt.strftime("%d/%m/%Y")
+                                    ])
+                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Registrou reserva Tombo {t_tombo} para {n_aluno}")
+                                    st.success("🎉 Livro reservado com sucesso na fila de espera!")
+                                    st.rerun()
+                                except Exception as err_res:
+                                    st.error(f"Erro ao registrar reserva: {err_res}")
+
+                    st.markdown("##### 📋 Lista de Reservas Ativas")
+                    if not df_reservas.empty:
+                        df_res_ano = df_reservas[df_reservas["AnoLetivo"].astype(str).str.strip() == str(ano_letivo_escolhido)]
+                        if not df_res_ano.empty:
+                            st.dataframe(df_res_ano, use_container_width=True, hide_index=True)
+                        else:
+                            st.info("ℹ️ Nenhuma reserva registrada para este ano.")
+                    else:
+                        st.info("ℹ️ Nenhuma reserva cadastrada no sistema.")
 
             elif sub_biblioteca in ["Relatórios Gerais", "Recibos", "Relatório do Acervo", "Relatório de Empréstimo", "Gráficos"]:
                 st.markdown(f"### 📊 Módulo de Relatórios e Gráficos — Biblioteca ({sub_biblioteca})")
@@ -1150,4 +1352,5 @@ else:
                     aba_log_s = doc_s.worksheet("log_auditoria_ipec")
                     df_logs = pd.DataFrame(aba_log_s.get_all_records())
                     st.dataframe(df_logs, use_container_width=True)
-                except Exception: st.error("Aba de logs vazia.")
+                except Exception:
+                    st.error("Aba de logs vazia.")
