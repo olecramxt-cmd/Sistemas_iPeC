@@ -2,11 +2,11 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do Código: v.1.5.030.1
-# Data de Atualização: 25/07/2026 - 08:23
+# Versão do Código: v.1.5.030.2
+# Data de Atualização: 25/07/2026 - 08:26
 # Descrição das Alterações:
-#   - Correção cirúrgica do sub-menu "Atualização de Dados" (Edição Individual de Alunos),
-#     garantindo a renderização correta do editor e o salvamento na nuvem baseado na versão v.1.5.030.
+#   - Correção definitiva da sintaxe (remoção de caractere markdown incorreto na linha 499).
+#   - Restauração perfeita da Edição Individual de Alunos ("Atualização de Dados").
 # ==============================================================================
 
 import streamlit as st
@@ -287,7 +287,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.030.1 de 25/07/2026<br>
+        Versão: v.1.5.030.2 de 25/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -411,7 +411,7 @@ else:
                         st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
                     st.markdown("#### 📋 Tabela de Registros (Edição Geral)")
-                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v30_fix")
+                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v30_fix2")
 
                     if st.session_state["perfil_usuario"] == "Total":
                         if st.button("💾 Salvar Alterações Gerais"):
@@ -443,7 +443,7 @@ else:
                 elif sub_conformidade == "Atualização de Dados":
                     st.markdown(f"#### 🔍 Atualização e Edição Individual de Alunos ({ano_letivo_escolhido})")
                     lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                    aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_ind_fix")
+                    aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_ind_fix2")
                     
                     if aluno_selecionado_busca != "Selecione o Aluno...":
                         id_alvo_ind = int(aluno_selecionado_busca.split(" - ")[0])
@@ -451,7 +451,6 @@ else:
                         
                         if not df_aluno_ind.empty:
                             st.markdown("##### Dados Atuais do Aluno Selecionado:")
-                            # CORREÇÃO CRUCIAL: Chave única isolada e estado reativo garantido para o editor individual
                             df_individual_edit = st.data_editor(
                                 df_aluno_ind, 
                                 use_container_width=True, 
@@ -495,9 +494,3 @@ else:
         elif menu_principal == "🛠️ Suporte":
             st.markdown(f"### 🛠️ Painel de Suporte e Auditoria de Infraestrutura ({ano_letivo_escolhido})")
             st.info("Módulo de suporte pronto.")
-
----
-
-**Commit message:**
-```text
-Corrige v.1.5.030.1: restaura o funcionamento do sub-menu Atualização de Dados (edição individual)
