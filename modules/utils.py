@@ -2,10 +2,10 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa utils.py. Versão do Código: v.1.5.045
-# Data de atualização: 26/07/2026 - 03:22
+# Programa utils.py. Versão do Código: v.1.5.050
+# Data de atualização: 26/07/2026 - 04:13
 # Descrição das Alterações:
-#   - Isolamento seguro das funções de conexão, horário oficial e logs de auditoria.
+#   - Inclusão da constante COLUNAS_OFICIAIS para sanar o erro de importação no app.py.
 # ==============================================================================
 
 import streamlit as st
@@ -14,6 +14,13 @@ import re
 from datetime import datetime, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
+
+COLUNAS_OFICIAIS = [
+    "Id.", "Ano Letivo", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
+    "Mãe", "Pai", "Sexo", "Telefone", "E-mail(s)", "Endereço", "Bairro",
+    "Cartão Cidadão", "Cartão do SUS", "CERTIDÃO", "CPF", "Período de Ensino",
+    "Turma", "Turno", "Professor de Apoio Escolar - PAE", "Status", "Transferência"
+]
 
 def obter_horario_unai():
     """Retorna o horário oficial sincronizado com Unaí-MG (GMT-3)."""
@@ -56,7 +63,7 @@ def registrar_log_auditoria(usuario, perfil, acao):
         doc = conectar_planilha()
         try:
             aba_log = doc.worksheet("log_auditoria_ipec")
-        except gspread.WorksheetNotFound:
+        except Exception:
             aba_log = doc.add_worksheet(title="log_auditoria_ipec", rows="1000", cols="4")
             aba_log.append_row(["Data_Hora", "Usuario", "Perfil", "Acao"])
         
