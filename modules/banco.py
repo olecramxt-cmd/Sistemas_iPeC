@@ -4,7 +4,7 @@
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
 # Programa banco.py. Versão do Código: v.1.5.046
 # Data de atualização: 26/07/2026 - 03:46
-#Descrição das Alterações:
+# Descrição das Alterações:
 # - Isolamento seguro das funções de carregamento do banco de dados e planilhas de apoio.
 # ==============================================================================
 
@@ -73,7 +73,7 @@ def carregar_acervo_biblioteca():
         doc = conectar_planilha()
         try:
             aba_bib = doc.worksheet("biblioteca_acervo_ipec")
-        except gspread.WorksheetNotFound:
+        except Exception:
             aba_bib = doc.add_worksheet(title="biblioteca_acervo_ipec", rows="10000", cols="8")
             aba_bib.append_row(["Tombo", "Titulo", "Autor", "Categoria", "Disciplina", "Total", "Disponiveis", "Status"])
         registros = aba_bib.get_all_records()
@@ -86,7 +86,7 @@ def carregar_emprestimos_biblioteca():
         doc = conectar_planilha()
         try:
             aba_emp = doc.worksheet("biblioteca_emprestimos_ipec")
-        except gspread.WorksheetNotFound:
+        except Exception:
             aba_emp = doc.add_worksheet(title="biblioteca_emprestimos_ipec", rows="10000", cols="11")
             aba_emp.append_row(["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataEmprestimo", "DataPrevista", "Status", "DataDevolucao", "Observacao"])
         registros = aba_emp.get_all_records()
@@ -99,7 +99,7 @@ def carregar_config_biblioteca():
         doc = conectar_planilha()
         try:
             aba_cfg = doc.worksheet("biblioteca_config_ipec")
-        except gspread.WorksheetNotFound:
+        except Exception:
             aba_cfg = doc.add_worksheet(title="biblioteca_config_ipec", rows="10", cols="3")
             aba_cfg.append_row(["Chave", "Valor"])
             aba_cfg.append_row(["PrazoLiterarioDias", 14])
