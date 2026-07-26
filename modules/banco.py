@@ -3,9 +3,9 @@
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
 # Programa banco.py. Versão do Código: v.1.5.053
-# Data de atualização: 26/07/2026 - 05:52
+# Data de atualização: 26/07/2026 - 06:11
 # Descrição das Alterações:
-#   - Inclusão das funções de carregamento e salvamento para o módulo Programa Bolsa Família (PBF).
+#   - Inclusão oficial da funcao carregar_dados_pbf para o modulo banco.py.
 # ==============================================================================
 
 import streamlit as st
