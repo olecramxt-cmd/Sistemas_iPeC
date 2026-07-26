@@ -2,10 +2,10 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa ui_elementos.py. Versão do Código: v.1.5.050
-# Data de atualização: 26/07/2026 - 04:29
+# Programa ui_elementos.py. Versão do Código: v.1.5.051
+# Data de atualização: 26/07/2026 - 04:55
 # Descrição das Alterações:
-#   - Melhoria do contraste e legibilidade das opções de menu e rádio na barra lateral.
+#   - Correção cirúrgica do seletor CSS do st.radio para garantir alta legibilidade (texto branco).
 # ==============================================================================
 
 import streamlit as st
@@ -28,12 +28,12 @@ def aplicar_estilos_css():
                 margin-top: -35px !important;
             }
             .stRadio > div {
-                background-color: rgba(15, 43, 92, 0.6);
+                background-color: rgba(15, 43, 92, 0.7);
                 padding: 10px;
                 border-radius: 8px;
-                border: 1px solid rgba(247, 195, 37, 0.4);
+                border: 1px solid rgba(247, 195, 37, 0.5);
             }
-            .stRadio label {
+            .stRadio label p, .stRadio div[data-baseweb="radio"] div {
                 color: #ffffff !important;
                 font-weight: 700 !important;
                 font-size: 1.05em !important;
