@@ -2,11 +2,11 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa app.py. Versão do Código: v.1.5.056
-# Data de atualização: 26/07/2026 - 06:40
+# Programa app.py. Versão do Código: v.1.5.057
+# Data de atualização: 26/07/2026 - 06:56
 # Descrição das Alterações:
-#   - Refinamento absoluto do extrator de PDF para ignorar metadados binários e extrair nomes limpos.
-#   - Inclusão do botão de impressão interativo com janela de seleção de impressora.
+#   - Correção cirúrgica do extrator de PDF do PBF para ignorar metadados e capturar nomes reais.
+#   - Implementação de janela de impressão dedicada para relatórios e listagens.
 # ==============================================================================
 
 import streamlit as st
@@ -55,7 +55,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.056 de 26/07/2026<br>
+        Versão: v.1.5.057 de 26/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -167,7 +167,7 @@ else:
                         st.markdown('<div class="aviso-nao-encontrado-pulsante">⚠️ ATENÇÃO: Nenhum registro foi encontrado com os filtros informados ou o aluno não existe na base de dados!</div>', unsafe_allow_html=True)
                     else:
                         st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real)")
-                        df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v56")
+                        df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v57")
 
                         if st.session_state["perfil_usuario"] == "Total":
                             col_bt1, col_bt2, col_bt3 = st.columns([2, 2, 3])
@@ -222,7 +222,7 @@ else:
 
                             with col_bt3:
                                 lista_excluir_op = ["Selecione..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v56")
+                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v57")
                                 if aluno_para_excluir != "Selecione...":
                                     id_exc = int(aluno_para_excluir.split(" - ")[0])
                                     if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -247,7 +247,7 @@ else:
                         st.warning("⚠️ Nenhum aluno cadastrado para este ano letivo.")
                     else:
                         lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v56")
+                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v57")
                         
                         if aluno_selecionado_busca and aluno_selecionado_busca != "Selecione o Aluno...":
                             try:
@@ -258,7 +258,7 @@ else:
                                     reg_atual = df_aluno_ind.iloc[0]
                                     st.markdown(f"##### ✍️ Ficha Cadastral e Edição: {reg_atual.get('Aluno', '')}")
                                     
-                                    with st.form(f"form_atualizacao_individual_v56_{id_alvo_ind}"):
+                                    with st.form(f"form_atualizacao_individual_v57_{id_alvo_ind}"):
                                         col_up1, col_up2, col_up3 = st.columns(3)
                                         with col_up1:
                                             novo_nome = st.text_input("Nome do Aluno:", value=str(reg_atual.get("Aluno", "")))
@@ -494,7 +494,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_v56"
+                                key="editor_miguilim_v57"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -614,7 +614,7 @@ else:
                 "Relatório do Acervo", 
                 "Relatório de Empréstimo", 
                 "Gráficos"
-            ], key="sub_bib_v56")
+            ], key="sub_bib_v57")
             
             if sub_biblioteca == "Catálogo do Acervo":
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
@@ -624,11 +624,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v56")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v57")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v56")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v57")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v56")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v57")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -648,7 +648,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v56"
+                        key="tabela_acervo_v57"
                     )
                     
                     try:
@@ -683,7 +683,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v56", clear_on_submit=False):
+                with st.form("form_biblioteca_v57", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.get("lib_tombo", ""))
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.get("lib_titulo", ""))
                     
@@ -797,7 +797,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.get("tombo_para_excluir_seguro", "")
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v56")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v57")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -839,7 +839,7 @@ else:
                 try: dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
                 except: dt_fixa_obj = datetime(2026, 12, 15).date()
 
-                with st.form("form_config_biblioteca_v56"):
+                with st.form("form_config_biblioteca_v57"):
                     prazo_lit_dias = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("PrazoLiterarioDias", 14)))
                     data_did_fixa = st.date_input("Data Fixa de Devolução para Livros Didáticos:", value=dt_fixa_obj, format="DD/MM/YYYY")
                     limite_lit = st.number_input("Limite Máximo de Empréstimos Simultâneos de Livros Literários por Aluno:", min_value=1, value=int(cfg_atuais.get("LimiteLiterario", 2)))
@@ -870,12 +870,12 @@ else:
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v56")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v57")
                 
                 if sub_aba_emp == "Novo Empréstimo":
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v56")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v56")
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v56", format="DD/MM/YYYY")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v57")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v57")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v57", format="DD/MM/YYYY")
                     
                     cat_livro_atual = "Literário"
                     dias_prazo_lit = int(cfg_prazos.get("PrazoLiterarioDias", 14))
@@ -889,10 +889,10 @@ else:
                             cat_livro_atual = "Didático"
                             data_prev_calc = data_did_obj
                     
-                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v56", format="DD/MM/YYYY")
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v56")
+                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v57", format="DD/MM/YYYY")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v57")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v56"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v57"):
                         if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                             st.error("⚠️ Selecione o aluno e o livro para efetuar o empréstimo.")
                         else:
@@ -923,7 +923,7 @@ else:
                             st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v56")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v57")
                                 if st.button("✅ Confirmar Devolução (Baixa)") and emp_selecionado_acao != "Selecione...":
                                     tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
                                     aluno_dev = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
@@ -946,7 +946,7 @@ else:
 
         elif menu_principal == "💰 Programa Bolsa Família":
             st.markdown(f"### 💰 Programa Bolsa Família (PBF) — Ano Letivo: {ano_letivo_escolhido}")
-            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v56")
+            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v57")
             
             periodos_pbf = ["Fev/Mar", "Abr/Maio", "Jun/Jul", "Ags/Set", "Out/Nov"]
 
@@ -969,22 +969,44 @@ else:
                                     if t_pag:
                                         texto_total += t_pag + "\n"
                                 
-                                # Processamento cirúrgico para filtrar estritamente metadados binários e capturar nomes reais
+                                # Extrator cirúrgico adaptado aos PDFs oficiais do Bolsa Família
                                 linhas_brutas = texto_total.split("\n")
                                 ignorar_termos = [
                                     "Sistema", "PRESENÇA", "Relatório", "DADOS DA ESCOLA", "Nome da Escola", 
                                     "INEP", "UF/Município", "Ano", "Legenda", "Lançamento", "Sem lançamento", 
-                                    "Alunos S/Freq.", "%PDF", "obj", "endobj", "stream", "endstream", "xref", "trailer", "Root", "Pages", "Metadata"
+                                    "Alunos S/Freq.", "FEV.", "MAR.", "JUN.", "JUL.", "AGO.", "SET.", "OUT.", "NOV.", "DEZ.",
+                                    "Aluno Ativo", "Operador(a)", "Auxiliar", "Escolar", "Municipal", "Secretaria",
+                                    "Série/Ano", "Responsável", "Data/Hora", "Registro", "Frequência", "%", "obj", "endobj", "stream"
                                 ]
                                 
-                                for linha in linhas_brutas:
-                                    linha_l = linha.strip()
-                                    # Ignora linhas curtas, tags PDF e termos institucionais
-                                    if len(linha_l) > 4 and not any(ig in linha_l for ig in ignorar_termos) and not "2026(" in linha_l and not "FEV." in linha_l and not "MAR." in linha_l:
-                                        if not re.match(r'^\d{2}/\d{2}/\d{4}', linha_l) and not linha_l.startswith("%") and not "<" in linha_l:
-                                            # Filtra apenas linhas que parecem nomes de alunos válidos (letras maiúsculas e espaços)
-                                            if re.search(r'[A-ZÀ-Ú]', linha_l):
-                                                linhas_extraidas.append({"Aluno": linha_l.upper()})
+                                i = 0
+                                while i < len(linhas_brutas):
+                                    l_atual = linhas_brutas[i].strip()
+                                    # Procura por linhas que marcam início de período ou nomes de alunos em maiúsculas
+                                    if "2026(" in l_atual or "2026 (" in l_atual:
+                                        # O nome do aluno geralmente está nas linhas seguintes antes das porcentagens de frequência
+                                        candidato_linhas = []
+                                        j = i + 1
+                                        while j < len(linhas_brutas) and j < i + 5:
+                                            prox = linhas_brutas[j].strip()
+                                            if not any(ig in prox for ig in ignorar_termos) and not "%" in prox and not "ano Ensino" in prox and not "Fundamental" in prox and len(prox) > 3:
+                                                candidato_linhas.append(prox)
+                                            j += 1
+                                        if candidato_linhas:
+                                            nome_completo = " ".join(candidato_linhas).upper()
+                                            # Limpa ruídos comuns
+                                            nome_completo = re.sub(r'\s+', ' ', nome_completo).strip()
+                                            if len(nome_completo) > 5 and not "DADOS DA ESCOLA" in nome_completo:
+                                                linhas_extraidas.append({"Aluno": nome_completo})
+                                    i += 1
+                                    
+                                # Se a varredura estrutural não pegar tudo, faz varredura por linhas limpas em maiúsculas
+                                if len(linhas_extraidas) < 5:
+                                    for linha in linhas_brutas:
+                                        linha_l = linha.strip()
+                                        if len(linha_l) > 5 and linha_l.isupper() and not any(ig in linha_l for ig in ignorar_termos):
+                                            if not "/" in linha_l and not ":" in linha_l and not "DE" in linha_l:
+                                                linhas_extraidas.append({"Aluno": linha_l})
                             else:
                                 stringio = arquivo_pbf.getvalue().decode("latin1")
                                 for linha in stringio.split("\n"):
@@ -1040,17 +1062,29 @@ else:
                     st.markdown(f"##### 📄 Relatório Oficial PBF - Referência: {periodo_imp_ref} ({ano_letivo_escolhido})")
                     st.dataframe(df_pbf_rel, use_container_width=True, hide_index=True)
                     
+                    # Script JS otimizado para abrir janela dedicada de impressão contendo estritamente a listagem formatada
                     html_botao_impressao = f"""
                     <script>
-                    function abrirJanelaImpressora() {{
-                        window.print();
+                    function abrirJanelaImpressoraDedivada() {{
+                        var conteudoTabela = `{df_pbf_rel.to_html(index=False, classes='table table-striped')}`;
+                        var janelaImpressao = window.open('', '_blank', 'width=900,height=650');
+                        janelaImpressao.document.write('<html><head><title>Relatório PBF - {ano_letivo_escolhido} - {periodo_imp_ref}</title>');
+                        janelaImpressao.document.write('<style>body {{ font-family: Arial, sans-serif; padding: 20px; }} h2 {{ color: #0e4166; }} table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }} th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }} th {{ background-color: #0e4166; color: white; }}</style>');
+                        janelaImpressao.document.write('</style></head><body>');
+                        janelaImpressao.document.write('<h2>ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</h2>');
+                        janelaImpressao.document.write('<h3>SISTEMAS iPeC - Relatório Oficial PBF (Período: {periodo_imp_ref} / Ano: {ano_letivo_escolhido})</h3>');
+                        janelaImpressao.document.write(conteudoTabela);
+                        janelaImpressao.document.write('</body></html>');
+                        janelaImpressao.document.close();
+                        janelaImpressao.focus();
+                        setTimeout(function() {{ janelaImpressao.print(); }}, 500);
                     }}
                     </script>
-                    <button onclick="abrirJanelaImpressora()" style="background-color: #0e4166; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px;">
-                        🖨️ Selecionar Impressora e Imprimir Listagem
+                    <button onclick="abrirJanelaImpressoraDedivada()" style="background-color: #0e4166; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px;">
+                        🖨️ Imprimir Listagem Oficial PBF
                     </button>
                     """
-                    st.components.v1.html(html_botao_impressao, height=60)
+                    st.components.v1.html(html_botao_impressao, height=70)
                 else:
                     st.warning(f"⚠️ Não há dados disponíveis para impressão no período {periodo_imp_ref}.")
 
