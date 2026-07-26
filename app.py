@@ -2,12 +2,12 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa app.py. Versão do Código: v.1.5.061
-# Data de atualização: 26/07/2026 - 08:02
+# Programa app.py. Versão do Código: v.1.5.062
+# Data de atualização: 26/07/2026 - 08:30
 # Descrição das Alterações:
-#   - Layout de impressão corporativo com logo, cabeçalho, rodapé e coluna de Turma.
-#   - Confirmação de sobrescrita irreversível na importação de dados PBF.
-#   - Correção do erro de cota (429) do Google Sheets na atualização em lote via salvamento em bloco.
+#   - Restrição da importação PBF exclusivamente para o formato PDF.
+#   - Ajuste no fluxo de confirmação de sobrescrita e sincronização real com o banco de dados.
+#   - Correção definitiva do botão de impressão e limpeza de textos corporativos.
 # ==============================================================================
 
 import streamlit as st
@@ -56,7 +56,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.061 de 26/07/2026<br>
+        Versão: v.1.5.062 de 26/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -168,7 +168,7 @@ else:
                         st.markdown('<div class="aviso-nao-encontrado-pulsante">⚠️ ATENÇÃO: Nenhum registro foi encontrado com os filtros informados ou o aluno não existe na base de dados!</div>', unsafe_allow_html=True)
                     else:
                         st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real)")
-                        df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v61")
+                        df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v62")
 
                         if st.session_state["perfil_usuario"] == "Total":
                             col_bt1, col_bt2, col_bt3 = st.columns([2, 2, 3])
@@ -223,7 +223,7 @@ else:
 
                             with col_bt3:
                                 lista_excluir_op = ["Selecione..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v61")
+                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v62")
                                 if aluno_para_excluir != "Selecione...":
                                     id_exc = int(aluno_para_excluir.split(" - ")[0])
                                     if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -248,7 +248,7 @@ else:
                         st.warning("⚠️ Nenhum aluno cadastrado para este ano letivo.")
                     else:
                         lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v61")
+                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v62")
                         
                         if aluno_selecionado_busca and aluno_selecionado_busca != "Selecione o Aluno...":
                             try:
@@ -259,7 +259,7 @@ else:
                                     reg_atual = df_aluno_ind.iloc[0]
                                     st.markdown(f"##### ✍️ Ficha Cadastral e Edição: {reg_atual.get('Aluno', '')}")
                                     
-                                    with st.form(f"form_atualizacao_individual_v61_{id_alvo_ind}"):
+                                    with st.form(f"form_atualizacao_individual_v62_{id_alvo_ind}"):
                                         col_up1, col_up2, col_up3 = st.columns(3)
                                         with col_up1:
                                             novo_nome = st.text_input("Nome do Aluno:", value=str(reg_atual.get("Aluno", "")))
@@ -354,8 +354,8 @@ else:
             st.markdown(f"### 📥 Módulo de Importação de Dados — Ano: {ano_letivo_escolhido}")
             sub_lote = st.sidebar.radio("Sub-menu:", ["Importar Arquivo .TXT", "Visualizar Histórico de Envio"])
             if sub_lote == "Importar Arquivo .TXT":
-                st.info(f"Carregue os arquivos .TXT correspondentes para popular o ano letivo de {ano_letivo_escolhido}.")
-                arquivos_escolhidos = st.file_uploader("Escolha os arquivos .txt", type=["txt"], accept_multiple_files=True)
+                st.info(f"Carregue os arquivos correspondentes para popular o ano letivo de {ano_letivo_escolhido}.")
+                arquivos_escolhidos = st.file_uploader("Escolha os arquivos", accept_multiple_files=True)
                 if arquivos_escolhidos:
                     st.success(f"{len(arquivos_escolhidos)} arquivo(s) carregado(s) com sucesso para processamento.")
             else:
@@ -495,7 +495,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_v61"
+                                key="editor_miguilim_v62"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -615,7 +615,7 @@ else:
                 "Relatório do Acervo", 
                 "Relatório de Empréstimo", 
                 "Gráficos"
-            ], key="sub_bib_v61")
+            ], key="sub_bib_v62")
             
             if sub_biblioteca == "Catálogo do Acervo":
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
@@ -625,11 +625,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v61")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v62")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v61")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v62")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v61")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v62")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -649,7 +649,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v61"
+                        key="tabela_acervo_v62"
                     )
                     
                     try:
@@ -684,7 +684,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v61", clear_on_submit=False):
+                with st.form("form_biblioteca_v62", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.get("lib_tombo", ""))
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.get("lib_titulo", ""))
                     
@@ -798,7 +798,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.get("tombo_para_excluir_seguro", "")
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v61")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v62")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -840,7 +840,7 @@ else:
                 try: dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
                 except: dt_fixa_obj = datetime(2026, 12, 15).date()
 
-                with st.form("form_config_biblioteca_v61"):
+                with st.form("form_config_biblioteca_v62"):
                     prazo_lit_dias = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("PrazoLiterarioDias", 14)))
                     data_did_fixa = st.date_input("Data Fixa de Devolução para Livros Didáticos:", value=dt_fixa_obj, format="DD/MM/YYYY")
                     limite_lit = st.number_input("Limite Máximo de Empréstimos Simultâneos de Livros Literários por Aluno:", min_value=1, value=int(cfg_atuais.get("LimiteLiterario", 2)))
@@ -871,12 +871,12 @@ else:
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v61")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v62")
                 
                 if sub_aba_emp == "Novo Empréstimo":
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v61")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v61")
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v61", format="DD/MM/YYYY")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v62")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v62")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v62", format="DD/MM/YYYY")
                     
                     cat_livro_atual = "Literário"
                     dias_prazo_lit = int(cfg_prazos.get("PrazoLiterarioDias", 14))
@@ -890,10 +890,10 @@ else:
                             cat_livro_atual = "Didático"
                             data_prev_calc = data_did_obj
                     
-                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v61", format="DD/MM/YYYY")
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v61")
+                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v62", format="DD/MM/YYYY")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v62")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v61"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v62"):
                         if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                             st.error("⚠️ Selecione o aluno e o livro para efetuar o empréstimo.")
                         else:
@@ -924,7 +924,7 @@ else:
                             st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v61")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v62")
                                 if st.button("✅ Confirmar Devolução (Baixa)") and emp_selecionado_acao != "Selecione...":
                                     tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
                                     aluno_dev = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
@@ -947,80 +947,41 @@ else:
 
         elif menu_principal == "💰 Programa Bolsa Família":
             st.markdown(f"### 💰 Programa Bolsa Família (PBF) — Ano Letivo: {ano_letivo_escolhido}")
-            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v61")
+            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v62")
             
             periodos_pbf = ["Fev/Mar", "Abr/Maio", "Jun/Jul", "Ags/Set", "Out/Nov"]
 
             if sub_pbf == "Importar Dados":
-                st.markdown("#### 📂 Importação de Dados Bimestrais do PBF")
-                st.info("Selecione o período de referência e carregue o arquivo. Caso já existam dados para o período, o sistema solicitará confirmação para sobrescrita.")
+                st.markdown("#### 📂 Importação de Dados Bimestrais do PBF (Formato PDF)")
+                st.info("Selecione o período de referência e carregue o arquivo PDF oficial.")
                 
                 periodo_imp = st.selectbox("Selecione o Período de Referência:", periodos_pbf, key="sel_periodo_pbf_imp")
                 
-                # Verificação prévia se já existem dados salvos na nuvem para este período
+                # Verificação real e atualizada na nuvem
                 df_verif_existente = carregar_dados_pbf(ano_letivo_escolhido, periodo_imp)
                 tem_dados_salvos = not df_verif_existente.empty
                 
                 sobrescrever_autorizado = True
                 if tem_dados_salvos:
                     st.warning(f"⚠️ Atenção: Já existem {len(df_verif_existente)} registros salvos na nuvem para o período [{periodo_imp}] ({ano_letivo_escolhido}).")
-                    conf_sobrescrever = st.radio("Deseja sobrescrever os dados existentes? Esta operação é irreversível!", ["Não", "Sim"], index=0, key="radio_sobrescrever_pbf")
-                    sobrescrever_autorizado = (conf_sobrescrever == "Sim")
+                    conf_sobrescrever = st.radio("Deseja sobrescrever os dados existentes? Esta operação é irreversível!", ["Escolha...", "Não", "Sim"], index=0, key="radio_sobrescrever_pbf")
+                    if conf_sobrescrever == "Escolha...":
+                        sobrescrever_autorizado = False
+                        st.info("ℹ️ Selecione 'Sim' para sobrescrever ou 'Não' para cancelar a importação.")
+                    elif conf_sobrescrever == "Não":
+                        sobrescrever_autorizado = False
+                        st.warning("⚠️ Operação cancelada. Nenhum dado foi alterado.")
+                    else:
+                        sobrescrever_autorizado = True
 
                 if not tem_dados_salvos or sobrescrever_autorizado:
-                    arquivo_pbf = st.file_uploader(f"Carregar arquivo para o período [{periodo_imp}] ({ano_letivo_escolhido}):", type=["xlsx", "xls", "txt", "pdf", "csv"], key=f"upl_pbf_{periodo_imp}")
-                    
-                    if arquivo_pbf is not None:
-                        if st.button("📥 Processar e Salvar no Banco PBF", key="btn_salvar_pbf_lote"):
-                            try:
-                                linhas_extraidas = []
-                                nome_arquivo = arquivo_pbf.name.lower()
-                                
-                                termos_proibidos = [
-                                    "ESCOLA", "RELATÓRIO", "PRESENÇA", "INEP", "MUNICIPAL", "SECRETARIA",
-                                    "ANO", "PERÍODO", "DATA", "HORA", "REGISTRO", "SITUAÇÃO", "LEGENDA",
-                                    "ATIVO", "FINALIZADO", "LANÇAMENTO", "MARÇO", "FEVEREIRO", "ABRIL", "MAIO",
-                                    "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
-                                    "DEPENDÊNCIA", "ADMINISTRATIVA", "UNAÍ", "MG", "ALUNOS", "FREQUÊNCIA",
-                                    "AUXILIAR", "OPERADOR", "FUNDAMENTAL", "ENSINO", "%"
-                                ]
-
-                                def validar_e_adicionar_aluno(texto):
-                                    t_clean = str(texto).upper().strip()
-                                    t_clean = re.sub(r'^.*?/MARÇO\)\s*', '', t_clean)
-                                    t_clean = re.sub(r'^.*?/MARÇO\s*', '', t_clean)
-                                    t_clean = re.sub(r'^\(FEVEREIRO.*?\)\s*', '', t_clean)
-                                    t_clean = re.sub(r'^\d{2}/\d{2}/\d{4}.*$', '', t_clean).strip()
-                                    t_clean = re.sub(r'^\d{2}:\d{2}.*$', '', t_clean).strip()
-
-                                    if len(t_clean) < 5:
-                                        return
-                                    
-                                    contem_proibido = False
-                                    for termo in termos_proibidos:
-                                        if termo in t_clean:
-                                            contem_proibido = True
-                                            break
-                                    
-                                    if not contem_proibido and not any(dig in t_clean for dig in ["31292141", "2026/"]):
-                                        linhas_extraidas.append({"Aluno": t_clean})
-
-                                if nome_arquivo.endswith(".xlsx") or nome_arquivo.endswith(".xls"):
-                                    df_excel = pd.read_excel(arquivo_pbf)
-                                    for col in df_excel.columns:
-                                        for val in df_excel[col].dropna():
-                                            validar_e_adicionar_aluno(val)
-                                                    
-                                elif nome_arquivo.endswith(".txt") or nome_arquivo.endswith(".csv"):
-                                    stringio = arquivo_pbf.getvalue().decode("latin1")
-                                    for linha in stringio.split("\n"):
-                                        l_trim = linha.strip()
-                                        if len(l_trim) > 5:
-                                            partes = re.split(r'\t|;|\|', l_trim)
-                                            for p in partes:
-                                                validar_e_adicionar_aluno(p)
-                                                    
-                                elif nome_arquivo.endswith(".pdf"):
+                    if not tem_dados_salvos or (tem_dados_salvos and conf_sobrescrever == "Sim"):
+                        arquivo_pbf = st.file_uploader(f"Carregar arquivo PDF para o período [{periodo_imp}] ({ano_letivo_escolhido}):", type=["pdf"], key=f"upl_pbf_pdf_{periodo_imp}")
+                        
+                        if arquivo_pbf is not None:
+                            if st.button("📥 Processar e Salvar no Banco PBF", key="btn_salvar_pbf_lote"):
+                                try:
+                                    linhas_extraidas = []
                                     reader = PdfReader(arquivo_pbf)
                                     texto_total = ""
                                     for pagina in reader.pages:
@@ -1028,6 +989,35 @@ else:
                                         if t_pag:
                                             texto_total += t_pag + "\n"
                                     
+                                    termos_proibidos = [
+                                        "ESCOLA", "RELATÓRIO", "PRESENÇA", "INEP", "MUNICIPAL", "SECRETARIA",
+                                        "ANO", "PERÍODO", "DATA", "HORA", "REGISTRO", "SITUAÇÃO", "LEGENDA",
+                                        "ATIVO", "FINALIZADO", "LANÇAMENTO", "MARÇO", "FEVEREIRO", "ABRIL", "MAIO",
+                                        "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
+                                        "DEPENDÊNCIA", "ADMINISTRATIVA", "UNAÍ", "MG", "ALUNOS", "FREQUÊNCIA",
+                                        "AUXILIAR", "OPERADOR", "FUNDAMENTAL", "ENSINO", "%"
+                                    ]
+
+                                    def validar_e_adicionar_aluno(texto):
+                                        t_clean = str(texto).upper().strip()
+                                        t_clean = re.sub(r'^.*?/MARÇO\)\s*', '', t_clean)
+                                        t_clean = re.sub(r'^.*?/MARÇO\s*', '', t_clean)
+                                        t_clean = re.sub(r'^\(FEVEREIRO.*?\)\s*', '', t_clean)
+                                        t_clean = re.sub(r'^\d{2}/\d{2}/\d{4}.*$', '', t_clean).strip()
+                                        t_clean = re.sub(r'^\d{2}:\d{2}.*$', '', t_clean).strip()
+
+                                        if len(t_clean) < 5:
+                                            return
+                                        
+                                        contem_proibido = False
+                                        for termo in termos_proibidos:
+                                            if termo in t_clean:
+                                                contem_proibido = True
+                                                break
+                                        
+                                        if not contem_proibido and not any(dig in t_clean for dig in ["31292141", "2026/"]):
+                                            linhas_extraidas.append({"Aluno": t_clean})
+
                                     linhas_brutas = texto_total.split("\n")
                                     i = 0
                                     while i < len(linhas_brutas):
@@ -1045,37 +1035,35 @@ else:
                                                 validar_e_adicionar_aluno(nome_completo)
                                         i += 1
 
-                                df_novo_pbf = pd.DataFrame(linhas_extraidas).drop_duplicates(subset=["Aluno"])
+                                    df_novo_pbf = pd.DataFrame(linhas_extraidas).drop_duplicates(subset=["Aluno"])
 
-                                if not df_novo_pbf.empty:
-                                    doc_pbf = conectar_planilha()
-                                    nome_aba_pbf = f"pbf_{ano_letivo_escolhido}_{periodo_imp.replace('/', '_').replace('.', '').lower()}"
-                                    
-                                    try:
-                                        aba_pbf = doc_pbf.worksheet(nome_aba_pbf)
-                                        doc_pbf.del_worksheet(aba_pbf)
-                                    except Exception:
-                                        pass
-                                    
-                                    aba_pbf = doc_pbf.add_worksheet(title=nome_aba_pbf, rows="2000", cols="5")
-                                    aba_pbf.append_row(["AnoLetivo", "Periodo", "Aluno", "DataImportacao"])
-                                    
-                                    data_hora_imp = obter_horario_unai().strftime("%d/%m/%Y %H:%M")
-                                    lote_linhas = [[str(ano_letivo_escolhido), str(periodo_imp), str(r["Aluno"]), data_hora_imp] for _, r in df_novo_pbf.iterrows()]
-                                    
-                                    if lote_linhas:
-                                        aba_pbf.append_rows(lote_linhas)
+                                    if not df_novo_pbf.empty:
+                                        doc_pbf = conectar_planilha()
+                                        nome_aba_pbf = f"pbf_{ano_letivo_escolhido}_{periodo_imp.replace('/', '_').replace('.', '').lower()}"
+                                        
+                                        try:
+                                            aba_pbf = doc_pbf.worksheet(nome_aba_pbf)
+                                            doc_pbf.del_worksheet(aba_pbf)
+                                        except Exception:
+                                            pass
+                                        
+                                        aba_pbf = doc_pbf.add_worksheet(title=nome_aba_pbf, rows="2000", cols="5")
+                                        aba_pbf.append_row(["AnoLetivo", "Periodo", "Aluno", "DataImportacao"])
+                                        
+                                        data_hora_imp = obter_horario_unai().strftime("%d/%m/%Y %H:%M")
+                                        lote_linhas = [[str(ano_letivo_escolhido), str(periodo_imp), str(r["Aluno"]), data_hora_imp] for _, r in df_novo_pbf.iterrows()]
+                                        
+                                        if lote_linhas:
+                                            aba_pbf.append_rows(lote_linhas)
 
-                                    registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Importou dados PBF para {periodo_imp} ({ano_letivo_escolhido})")
-                                    st.success(f"🎉 Dados do período {periodo_imp} importados com sucesso ({len(lote_linhas)} registros limpos)!")
-                                    st.cache_data.clear()
-                                    st.rerun()
-                                else:
-                                    st.warning("⚠️ O arquivo enviado não pôde ser processado ou retornou vazio após a filtragem.")
-                            except Exception as err_pbf_imp:
-                                st.error(f"Erro ao processar importação PBF: {err_pbf_imp}")
-                else:
-                    st.info("ℹ️ Importação pausada. Confirme a sobrescrita selecionando 'Sim' acima para liberar o carregamento do arquivo.")
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Importou dados PBF para {periodo_imp} ({ano_letivo_escolhido})")
+                                        st.success(f"🎉 Dados do período {periodo_imp} importados com sucesso ({len(lote_linhas)} registros limpos)!")
+                                        st.cache_data.clear()
+                                        st.rerun()
+                                    else:
+                                        st.warning("⚠️ O arquivo PDF enviado não retornou registros válidos após a filtragem.")
+                                except Exception as err_pbf_imp:
+                                    st.error(f"Erro ao processar importação PDF: {err_pbf_imp}")
 
             elif sub_pbf == "Visualizar Dados":
                 st.markdown("#### 👁️ Visualização de Dados Importados (Linhas e Colunas)")
@@ -1094,7 +1082,6 @@ else:
                 
                 df_pbf_rel = carregar_dados_pbf(ano_letivo_escolhido, periodo_imp_ref)
                 if not df_pbf_rel.empty:
-                    # Cruza os nomes do PBF com o cadastro geral para buscar a turma/período de cada aluno
                     if not df_db_ano.empty and "Aluno" in df_db_ano.columns and "Turma" in df_db_ano.columns:
                         mapa_turmas = dict(zip(df_db_ano["Aluno"].astype(str).str.strip().str.upper(), df_db_ano["Turma"].astype(str).str.strip()))
                         mapa_periodo_ens = dict(zip(df_db_ano["Aluno"].astype(str).str.strip().str.upper(), df_db_ano["Período de Ensino"].astype(str).str.strip()))
@@ -1120,11 +1107,12 @@ else:
                     operador_atual = st.session_state.get('email_usuario', 'Sistema').split('@')[0]
                     data_hora_atual_str = obter_horario_unai().strftime("%d/%m/%Y %H:%M")
                     
-                    # Script JS de impressão com layout corporativo estrito exigido (Logo, Cabeçalho, Tabela com Turma e Rodapé paginado)
+                    html_tabela_impressao = df_pbf_rel[['Aluno', 'Localização (Turma/Período)']].to_html(index=False, classes='table table-bordered table-striped')
+                    
                     html_botao_impressao = f"""
                     <script>
                     function abrirJanelaImpressoraDedivada() {{
-                        var conteudoTabela = `{df_pbf_rel[['Aluno', 'Localização (Turma/Período)']].to_html(index=False, classes='table table-bordered table-striped')}`;
+                        var conteudoTabela = `{html_tabela_impressao}`;
                         var janelaImpressao = window.open('', '_blank', 'width=1000,height=750');
                         janelaImpressao.document.write('<html><head><title>Relatório PBF - {ano_letivo_escolhido} - {periodo_imp_ref}</title>');
                         janelaImpressao.document.write('<style>');
@@ -1151,7 +1139,7 @@ else:
                         janelaImpressao.document.write(conteudoTabela);
                         
                         janelaImpressao.document.write('<div class="footer-container">');
-                        janelaImpressao.document.write('<div>Sistemas iPeC - v.1.5.061</div>');
+                        janelaImpressao.document.write('<div>Sistemas iPeC - v.1.5.062</div>');
                         janelaImpressao.document.write('<div>Operador: {operador_atual} | Data/Hora: {data_hora_atual_str}</div>');
                         janelaImpressao.document.write('<div>p.1/1</div>');
                         janelaImpressao.document.write('</div>');
@@ -1172,7 +1160,7 @@ else:
 
             elif sub_pbf == "Atualização em Lote (PBF)":
                 st.markdown("#### 🔄 Rotina de Atualização em Lote para o Cadastro de Alunos")
-                st.info("Esta rotina cruzará a lista de beneficiários importada com o cadastro de alunos do ano letivo vigente. O salvamento em lote otimizado evitará estouro de cota na API do Google Sheets.")
+                st.info("Esta rotina cruzará a lista de beneficiários importada com o cadastro de alunos do ano letivo vigente. Os alunos presentes na lista terão o campo PBF atualizado para 'Sim', e os demais para 'Não'.")
                 
                 periodo_lote_pbf = st.selectbox("Selecione o Período de Referência Base:", periodos_pbf, key="sel_periodo_pbf_lote_rotina")
                 
@@ -1202,7 +1190,6 @@ else:
                                         reg_al["Idade"] = calcular_idade_extenso(reg_al.get("Nascimento", ""))
                                         valores_linha_corrigidos = [str(reg_al.get(c, "")) for c in COLUNAS_OFICIAIS]
                                         
-                                        # Prepara para atualizar em bloco otimizado (evita erro 429 de quota)
                                         lote_atualizacoes.append({
                                             'range': f"A{linha_plan_al}:Z{linha_plan_al}",
                                             'values': [valores_linha_corrigidos]
@@ -1210,7 +1197,6 @@ else:
                                         atualizados_count += 1
 
                             if lote_atualizacoes:
-                                # Executa atualização em lote via batch_update do gspread
                                 aba_alunos_lote.batch_update(lote_atualizacoes)
                             
                             registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Executou atualização em lote PBF ({periodo_lote_pbf}) - {atualizados_count} alteracoes.")
