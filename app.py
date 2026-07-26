@@ -2,10 +2,10 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa app.py. Versão do Código: v.1.5.059
-# Data de atualização: 26/07/2026 - 07:07
+# Programa app.py. Versão do Código: v.1.5.060
+# Data de atualização: 26/07/2026 - 07:20
 # Descrição das Alterações:
-#   - Expansão do módulo de importação PBF para suporte nativo e otimizado a .xlsx, .xls e .txt.
+#   - Refinamento absoluto do filtro de importação PBF para barrar cabeçalhos, termos institucionais e lixo de texto.
 # ==============================================================================
 
 import streamlit as st
@@ -54,7 +54,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.059 de 26/07/2026<br>
+        Versão: v.1.5.060 de 26/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -166,7 +166,7 @@ else:
                         st.markdown('<div class="aviso-nao-encontrado-pulsante">⚠️ ATENÇÃO: Nenhum registro foi encontrado com os filtros informados ou o aluno não existe na base de dados!</div>', unsafe_allow_html=True)
                     else:
                         st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real)")
-                        df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v59")
+                        df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v60")
 
                         if st.session_state["perfil_usuario"] == "Total":
                             col_bt1, col_bt2, col_bt3 = st.columns([2, 2, 3])
@@ -221,7 +221,7 @@ else:
 
                             with col_bt3:
                                 lista_excluir_op = ["Selecione..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v59")
+                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v60")
                                 if aluno_para_excluir != "Selecione...":
                                     id_exc = int(aluno_para_excluir.split(" - ")[0])
                                     if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -246,7 +246,7 @@ else:
                         st.warning("⚠️ Nenhum aluno cadastrado para este ano letivo.")
                     else:
                         lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v59")
+                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v60")
                         
                         if aluno_selecionado_busca and aluno_selecionado_busca != "Selecione o Aluno...":
                             try:
@@ -257,7 +257,7 @@ else:
                                     reg_atual = df_aluno_ind.iloc[0]
                                     st.markdown(f"##### ✍️ Ficha Cadastral e Edição: {reg_atual.get('Aluno', '')}")
                                     
-                                    with st.form(f"form_atualizacao_individual_v59_{id_alvo_ind}"):
+                                    with st.form(f"form_atualizacao_individual_v60_{id_alvo_ind}"):
                                         col_up1, col_up2, col_up3 = st.columns(3)
                                         with col_up1:
                                             novo_nome = st.text_input("Nome do Aluno:", value=str(reg_atual.get("Aluno", "")))
@@ -493,7 +493,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_v59"
+                                key="editor_miguilim_v60"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -613,7 +613,7 @@ else:
                 "Relatório do Acervo", 
                 "Relatório de Empréstimo", 
                 "Gráficos"
-            ], key="sub_bib_v59")
+            ], key="sub_bib_v60")
             
             if sub_biblioteca == "Catálogo do Acervo":
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
@@ -623,11 +623,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v59")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v60")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v59")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v60")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v59")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v60")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -647,7 +647,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v59"
+                        key="tabela_acervo_v60"
                     )
                     
                     try:
@@ -682,7 +682,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v59", clear_on_submit=False):
+                with st.form("form_biblioteca_v60", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.get("lib_tombo", ""))
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.get("lib_titulo", ""))
                     
@@ -796,7 +796,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.get("tombo_para_excluir_seguro", "")
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v59")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v60")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -838,7 +838,7 @@ else:
                 try: dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
                 except: dt_fixa_obj = datetime(2026, 12, 15).date()
 
-                with st.form("form_config_biblioteca_v59"):
+                with st.form("form_config_biblioteca_v60"):
                     prazo_lit_dias = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("PrazoLiterarioDias", 14)))
                     data_did_fixa = st.date_input("Data Fixa de Devolução para Livros Didáticos:", value=dt_fixa_obj, format="DD/MM/YYYY")
                     limite_lit = st.number_input("Limite Máximo de Empréstimos Simultâneos de Livros Literários por Aluno:", min_value=1, value=int(cfg_atuais.get("LimiteLiterario", 2)))
@@ -869,12 +869,12 @@ else:
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v59")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v60")
                 
                 if sub_aba_emp == "Novo Empréstimo":
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v59")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v59")
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v59", format="DD/MM/YYYY")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v60")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v60")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v60", format="DD/MM/YYYY")
                     
                     cat_livro_atual = "Literário"
                     dias_prazo_lit = int(cfg_prazos.get("PrazoLiterarioDias", 14))
@@ -888,10 +888,10 @@ else:
                             cat_livro_atual = "Didático"
                             data_prev_calc = data_did_obj
                     
-                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v59", format="DD/MM/YYYY")
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v59")
+                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v60", format="DD/MM/YYYY")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v60")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v59"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v60"):
                         if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                             st.error("⚠️ Selecione o aluno e o livro para efetuar o empréstimo.")
                         else:
@@ -922,7 +922,7 @@ else:
                             st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v59")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v60")
                                 if st.button("✅ Confirmar Devolução (Baixa)") and emp_selecionado_acao != "Selecione...":
                                     tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
                                     aluno_dev = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
@@ -945,13 +945,13 @@ else:
 
         elif menu_principal == "💰 Programa Bolsa Família":
             st.markdown(f"### 💰 Programa Bolsa Família (PBF) — Ano Letivo: {ano_letivo_escolhido}")
-            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v59")
+            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v60")
             
             periodos_pbf = ["Fev/Mar", "Abr/Maio", "Jun/Jul", "Ags/Set", "Out/Nov"]
 
             if sub_pbf == "Importar Dados":
                 st.markdown("#### 📂 Importação de Dados Bimestrais do PBF")
-                st.info("Selecione o período de referência e carregue o arquivo convertido em **Excel (.xlsx)**, **Texto (.txt)** ou **PDF**.")
+                st.info("Selecione o período de referência e carregue o arquivo (Excel, Texto ou PDF). O extrator limpará automaticamente qualquer cabeçalho ou metadado institucional.")
                 
                 periodo_imp = st.selectbox("Selecione o Período de Referência:", periodos_pbf, key="sel_periodo_pbf_imp")
                 arquivo_pbf = st.file_uploader(f"Carregar arquivo para o período [{periodo_imp}] ({ano_letivo_escolhido}):", type=["xlsx", "xls", "txt", "pdf", "csv"], key=f"upl_pbf_{periodo_imp}")
@@ -962,39 +962,51 @@ else:
                             linhas_extraidas = []
                             nome_arquivo = arquivo_pbf.name.lower()
                             
-                            if nome_arquivo.endswith(".xlsx") or nome_arquivo.endswith(".xls"):
-                                df_excel = pd.read_excel(arquivo_pbf)
-                                coluna_aluno_encontrada = None
-                                for col in df_excel.columns:
-                                    col_str = str(col).upper()
-                                    if "NOME" in col_str or "ALUNO" in col_str:
-                                        coluna_aluno_encontrada = col
+                            # Lista robusta de termos institucionais e lixo para ignorar categoricamente
+                            termos_proibidos = [
+                                "ESCOLA", "RELATÓRIO", "PRESENÇA", "INEP", "MUNICIPAL", "SECRETARIA",
+                                "ANO", "PERÍODO", "DATA", "HORA", "REGISTRO", "SITUAÇÃO", "LEGENDA",
+                                "ATIVO", "FINALIZADO", "LANÇAMENTO", "MARÇO", "FEVEREIRO", "ABRIL", "MAIO",
+                                "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
+                                "DEPENDÊNCIA", "ADMINISTRATIVA", "UNAÍ", "MG", "ALUNOS", "FREQUÊNCIA",
+                                "AUXILIAR", "OPERADOR", "ESCOLA", "FUNDAMENTAL", "ENSINO", "%"
+                            ]
+
+                            def validar_e_adicionar_aluno(texto):
+                                t_clean = str(texto).upper().strip()
+                                # Remove prefixos de meses/marços remanescentes se houver
+                                t_clean = re.sub(r'^.*?/MARÇO\)\s*', '', t_clean)
+                                t_clean = re.sub(r'^.*?/MARÇO\s*', '', t_clean)
+                                t_clean = re.sub(r'^\(FEVEREIRO.*?\)\s*', '', t_clean)
+                                t_clean = t_clean.strip()
+
+                                if len(t_clean) < 5:
+                                    return
+                                
+                                # Verifica se contém alguma palavra proibida de cabeçalho
+                                contem_proibido = False
+                                for termo in termos_proibidos:
+                                    if termo in t_clean:
+                                        contem_proibido = True
                                         break
                                 
-                                if coluna_aluno_encontrada:
-                                    for val in df_excel[coluna_aluno_encontrada].dropna():
-                                        v_str = str(val).strip().upper()
-                                        if len(v_str) > 3 and not "ESCOLA" in v_str and not "RELATÓRIO" in v_str:
-                                            linhas_extraidas.append({"Aluno": v_str})
-                                else:
-                                    for col in df_excel.columns:
-                                        for val in df_excel[col].dropna():
-                                            v_str = str(val).strip().upper()
-                                            if len(v_str) > 5 and not "ESCOLA" in v_str and not "2026" in v_str:
-                                                linhas_extraidas.append({"Aluno": v_str})
+                                if not contem_proibido and not any(dig in t_clean for dig in ["31292141", "2026/"]):
+                                    linhas_extraidas.append({"Aluno": t_clean})
+
+                            if nome_arquivo.endswith(".xlsx") or nome_arquivo.endswith(".xls"):
+                                df_excel = pd.read_excel(arquivo_pbf)
+                                for col in df_excel.columns:
+                                    for val in df_excel[col].dropna():
+                                        validar_e_adicionar_aluno(val)
                                                 
                             elif nome_arquivo.endswith(".txt") or nome_arquivo.endswith(".csv"):
                                 stringio = arquivo_pbf.getvalue().decode("latin1")
                                 for linha in stringio.split("\n"):
-                                    l_trim = linha.strip().upper()
-                                    if len(l_trim) > 5 and not "ESCOLA" in l_trim and not "RELATÓRIO" in l_trim and not "PRESENÇA" in l_trim:
-                                        # Remove tabulações ou separadores do TXT/CSV e pega a parte do nome
+                                    l_trim = linha.strip()
+                                    if len(l_trim) > 5:
                                         partes = re.split(r'\t|;|\|', l_trim)
                                         for p in partes:
-                                            p_limpo = p.strip()
-                                            if len(p_limpo) > 5 and not any(dig in p_limpo for dig in ["2026", "31292141", "%"]):
-                                                linhas_extraidas.append({"Aluno": p_limpo})
-                                                break
+                                            validar_e_adicionar_aluno(p)
                                                 
                             elif nome_arquivo.endswith(".pdf"):
                                 reader = PdfReader(arquivo_pbf)
@@ -1005,14 +1017,6 @@ else:
                                         texto_total += t_pag + "\n"
                                 
                                 linhas_brutas = texto_total.split("\n")
-                                ignorar_termos = [
-                                    "Sistema", "PRESENÇA", "Relatório", "DADOS DA ESCOLA", "Nome da Escola", 
-                                    "INEP", "UF/Município", "Ano", "Legenda", "Lançamento", "Sem lançamento", 
-                                    "Alunos S/Freq.", "FEV.", "MAR.", "JUN.", "JUL.", "AGO.", "SET.", "OUT.", "NOV.", "DEZ.",
-                                    "Aluno Ativo", "Operador(a)", "Auxiliar", "Escolar", "Municipal", "Secretaria",
-                                    "Série/Ano", "Responsável", "Data/Hora", "Registro", "Frequência", "%", "obj", "endobj", "stream"
-                                ]
-                                
                                 i = 0
                                 while i < len(linhas_brutas):
                                     l_atual = linhas_brutas[i].strip()
@@ -1021,14 +1025,12 @@ else:
                                         j = i + 1
                                         while j < len(linhas_brutas) and j < i + 5:
                                             prox = linhas_brutas[j].strip()
-                                            if not any(ig in prox for ig in ignorar_termos) and not "%" in prox and not "ano Ensino" in prox and not "Fundamental" in prox and len(prox) > 3:
+                                            if len(prox) > 3 and not "%" in prox and not "ano Ensino" in prox and not "Fundamental" in prox:
                                                 candidato_linhas.append(prox)
                                             j += 1
                                         if candidato_linhas:
                                             nome_completo = " ".join(candidato_linhas).upper()
-                                            nome_completo = re.sub(r'\s+', ' ', nome_completo).strip()
-                                            if len(nome_completo) > 5 and not "DADOS DA ESCOLA" in nome_completo:
-                                                linhas_extraidas.append({"Aluno": nome_completo})
+                                            validar_e_adicionar_aluno(nome_completo)
                                     i += 1
 
                             df_novo_pbf = pd.DataFrame(linhas_extraidas).drop_duplicates(subset=["Aluno"])
@@ -1056,7 +1058,7 @@ else:
                                 st.success(f"🎉 Dados do período {periodo_imp} importados com sucesso ({len(lote_linhas)} registros limpos)!")
                                 st.cache_data.clear()
                             else:
-                                st.warning("⚠️ O arquivo enviado não pôde ser processado ou está vazio.")
+                                st.warning("⚠️ O arquivo enviado não pôde ser processado ou retornou vazio após a filtragem.")
                         except Exception as err_pbf_imp:
                             st.error(f"Erro ao processar importação PBF: {err_pbf_imp}")
 
