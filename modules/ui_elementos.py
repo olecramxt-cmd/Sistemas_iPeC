@@ -2,10 +2,10 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa ui_elementos.py. Versão do Código: v.1.5.048
-# Data de atualização: 26/07/2026 - 04:02
+# Programa ui_elementos.py. Versão do Código: v.1.5.050
+# Data de atualização: 26/07/2026 - 04:29
 # Descrição das Alterações:
-# - Isolamento seguro dos estilos CSS, componentes visuais e cabeçalhos da interface.
+#   - Melhoria do contraste e legibilidade das opções de menu e rádio na barra lateral.
 # ==============================================================================
 
 import streamlit as st
@@ -28,14 +28,15 @@ def aplicar_estilos_css():
                 margin-top: -35px !important;
             }
             .stRadio > div {
-                background-color: rgba(255, 255, 255, 0.15);
+                background-color: rgba(15, 43, 92, 0.6);
                 padding: 10px;
                 border-radius: 8px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(247, 195, 37, 0.4);
             }
             .stRadio label {
                 color: #ffffff !important;
-                font-weight: 600 !important;
+                font-weight: 700 !important;
+                font-size: 1.05em !important;
             }
             div.stButton > button:first-child {
                 background-color: #1e4b8f;
@@ -131,6 +132,23 @@ def aplicar_estilos_css():
                 display: block;
                 width: 100%;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            @keyframes pulsar-alerta {
+                0% { opacity: 1.0; transform: scale(1); }
+                50% { opacity: 0.4; transform: scale(1.02); }
+                100% { opacity: 1.0; transform: scale(1); }
+            }
+            .aviso-nao-encontrado-pulsante {
+                color: #d32f2f;
+                font-weight: 900;
+                font-size: 1.2em;
+                text-align: center;
+                padding: 15px;
+                background-color: rgba(211, 47, 47, 0.1);
+                border: 2px dashed #d32f2f;
+                border-radius: 8px;
+                margin: 20px 0;
+                animation: pulsar-alerta 1.5s infinite ease-in-out;
             }
         </style>
     """, unsafe_allow_html=True)
