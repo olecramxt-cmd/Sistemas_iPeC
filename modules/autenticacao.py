@@ -18,7 +18,7 @@ def gerenciar_autenticacao(user_input, pass_input):
         doc = conectar_planilha()
         try:
             aba_cred = doc.worksheet("credenciais_ipec")
-        except gspread.WorksheetNotFound:
+        except Exception:
             aba_cred = doc.add_worksheet(title="credenciais_ipec", rows="100", cols="4")
             aba_cred.append_row(["Usuario", "Senha", "Perfil", "Foto"])
             aba_cred.append_row(["admin@ipec.com", "admin123", "Total", ""])
