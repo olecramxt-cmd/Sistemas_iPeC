@@ -2,22 +2,32 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Versão do Código: v.1.5.044
-# Data de Atualização: 26/07/2026 - 03:04
+# Programa app.py. Versão do Código: v.1.5.049
+# Data de atualização: 26/07/2026 - 04:05
 # Descrição das Alterações:
-#   - Inicialização segura de todas as chaves de st.session_state para evitar KeyError.
+#   - Refatoração completa para arquitetura modular utilizando os pacotes de modules.
+#   - Redução drástica de linhas e ganho expressivo de fluidez e performance.
 # ==============================================================================
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import re
 from datetime import datetime, timedelta
 import time
-import gspread
-from google.oauth2.service_account import Credentials
 import os
 import base64
+
+# IMPORTAÇÃO DOS MÓDULOS MODULARIZADOS DO SISTEMA iPeC
+from modules.utils import obter_horario_unai, calcular_idade_extenso, conectar_planilha, registrar_log_auditoria, COLUNAS_OFICIAIS
+from modules.banco import (
+    carregar_banco_dados_virtual, 
+    carregar_dados_miguilim, 
+    carregar_acervo_biblioteca, 
+    carregar_emprestimos_biblioteca, 
+    carregar_config_biblioteca
+)
+from modules.autenticacao import gerenciar_autenticacao
+from modules.ui_elementos import aplicar_estilos_css, renderizar_cabecalho_principal
 
 # CONFIGURAÇÃO ESTRITA DA PÁGINA
 st.set_page_config(
@@ -26,315 +36,8 @@ st.set_page_config(
     layout="wide"
 )
 
-st.markdown("""
-    <style>
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #0f2b5c 0%, #1e4b8f 50%, #f7c325 100%);
-            color: #ffffff !important;
-            padding-top: 0rem !important;
-        }
-        [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-            color: #ffffff !important;
-        }
-        [data-testid="stSidebar"] > div:first-child {
-            margin-top: -35px !important;
-        }
-        .stRadio > div {
-            background-color: rgba(255, 255, 255, 0.15);
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .stRadio label {
-            color: #ffffff !important;
-            font-weight: 600 !important;
-        }
-        div.stButton > button:first-child {
-            background-color: #1e4b8f;
-            color: white;
-            border-radius: 6px;
-            border: 1px solid #f7c325;
-            width: 100%;
-            padding: 0.3rem;
-        }
-        div.stButton > button:first-child:hover {
-            background-color: #f7c325;
-            color: #0f2b5c;
-        }
-        .sidebar-logo-footer {
-            text-align: center;
-            font-size: 0.72em;
-            color: #ffffff;
-            margin-top: -35px;
-            margin-bottom: 2px;
-            padding-bottom: 2px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            line-height: 1.2;
-        }
-        .profile-wrapper {
-            text-align: center;
-            margin-top: -15px;
-            margin-bottom: 5px;
-        }
-        .profile-img-container {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #f7c325;
-            margin: 0 auto 1px auto;
-            display: block;
-        }
-        .header-container-centralizado {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            width: 100%;
-            margin-top: 10px;
-            margin-bottom: 15px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 10px;
-            border: 1px solid rgba(30, 75, 143, 0.2);
-        }
-        .header-logo-img-cent {
-            width: 75px;
-            height: auto;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .titulo-central-proporcional {
-            font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 2.2vw;
-            font-weight: 900;
-            color: #0f2b5c;
-            line-height: 1.2;
-            margin: 0 0 5px 0;
-        }
-        .escola-titulo-proporcional {
-            font-family: 'Segoe UI Black', Arial, sans-serif;
-            font-size: 1.3vw;
-            font-weight: 900;
-            color: #1e4b8f;
-            letter-spacing: 1px;
-            margin: 0;
-        }
-        .sidebar-aviso-branco {
-            color: #ffffff !important;
-            font-size: 0.9em;
-            background-color: rgba(255, 255, 255, 0.15);
-            padding: 8px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
-        .tarja-verde-ipec {
-            background-color: #2e7d32;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 1.1em;
-            margin-bottom: 12px;
-            text-align: center;
-            border: 1px solid #81c784;
-            display: block;
-            width: 100%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-COLUNAS_OFICIAIS = [
-    "Id.", "Ano Letivo", "Aluno", "Nascimento", "Idade", "PBF", "AEE/CID", "Naturalidade", "Nacionalidade",
-    "Mãe", "Pai", "Sexo", "Telefone", "E-mail(s)", "Endereço", "Bairro",
-    "Cartão Cidadão", "Cartão do SUS", "CERTIDÃO", "CPF", "Período de Ensino",
-    "Turma", "Turno", "Professor de Apoio Escolar - PAE", "Status", "Transferência"
-]
-
-def obter_horario_unai():
-    return datetime.utcnow() - timedelta(hours=3)
-
-def calcular_idade_extenso(data_nasc_str):
-    if not data_nasc_str or pd.isna(data_nasc_str) or str(data_nasc_str).strip() in ["Não informado", ""]:
-        return "Não informado"
-    try:
-        match = re.search(r"(\d{2})/(\d{2})/(\d{4})", str(data_nasc_str))
-        if match:
-            dia, mes, ano = map(int, match.groups())
-            data_nasc = datetime(ano, mes, dia).date()
-            hoje = obter_horario_unai().date()
-            anos = hoje.year - data_nasc.year
-            meses = hoje.month - data_nasc.month
-            if hoje.month < data_nasc.month or (hoje.month == data_nasc.month and hoje.day < data_nasc.day):
-                anos -= 1
-                meses = 12 + (hoje.month - data_nasc.month)
-            if hoje.day < data_nasc.day and meses > 0:
-                meses -= 1
-            if anos < 0: anos = 0
-            return f"{anos} anos" if meses == 0 else f"{anos} anos e {meses} meses"
-    except Exception: pass
-    return "Não informado"
-
-def conectar_planilha():
-    escopos = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    credenciais_dict = st.secrets["gcp_service_account"]
-    credenciais = Credentials.from_service_account_info(credenciais_dict, scopes=escopos)
-    cliente = gspread.authorize(credenciais)
-    url_planilha = st.secrets["connections"]["sheets"]["public_gsheets_url"]
-    return cliente.open_by_url(url_planilha)
-
-@st.cache_data(ttl=600, show_spinner=False)
-def carregar_banco_dados_virtual_cached():
-    try:
-        doc = conectar_planilha()
-        aba = doc.get_worksheet(0)
-        dados = aba.get_all_records()
-        if not dados: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
-        df_bruto = pd.DataFrame(dados)
-        
-        colunas_encontradas = df_bruto.columns.tolist()
-        coluna_ano_real = None
-        for c in colunas_encontradas:
-            if "ano" in str(c).lower():
-                coluna_ano_real = c
-                break
-        
-        if coluna_ano_real and coluna_ano_real != "Ano Letivo":
-            df_bruto.rename(columns={coluna_ano_real: "Ano Letivo"}, inplace=True)
-
-        if "Aluno" in df_bruto.columns:
-            df_bruto = df_bruto[df_bruto["Aluno"].astype(str).str.strip() != ""]
-        if df_bruto.empty: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
-        df_bruto["Id."] = range(1, len(df_bruto) + 1)
-        
-        if "Ano Letivo" not in df_bruto.columns:
-            df_bruto["Ano Letivo"] = "2026"
-        else:
-            df_bruto["Ano Letivo"] = df_bruto["Ano Letivo"].astype(str).str.strip()
-            df_bruto.loc[df_bruto["Ano Letivo"].isin(["", "nan", "NaN", "None", "Não informado"]), "Ano Letivo"] = "2026"
-
-        if "Nascimento" in df_bruto.columns:
-            df_bruto["Idade"] = df_bruto["Nascimento"].apply(calcular_idade_extenso)
-        for col in COLUNAS_OFICIAIS:
-            if col not in df_bruto.columns:
-                df_bruto[col] = "Não informado" if col != "PBF" else "Não"
-            else:
-                df_bruto[col] = df_bruto[col].astype(str).str.strip().replace(["", "NaN", "nan", "None"], "Não informado")
-        return df_bruto[COLUNAS_OFICIAIS]
-    except Exception: return pd.DataFrame(columns=COLUNAS_OFICIAIS)
-
-def carregar_banco_dados_virtual():
-    return carregar_banco_dados_virtual_cached()
-
-def carregar_dados_miguilim(ano_escolhido):
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_mig = doc.worksheet("miguilim_ipec")
-            registros = aba_mig.get_all_records()
-            df_mig = pd.DataFrame(registros)
-            if not df_mig.empty and "Ano Letivo" in df_mig.columns:
-                return df_mig[df_mig["Ano Letivo"].astype(str).str.strip() == str(ano_escolhido)]
-        except Exception: pass
-    except Exception: pass
-    return pd.DataFrame()
-
-def carregar_acervo_biblioteca():
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_bib = doc.worksheet("biblioteca_acervo_ipec")
-        except gspread.WorksheetNotFound:
-            aba_bib = doc.add_worksheet(title="biblioteca_acervo_ipec", rows="10000", cols="8")
-            aba_bib.append_row(["Tombo", "Titulo", "Autor", "Categoria", "Disciplina", "Total", "Disponiveis", "Status"])
-        registros = aba_bib.get_all_records()
-        return pd.DataFrame(registros) if registros else pd.DataFrame(columns=["Tombo", "Titulo", "Autor", "Categoria", "Disciplina", "Total", "Disponiveis", "Status"])
-    except Exception:
-        return pd.DataFrame(columns=["Tombo", "Titulo", "Autor", "Categoria", "Disciplina", "Total", "Disponiveis", "Status"])
-
-def carregar_emprestimos_biblioteca():
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_emp = doc.worksheet("biblioteca_emprestimos_ipec")
-        except gspread.WorksheetNotFound:
-            aba_emp = doc.add_worksheet(title="biblioteca_emprestimos_ipec", rows="10000", cols="11")
-            aba_emp.append_row(["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataEmprestimo", "DataPrevista", "Status", "DataDevolucao", "Observacao"])
-        registros = aba_emp.get_all_records()
-        return pd.DataFrame(registros) if registros else pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataEmprestimo", "DataPrevista", "Status", "DataDevolucao", "Observacao"])
-    except Exception:
-        return pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataEmprestimo", "DataPrevista", "Status", "DataDevolucao", "Observacao"])
-
-def carregar_reservas_biblioteca():
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_res = doc.worksheet("biblioteca_reservas_ipec")
-        except gspread.WorksheetNotFound:
-            aba_res = doc.add_worksheet(title="biblioteca_reservas_ipec", rows="1000", cols="6")
-            aba_res.append_row(["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
-        registros = aba_res.get_all_records()
-        return pd.DataFrame(registros) if registros else pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
-    except Exception:
-        return pd.DataFrame(columns=["AnoLetivo", "Tombo", "Titulo", "Aluno", "Turma", "DataReserva"])
-
-def carregar_config_biblioteca():
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_cfg = doc.worksheet("biblioteca_config_ipec")
-        except gspread.WorksheetNotFound:
-            aba_cfg = doc.add_worksheet(title="biblioteca_config_ipec", rows="10", cols="3")
-            aba_cfg.append_row(["Chave", "Valor"])
-            aba_cfg.append_row(["PrazoLiterarioDias", 14])
-            aba_cfg.append_row(["DataFixaDidatico", "15/12/2026"])
-            aba_cfg.append_row(["LimiteLiterario", 2])
-        registros = aba_cfg.get_all_records()
-        cfg_dict = {"PrazoLiterarioDias": 14, "DataFixaDidatico": "15/12/2026", "LimiteLiterario": 2}
-        for r in registros:
-            chave = str(r.get("Chave", "")).strip()
-            valor = r.get("Valor", "")
-            if chave: cfg_dict[chave] = valor
-        return cfg_dict
-    except Exception:
-        return {"PrazoLiterarioDias": 14, "DataFixaDidatico": "15/12/2026", "LimiteLiterario": 2}
-
-def registrar_log_auditoria(usuario, perfil, acao):
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_log = doc.worksheet("log_auditoria_ipec")
-        except gspread.WorksheetNotFound:
-            aba_log = doc.add_worksheet(title="log_auditoria_ipec", rows="1000", cols="4")
-            aba_log.append_row(["Data_Hora", "Usuario", "Perfil", "Acao"])
-        
-        data_hora_atual = obter_horario_unai().strftime("%d/%m/%Y, %H:%M")
-        aba_log.append_row([data_hora_atual, usuario, perfil, acao])
-    except Exception: pass
-
-def gerenciar_autenticacao(user_input, pass_input):
-    try:
-        doc = conectar_planilha()
-        try:
-            aba_cred = doc.worksheet("credenciais_ipec")
-        except gspread.WorksheetNotFound:
-            aba_cred = doc.add_worksheet(title="credenciais_ipec", rows="100", cols="4")
-            aba_cred.append_row(["Usuario", "Senha", "Perfil", "Foto"])
-            aba_cred.append_row(["admin@ipec.com", "admin123", "Total", ""])
-            aba_cred.append_row(["operador@ipec.com", "ipec123", "Parcial", ""])
-        
-        registros = aba_cred.get_all_records()
-        for r in registros:
-            if str(r["Usuario"]).strip() == user_input.strip() and str(r["Senha"]).strip() == pass_input.strip():
-                return {
-                    "Perfil": str(r["Perfil"]).strip(),
-                    "Foto": str(r.get("Foto", "")).strip()
-                }
-    except Exception: pass
-    return None
+# APLICAÇÃO DOS ESTILOS CSS CUSTOMIZADOS
+aplicar_estilos_css()
 
 # INICIALIZAÇÃO SEGURA DE TODAS AS CHAVES DE SESSÃO
 if "dados_banco" not in st.session_state:
@@ -354,7 +57,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.044 de 26/07/2026<br>
+        Versão: v.1.5.049 de 26/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -394,22 +97,8 @@ else:
         st.session_state["perfil_usuario"] = None
         st.rerun()
 
-    logo_base64 = ""
-    try:
-        path_logo = "imagens/Logo da Escola.jpeg"
-        if os.path.exists(path_logo):
-            with open(path_logo, "rb") as f:
-                logo_base64 = base64.b64encode(f.read()).decode("utf-8")
-    except Exception: pass
-
-    html_cabecalho = f"""
-    <div class="header-container-centralizado">
-        <img src="data:image/jpeg;base64,{logo_base64}" class="header-logo-img-cent">
-        <p class="titulo-central-proporcional">🏫 SISTEMAS iPeC - Central de Trabalhos</p>
-        <p class="escola-titulo-proporcional">ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</p>
-    </div>
-    """
-    st.markdown(html_cabecalho, unsafe_allow_html=True)
+    # RENDERIZAÇÃO DO CABEÇALHO CENTRALIZADO DA ESCOLA
+    renderizar_cabecalho_principal()
 
     st.markdown("---")
     
@@ -479,7 +168,7 @@ else:
                         st.session_state.f_pbf = st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf)
 
                     st.markdown("#### 📋 Tabela de Registros (Edição Direta em Tempo Real)")
-                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v44")
+                    df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v49")
 
                     if st.session_state["perfil_usuario"] == "Total":
                         col_bt1, col_bt2, col_bt3 = st.columns([2, 2, 3])
@@ -534,7 +223,7 @@ else:
 
                         with col_bt3:
                             lista_excluir_op = ["Selecione..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                            aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v44")
+                            aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v49")
                             if aluno_para_excluir != "Selecione...":
                                 id_exc = int(aluno_para_excluir.split(" - ")[0])
                                 if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -559,7 +248,7 @@ else:
                         st.warning("⚠️ Nenhum aluno cadastrado para este ano letivo.")
                     else:
                         lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v44")
+                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v49")
                         
                         if aluno_selecionado_busca != "Selecione o Aluno...":
                             id_alvo_ind = int(aluno_selecionado_busca.split(" - ")[0])
@@ -569,7 +258,7 @@ else:
                                 st.markdown("##### ✍️ Edição Detalhada de Campos do Aluno Selecionado")
                                 reg_atual = df_aluno_ind.iloc[0]
                                 
-                                with st.form(f"form_atualizacao_individual_v44_{id_alvo_ind}"):
+                                with st.form(f"form_atualizacao_individual_v49_{id_alvo_ind}"):
                                     col_up1, col_up2, col_up3 = st.columns(3)
                                     with col_up1:
                                         novo_nome = st.text_input("Nome do Aluno:", value=str(reg_atual.get("Aluno", "")))
@@ -797,7 +486,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_v44"
+                                key="editor_miguilim_v49"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -821,7 +510,7 @@ else:
                                         doc_mig = conectar_planilha()
                                         try:
                                             aba_mig = doc_mig.worksheet("miguilim_ipec")
-                                        except gspread.WorksheetNotFound:
+                                        except Exception:
                                             aba_mig = doc_mig.add_worksheet(title="miguilim_ipec", rows="1000", cols="18")
                                             aba_mig.append_row([
                                                 "Ano Letivo", "Turma", "Aluno", "CPF", "Mãe", 
@@ -917,7 +606,7 @@ else:
                 "Relatório do Acervo", 
                 "Relatório de Empréstimo", 
                 "Gráficos"
-            ], key="sub_bib_v44")
+            ], key="sub_bib_v49")
             
             if sub_biblioteca == "Catálogo do Acervo":
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
@@ -927,11 +616,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v44")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v49")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v44")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v49")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v44")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v49")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -951,7 +640,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v44"
+                        key="tabela_acervo_v49"
                     )
                     
                     try:
@@ -986,22 +675,22 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v44", clear_on_submit=False):
-                    input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.lib_tombo)
-                    input_titulo = st.text_input("Título da Obra:", value=st.session_state.lib_titulo)
+                with st.form("form_biblioteca_v49", clear_on_submit=False):
+                    input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.get("lib_tombo", ""))
+                    input_titulo = st.text_input("Título da Obra:", value=st.session_state.get("lib_titulo", ""))
                     
                     col_f1, col_f2 = st.columns(2)
                     with col_f1:
-                        input_autor = st.text_input("Autor / Organizador:", value=st.session_state.lib_autor)
+                        input_autor = st.text_input("Autor / Organizador:", value=st.session_state.get("lib_autor", ""))
                     with col_f2:
-                        cat_idx = 0 if st.session_state.lib_cat.strip().lower() == "didático" else 1
+                        cat_idx = 0 if str(st.session_state.get("lib_cat", "Didático")).strip().lower() == "didático" else 1
                         input_cat = st.selectbox("Categoria:", ["Didático", "Literário"], index=cat_idx)
                     
                     col_f3, col_f4 = st.columns(2)
                     with col_f3:
-                        input_disc = st.text_input("Gênero / Disciplina:", value=st.session_state.lib_disc)
+                        input_disc = st.text_input("Gênero / Disciplina:", value=st.session_state.get("lib_disc", ""))
                     with col_f4:
-                        input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=st.session_state.lib_total)
+                        input_total = st.number_input("Total de Novos Exemplares a Gerar:", min_value=1, value=int(st.session_state.get("lib_total", 1)))
                     
                     st.markdown("---")
                     st.markdown("##### ⚙️ Ações e Gerenciamento do Livro")
@@ -1098,9 +787,9 @@ else:
                             st.session_state.acionou_exclusao_form = True
 
                 if st.session_state.get("acionou_exclusao_form", False):
-                    tombo_alvo_exc = st.session_state.tombo_para_excluir_seguro
+                    tombo_alvo_exc = st.session_state.get("tombo_para_excluir_seguro", "")
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v44")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v49")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -1142,7 +831,7 @@ else:
                 try: dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
                 except: dt_fixa_obj = datetime(2026, 12, 15).date()
 
-                with st.form("form_config_biblioteca_v44"):
+                with st.form("form_config_biblioteca_v49"):
                     prazo_lit_dias = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("PrazoLiterarioDias", 14)))
                     data_did_fixa = st.date_input("Data Fixa de Devolução para Livros Didáticos:", value=dt_fixa_obj, format="DD/MM/YYYY")
                     limite_lit = st.number_input("Limite Máximo de Empréstimos Simultâneos de Livros Literários por Aluno:", min_value=1, value=int(cfg_atuais.get("LimiteLiterario", 2)))
@@ -1166,7 +855,6 @@ else:
                 st.markdown(f"#### 🔄 Controle de Empréstimos, Devoluções e Reservas — Ano: {ano_letivo_escolhido}")
                 df_acervo_disp = carregar_acervo_biblioteca()
                 df_emprestimos = carregar_emprestimos_biblioteca()
-                df_reservas = carregar_reservas_biblioteca()
                 cfg_prazos = carregar_config_biblioteca()
                 hoje_dt = obter_horario_unai().date()
                 
@@ -1174,12 +862,12 @@ else:
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v44")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v49")
                 
                 if sub_aba_emp == "Novo Empréstimo":
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v44")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v44")
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v44", format="DD/MM/YYYY")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v49")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v49")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v49", format="DD/MM/YYYY")
                     
                     cat_livro_atual = "Literário"
                     dias_prazo_lit = int(cfg_prazos.get("PrazoLiterarioDias", 14))
@@ -1193,10 +881,10 @@ else:
                             cat_livro_atual = "Didático"
                             data_prev_calc = data_did_obj
                     
-                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v44", format="DD/MM/YYYY")
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v44")
+                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v49", format="DD/MM/YYYY")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v49")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v44"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v49"):
                         if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                             st.error("⚠️ Selecione o aluno e o livro para efetuar o empréstimo.")
                         else:
@@ -1227,7 +915,7 @@ else:
                             st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v44")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v49")
                                 if st.button("✅ Confirmar Devolução (Baixa)") and emp_selecionado_acao != "Selecione...":
                                     tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
                                     aluno_dev = emp_selecionado_acao.split("Aluno: ")[1].split(" (Devolver")[0].strip()
