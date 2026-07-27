@@ -2,27 +2,27 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa seguranca_ipec.py. Versão do Código: v.1.0.001
-# Data de atualização: 27/07/2026 - 14:55
+# Programa seguranca_ipec.py. Versão do Código: v.1.0.002
+# Data de atualização: 27/07/2026 - 15:05
 # Descrição das Alterações:
-#   - Melhoria visual da mensagem de erro (fundo contrastante com fonte vermelha) e tratamento robusto para usuário não cadastrado e clique no botão de atualizar senha.
+#   - Ajuste na cor da fonte da mensagem de sucesso para branco, melhorando a visibilidade no painel lateral.
 # ==============================================================================
 
 import streamlit as st
 from modules.utils import conectar_planilha, registrar_log_auditoria
 
 def renderizar_painel_seguranca_sidebar():
-    """Renderiza na barra lateral a opção de alteração/recuperação de senha de forma isolada com alertas visuais ajustados."""
+    """Renderiza na barra lateral a opção de alteração/recuperação de senha de forma isolada."""
     st.sidebar.markdown("---")
     with st.sidebar.expander("🔑 Alterar / Esqueci Minha Senha"):
         st.markdown("<small>Preencha os dados abaixo para redefinir sua senha de acesso ao sistema.</small>", unsafe_allow_html=True)
         
-        email_rec = st.text_input("Seu E-mail de Usuário:", key="rec_email_v2")
-        senha_atual = st.text_input("Senha Atual (ou provisória):", type="password", key="rec_senha_atual_v2")
-        nova_senha = st.text_input("Nova Senha:", type="password", key="rec_nova_senha_v2")
-        confirma_nova_senha = st.text_input("Confirme a Nova Senha:", type="password", key="rec_confirma_senha_v2")
+        email_rec = st.text_input("Seu E-mail de Usuário:", key="rec_email_v3")
+        senha_atual = st.text_input("Senha Atual (ou provisória):", type="password", key="rec_senha_atual_v3")
+        nova_senha = st.text_input("Nova Senha:", type="password", key="rec_nova_senha_v3")
+        confirma_nova_senha = st.text_input("Confirme a Nova Senha:", type="password", key="rec_confirma_senha_v3")
         
-        if st.button("🔄 Atualizar Senha", key="btn_exec_rec_senha_v2"):
+        if st.button("🔄 Atualizar Senha", key="btn_exec_rec_senha_v3"):
             if not email_rec or not senha_atual or not nova_senha or not confirma_nova_senha:
                 st.sidebar.markdown(
                     "<div style='background-color: #fdf2f2; border: 1px solid #f8b4b4; padding: 10px; border-radius: 5px; color: #991b1b; font-weight: bold; font-size: 0.9em; margin-top: 10px;'>"
@@ -74,7 +74,12 @@ def renderizar_painel_seguranca_sidebar():
                     else:
                         aba_cred.update_cell(linha_alvo, 2, str(nova_senha).strip())
                         registrar_log_auditoria(email_rec, perfil_usuario_alvo, "Alterou/Redefiniu sua senha de acesso com sucesso.")
-                        st.sidebar.success("🎉 Senha alterada com sucesso! Faça login com a nova senha.")
+                        st.sidebar.markdown(
+                            "<div style='background-color: #065f46; border: 1px solid #34d399; padding: 10px; border-radius: 5px; color: #ffffff; font-weight: bold; font-size: 0.9em; margin-top: 10px;'>"
+                            "🎉 Senha alterada com sucesso! Faça login com a nova senha."
+                            "</div>", 
+                            unsafe_allow_html=True
+                        )
                         st.balloons()
                 except Exception as err_rec:
                     st.sidebar.error(f"Erro de conexão ao processar alteração: {err_rec}")
