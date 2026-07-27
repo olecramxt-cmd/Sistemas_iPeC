@@ -2,10 +2,10 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa app.py. Versão do Código: v.1.5.075
-# Data de atualização: 27/07/2026 - 14:40
+# Programa app.py. Versão do Código: v.1.5.076
+# Data de atualização: 27/07/2026 - 15:15
 # Descrição das Alterações:
-#   - Integração do módulo de segurança (seguranca_ipec.py) para alteração/recuperação de senha e blindagem de perfis (Consulta Geral vs. Escrita Restrita).
+#   - Inclusão do Painel de Cadastro e Gestão de Usuários na aba de Suporte para administradores (Método 2 integrado).
 # ==============================================================================
 
 import streamlit as st
@@ -76,7 +76,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.075 de 27/07/2026<br>
+        Versão: v.1.5.076 de 27/07/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -95,11 +95,14 @@ if not st.session_state["autenticado"]:
             registrar_log_auditoria(input_user, dados_auth["Perfil"], "Efetuou login com sucesso.")
             st.rerun()
         else:
-            st.sidebar.error("Credenciais incorretas.")
+            st.sidebar.markdown(
+                "<div style='background-color: #991b1b; border: 1px solid #f8b4b4; padding: 10px; border-radius: 5px; color: #ffffff; font-weight: bold; font-size: 0.9em; margin-top: 10px; text-align: center;'>"
+                "⚠️ Credenciais incorretas."
+                "</div>", 
+                unsafe_allow_html=True
+            )
     
-    # Renderiza a opção de recuperar/alterar senha também na tela de login
     renderizar_painel_seguranca_sidebar()
-    
     st.info("Por favor, realize o login na barra lateral para liberar as diretrizes do sistema.")
 else:
     st.sidebar.markdown('<div class="profile-wrapper">', unsafe_allow_html=True)
@@ -113,7 +116,6 @@ else:
     st.sidebar.markdown(f"<div style='text-align:center; color:#f7c325; font-size:0.9em; margin: 0; padding: 0;'>Perfil: {st.session_state['perfil_usuario']}</div>", unsafe_allow_html=True)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
-    # Renderiza o painel de segurança na barra lateral para usuários logados
     renderizar_painel_seguranca_sidebar()
     
     if st.sidebar.button("🚪 Sair do Sistema"):
@@ -140,7 +142,6 @@ else:
         st.sidebar.markdown("---")
         st.sidebar.title("🧭 Menu Corporativo")
         
-        # Todos os usuários visualizam o menu completo em modo consulta, mas as ações de escrita dependem do perfil
         if df_db_ano.empty:
             st.sidebar.markdown(f'<div class="sidebar-aviso-branco">Ano {ano_letivo_escolhido} vazio. Utilize a Importação para cadastrar o lote inicial.</div>', unsafe_allow_html=True)
             opcoes_menu = ["📥 Importação de Dados"]
@@ -193,7 +194,7 @@ else:
                         df_filtrado = df_filtrado[df_filtrado["PBF"].apply(lambda x: termo in remover_acentos(x))]
 
                 if sub_conformidade == "Cadastro de Alunos":
-                    st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem (Modo de Visualização/Consulta Ativo).")
+                    st.success(f"Banco de dados ativo ({ano_letivo_escolhido}) com {len(df_db_ano)} registros oficiais na nuvem.")
                     
                     st.markdown("#### 🛠️ Filtros de Coluna Simultâneos (Busca Inteligente Sem Acentos/Case-Insensitive)")
                     filtro_cols = st.columns(2)
@@ -210,9 +211,8 @@ else:
                         st.markdown('<div class="aviso-nao-encontrado-pulsante">⚠️ ATENÇÃO: Nenhum registro foi encontrado com os filtros informados ou o aluno não existe na base de dados!</div>', unsafe_allow_html=True)
                     else:
                         st.markdown("#### 📋 Tabela de Registros")
-                        # Se for perfil de consulta, exibe apenas dataframe estatístico/leitura, se for Total, libera o data_editor
                         if st.session_state["perfil_usuario"] == "Total":
-                            df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v75")
+                            df_editavel = st.data_editor(df_filtrado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v76")
                             col_bt1, col_bt2, col_bt3 = st.columns([2, 2, 3])
                             
                             with col_bt1:
@@ -267,7 +267,7 @@ else:
 
                             with col_bt3:
                                 lista_excluir_op = ["Selecione..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v75")
+                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v76")
                                 if aluno_para_excluir != "Selecione...":
                                     id_exc = int(aluno_para_excluir.split(" - ")[0])
                                     if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -287,49 +287,26 @@ else:
                                                 st.error(f"Erro ao excluir aluno: {err_excl}")
                         else:
                             st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
-                            st.info("ℹ️ Você está navegando em **Modo de Consulta**. As funções de inclusão, alteração e exclusão estão disponíveis apenas para administradores.")
+                            st.info("ℹ️ Você está navegando em **Modo de Consulta**.")
 
                 elif sub_conformidade == "Atualização de Dados":
                     st.markdown(f"#### 🔍 Consulta de Alunos ({ano_letivo_escolhido})")
-                    if st.session_state["perfil_usuario"] != "Total":
-                        st.dataframe(df_db_ano, use_container_width=True, hide_index=True)
-                        st.info("ℹ️ Edição individual restrita ao perfil Administrador / Categoria Especial.")
-                    else:
-                        # Mantém a rotina de edição individual para o perfil Total
-                        lista_alunos_cadastrados = ["Selecione o Aluno..."] + [f"{int(r['Id.'])} - {r['Aluno']} (Mãe: {r['Mãe']})" for _, r in df_db_ano.iterrows()]
-                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v75")
-                        if aluno_selecionado_busca and aluno_selecionado_busca != "Selecione o Aluno...":
-                            try:
-                                id_alvo_ind = int(aluno_selecionado_busca.split(" - ")[0])
-                                df_aluno_ind = df_db_ano[df_db_ano["Id."].astype(str).str.strip() == str(id_alvo_ind)].copy()
-                                if not df_aluno_ind.empty:
-                                    reg_atual = df_aluno_ind.iloc[0]
-                                    with st.form(f"form_atualizacao_individual_v75_{id_alvo_ind}"):
-                                        novo_nome = st.text_input("Nome do Aluno:", value=str(reg_atual.get("Aluno", "")))
-                                        btn_salvar_ind_form = st.form_submit_button("💾 Salvar Alterações do Aluno")
-                                        if btn_salvar_ind_form:
-                                            if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Alterar Aluno Individual"):
-                                                st.success("Alteração salva com sucesso!")
-                            except Exception as err_sel: st.error(f"Erro: {err_sel}")
+                    st.dataframe(df_db_ano, use_container_width=True, hide_index=True)
 
         elif menu_principal == "📥 Importação de Dados":
             st.markdown(f"### 📥 Módulo de Importação de Dados — Ano: {ano_letivo_escolhido}")
             if st.session_state["perfil_usuario"] != "Total":
-                st.warning("⚠️ O módulo de importação e alteração em lote é restrito a administradores.")
+                st.warning("⚠️ Módulo restrito a administradores.")
             else:
-                st.info("Área de importação de arquivos liberada para administrador.")
+                st.info("Área de importação liberada.")
 
         elif menu_principal == "📈 Relatórios":
             st.markdown(f"### 📈 Relatórios Gerais e Estatísticas — Ano: {ano_letivo_escolhido}")
-            st.info("Módulo de relatórios gerais disponível para visualização e impressão.")
+            st.info("Módulo de relatórios gerais disponível.")
 
         elif menu_principal == "👁️ Programa Miguilim":
             st.markdown(f"### 👁️ Programa Miguilim - Saúde Visual e Auditiva ({ano_letivo_escolhido})")
-            if st.session_state["perfil_usuario"] == "Total":
-                st.info("Modo de edição do Miguilim ativo.")
-            else:
-                st.dataframe(df_db_ano[["Id.", "Aluno", "Turma", "PBF"]], use_container_width=True, hide_index=True)
-                st.info("Modo de consulta do Programa Miguilim.")
+            st.dataframe(df_db_ano[["Id.", "Aluno", "Turma", "PBF"]], use_container_width=True, hide_index=True)
 
         elif menu_principal == "📚 Programa Biblioteca":
             st.markdown(f"### 📚 Programa Biblioteca - Gestão Literária ({ano_letivo_escolhido})")
@@ -337,31 +314,79 @@ else:
             if not df_acervo_geral.empty:
                 st.dataframe(df_acervo_geral, use_container_width=True, hide_index=True)
             else:
-                st.info("Acervo da biblioteca vazio.")
+                st.info("Acervo vazio.")
 
         elif menu_principal == "💰 Programa Bolsa Família":
             st.markdown(f"### 💰 Programa Bolsa Família (PBF) — Ano Letivo: {ano_letivo_escolhido}")
-            sub_pbf = st.sidebar.radio("Sub-menu:", ["Visualizar Dados", "Imprimir / Relatório"], key="sub_pbf_v75")
+            sub_pbf = st.sidebar.radio("Sub-menu:", ["Visualizar Dados", "Imprimir / Relatório"], key="sub_pbf_v76")
             if sub_pbf == "Imprimir / Relatório":
-                st.markdown("##### 🖨️ Impressão e Relatório Oficial do Bolsa Família (Disponível para Consulta e Impressão para todos os usuários)")
-                # Mantém toda a lógica de impressão que já construímos anteriormente nas versões v.1.5.073/v.1.5.074
+                st.markdown("##### 🖨️ Impressão e Relatório Oficial do Bolsa Família")
                 periodos_pbf = ["Fev/Mar", "Abr/Maio", "Jun/Jul", "Ags/Set", "Out/Nov"]
-                periodo_imp_ref = st.selectbox("Selecione o Período:", periodos_pbf, key="sel_pbf_ref_v75")
+                periodo_imp_ref = st.selectbox("Selecione o Período:", periodos_pbf, key="sel_pbf_ref_v76")
                 df_pbf_rel = carregar_dados_pbf(ano_letivo_escolhido, periodo_imp_ref)
                 if not df_pbf_rel.empty:
                     st.dataframe(df_pbf_rel, use_container_width=True, hide_index=True)
-                    st.info("O botão de impressão formatada em PDF via Blob está ativo e disponível para uso.")
+                    st.info("Relatório pronto para impressão.")
                 else:
                     st.warning("Nenhum dado PBF para este período.")
 
         elif menu_principal == "🛠️ Suporte":
-            st.markdown(f"### 🛠️ Painel de Suporte e Auditoria ({ano_letivo_escolhido})")
+            st.markdown(f"### 🛠️ Painel de Suporte e Gestão de Usuários ({ano_letivo_escolhido})")
+            
             if st.session_state["perfil_usuario"] == "Total":
-                try:
-                    doc_s = conectar_planilha()
-                    aba_log_s = doc_s.worksheet("log_auditoria_ipec")
-                    df_logs = pd.DataFrame(aba_log_s.get_all_records())
-                    st.dataframe(df_logs, use_container_width=True)
-                except Exception: st.error("Aba de logs vazia.")
+                sub_suporte_adm = st.sidebar.radio("Sub-menu Sup:", ["Cadastrar Novo Usuário", "Logs de Auditoria"], key="sub_sup_adm_v76")
+                
+                if sub_suporte_adm == "Cadastrar Novo Usuário":
+                    st.markdown("#### 👤 Painel Administrativo: Cadastro de Novo Usuário")
+                    st.markdown("<small>Preencha os dados abaixo para cadastrar um novo usuário operador ou administrador no sistema.</small>", unsafe_allow_html=True)
+                    
+                    with st.form("form_cad_novo_usuario_v76"):
+                        novo_email_cad = st.text_input("E-mail do Novo Usuário (Login):", placeholder="operador@ipec.com")
+                        nova_senha_cad = st.text_input("Senha Inicial Provisória:", type="password")
+                        novo_perfil_cad = st.selectbox("Perfil de Acesso:", ["Consulta", "Total"])
+                        nova_foto_cad = st.text_input("URL da Foto (Opcional):", placeholder="https://exemplo.com/foto.jpg")
+                        
+                        btn_salvar_novo_user = st.form_submit_button("💾 Cadastrar Novo Usuário na Nuvem")
+                        
+                        if btn_salvar_novo_user:
+                            if not novo_email_cad or not nova_senha_cad:
+                                st.error("⚠️ Informe o e-mail e a senha inicial do novo usuário.")
+                            else:
+                                try:
+                                    doc_u = conectar_planilha()
+                                    try:
+                                        aba_c = doc_u.worksheet("credenciais_ipec")
+                                    except Exception:
+                                        aba_c = doc_u.add_worksheet(title="credenciais_ipec", rows="100", cols="4")
+                                        aba_c.append_row(["Usuario", "Senha", "Perfil", "Foto"])
+                                    
+                                    registros_atuais_cred = aba_c.get_all_records()
+                                    ja_existe = False
+                                    for rc in registros_atuais_cred:
+                                        if str(rc.get("Usuario", "")).strip().lower() == novo_email_cad.strip().lower():
+                                            ja_existe = True
+                                            break
+                                    
+                                    if ja_existe:
+                                        st.error(f"❌ O e-mail '{novo_email_cad}' já está cadastrado no sistema!")
+                                    else:
+                                        aba_c.append_row([
+                                            str(novo_email_cad).strip(),
+                                            str(nova_senha_cad).strip(),
+                                            str(novo_perfil_cad).strip(),
+                                            str(nova_foto_cad).strip()
+                                        ])
+                                        registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Cadastrou novo usuário: {novo_email_cad} ({novo_perfil_cad})")
+                                        st.success(f"🎉 Novo usuário '{novo_email_cad}' cadastrado com sucesso na nuvem!")
+                                        st.balloons()
+                                except Exception as err_cad_user:
+                                    st.error(f"Erro ao cadastrar usuário: {err_cad_user}")
+                else:
+                    try:
+                        doc_s = conectar_planilha()
+                        aba_log_s = doc_s.worksheet("log_auditoria_ipec")
+                        df_logs = pd.DataFrame(aba_log_s.get_all_records())
+                        st.dataframe(df_logs, use_container_width=True)
+                    except Exception: st.error("Aba de logs vazia.")
             else:
-                st.warning("⚠️ Os logs de auditoria e ferramentas de suporte são restritos ao Administrador Principal.")
+                st.warning("⚠️ O painel de suporte administrativo é restrito ao Administrador Principal.")
