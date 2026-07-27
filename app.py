@@ -1,7 +1,7 @@
 # ==============================================================================
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
-# © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
+# © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC. 
 # Programa app.py. Versão do Código: v.1.5.079
 # Data de atualização: 27/07/2026 - 18:15
 # Descrição das Alterações:
