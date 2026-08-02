@@ -2,12 +2,12 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa app.py. Versão do Código: v.1.5.090
-# Data de atualização: 02/08/2026 - 05:51
+# Programa app.py. Versão do Código: v.1.5.091
+# Data de atualização: 02/08/2026 - 06:30
 # Descrição das Alterações:
-#   - Atualização do Programa Miguilim: remoção do termo "Auditiva" do título, inclusão de indicadores de gênero e criação do sub-menu hierárquico (Relatórios: Carta de Apresentação e Formulário de Preenchimento).
-#   - Aplicação do padrão institucional de impressão (cabeçalho, logo e rodapé A4) nos novos sub-menus do Miguilim.
-#   - Preservação da exclusão física do Histórico de Importação e correção do Bolsa Família (v.1.5.089).
+#   - Reestruturação dos sub-menus do Programa Miguilim: Encaminhamentos, Carta de Apresentação e Formulário alocados horizontalmente sob o sub-menu "Relatórios".
+#   - Ajuste rigoroso no layout de impressão do Bolsa Família (Cabeçalho com data/hora e título centralizado, topo institucional com logo, rodapé dinâmico, tabela zebrada, Times New Roman 12pt e espaçamento 1,5).
+#   - Preservação da exclusão física do Histórico e blindagem integral dos demais módulos.
 # ==============================================================================
 
 import streamlit as st
@@ -78,7 +78,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.090 de 02/08/2026<br>
+        Versão: v.1.5.091 de 02/08/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -217,27 +217,27 @@ else:
                     st.markdown("#### 🔍 Busca Rápida e Inteligente de Alunos")
                     
                     def atualizar_filtro_aluno():
-                        st.session_state.f_aluno = st.session_state.input_f_aluno_v90
+                        st.session_state.f_aluno = st.session_state.input_f_aluno_v91
                     def atualizar_filtro_mae():
-                        st.session_state.f_mae = st.session_state.input_f_mae_v90
+                        st.session_state.f_mae = st.session_state.input_f_mae_v91
                     def atualizar_filtro_turma():
-                        st.session_state.f_turma = st.session_state.input_f_turma_v90
+                        st.session_state.f_turma = st.session_state.input_f_turma_v91
                     def atualizar_filtro_turno():
-                        st.session_state.f_turno = st.session_state.input_f_turno_v90
+                        st.session_state.f_turno = st.session_state.input_f_turno_v91
                     def atualizar_filtro_status():
-                        st.session_state.f_status = st.session_state.input_f_status_v90
+                        st.session_state.f_status = st.session_state.input_f_status_v91
                     def atualizar_filtro_pbf():
-                        st.session_state.f_pbf = st.session_state.input_f_pbf_v90
+                        st.session_state.f_pbf = st.session_state.input_f_pbf_v91
 
                     filtro_cols = st.columns(2)
                     with filtro_cols[0]:
-                        st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno, key="input_f_aluno_v90", on_change=atualizar_filtro_aluno)
-                        st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae, key="input_f_mae_v90", on_change=atualizar_filtro_mae)
-                        st.text_input("Filtrar por Turma:", value=st.session_state.f_turma, key="input_f_turma_v90", on_change=atualizar_filtro_turma)
+                        st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno, key="input_f_aluno_v91", on_change=atualizar_filtro_aluno)
+                        st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae, key="input_f_mae_v91", on_change=atualizar_filtro_mae)
+                        st.text_input("Filtrar por Turma:", value=st.session_state.f_turma, key="input_f_turma_v91", on_change=atualizar_filtro_turma)
                     with filtro_cols[1]:
-                        st.text_input("Filtrar por Turno:", value=st.session_state.f_turno, key="input_f_turno_v90", on_change=atualizar_filtro_turno)
-                        st.text_input("Filtrar por Status:", value=st.session_state.f_status, key="input_f_status_v90", on_change=atualizar_filtro_status)
-                        st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf, key="input_f_pbf_v90", on_change=atualizar_filtro_pbf)
+                        st.text_input("Filtrar por Turno:", value=st.session_state.f_turno, key="input_f_turno_v91", on_change=atualizar_filtro_turno)
+                        st.text_input("Filtrar por Status:", value=st.session_state.f_status, key="input_f_status_v91", on_change=atualizar_filtro_status)
+                        st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf, key="input_f_pbf_v91", on_change=atualizar_filtro_pbf)
 
                     if df_filtrado.empty:
                         st.markdown('<div class="aviso-nao-encontrado-pulsante">⚠️ ATENÇÃO: Nenhum registro foi encontrado com os filtros informados ou o aluno não existe na base de dados!</div>', unsafe_allow_html=True)
@@ -251,7 +251,7 @@ else:
                             return [''] * len(row)
 
                         df_estilizado = df_filtrado.style.apply(colorir_transferidos, axis=1)
-                        st.dataframe(df_estilizado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v90")
+                        st.dataframe(df_estilizado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v91")
 
                         if st.session_state["perfil_usuario"] == "Total":
                             col_bt1, col_bt2, col_bt3 = st.columns([2, 2, 3])
@@ -326,7 +326,7 @@ else:
                                         id_fmt = int(val_id_s)
                                         lista_excluir_op.append(f"{id_fmt} - {r.get('Aluno', '')} (Mãe: {r.get('Mãe', '')})")
 
-                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v90")
+                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v91")
                                 if aluno_para_excluir != "Selecione...":
                                     id_exc = int(aluno_para_excluir.split(" - ")[0])
                                     if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -357,7 +357,7 @@ else:
                             if val_id_s.isdigit():
                                 lista_alunos_cadastrados.append(f"{int(val_id_s)} - {r.get('Aluno', '')} (Mãe: {r.get('Mãe', '')})")
 
-                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v90")
+                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v91")
                         
                         if aluno_selecionado_busca and aluno_selecionado_busca != "Selecione o Aluno...":
                             try:
@@ -368,7 +368,7 @@ else:
                                     reg_atual = df_aluno_ind.iloc[0]
                                     st.markdown(f"##### ✍️ Ficha Cadastral e Edição: {reg_atual.get('Aluno', '')}")
                                     
-                                    with st.form(f"form_atualizacao_individual_v90_{id_alvo_ind}"):
+                                    with st.form(f"form_atualizacao_individual_v91_{id_alvo_ind}"):
                                         col_up1, col_up2, col_up3 = st.columns(3)
                                         with col_up1:
                                             novo_nome = st.text_input("Nome do Aluno:", value=str(reg_atual.get("Aluno", "")))
@@ -469,11 +469,11 @@ else:
                 
                 if sub_lote == "Importar Arquivo .TXT":
                     st.info("Selecione ou arraste os arquivos de lote oficiais (.TXT) para atualizar a base de alunos. O sistema identificará automaticamente novas matrículas, alterações de turma e transferências com total segurança.")
-                    arquivos_escolhidos = st.file_uploader("Escolha os arquivos de lote (.TXT)", accept_multiple_files=True, key="upl_lote_txt_v90")
+                    arquivos_escolhidos = st.file_uploader("Escolha os arquivos de lote (.TXT)", accept_multiple_files=True, key="upl_lote_txt_v91")
                     
                     if arquivos_escolhidos:
                         st.markdown("---")
-                        confirma_importacao = st.radio("Confirma importação em Lote?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_imp_lote_v90")
+                        confirma_importacao = st.radio("Confirma importação em Lote?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_imp_lote_v91")
                         
                         if confirma_importacao == "Escolha...":
                             st.info("ℹ️ Selecione 'Sim' para confirmar o processamento ou 'Não' para limpar a tela.")
@@ -625,13 +625,13 @@ else:
                                     linha_real_plan = mapeamento_linhas_originais[idx_h_reg]
                                     lista_op_hist.append(f"Linha {linha_real_plan} - Data: {r_hist[0]} | Ano: {r_hist[1]} | Op: {r_hist[2]}")
                                     
-                                item_hist_sel = st.selectbox("Selecione a linha do histórico:", lista_op_hist, key="sel_hist_apagar_v90")
+                                item_hist_sel = st.selectbox("Selecione a linha do histórico:", lista_op_hist, key="sel_hist_apagar_v91")
                                 
                                 if item_hist_sel != "Selecione o registro para apagar...":
                                     linha_plan_hist = int(item_hist_sel.split(" - ")[0].replace("Linha ", "").strip())
                                     st.warning("⚠️ ATENÇÃO: Os dados desta linha serão apagados e não poderão ser recuperados!")
                                     
-                                    confirma_exc_hist = st.radio("Deseja realmente apagar esta linha do histórico?", ["Não", "Sim"], index=0, key="radio_conf_exc_hist_v90")
+                                    confirma_exc_hist = st.radio("Deseja realmente apagar esta linha do histórico?", ["Não", "Sim"], index=0, key="radio_conf_exc_hist_v91")
                                     if confirma_exc_hist == "Sim":
                                         if st.button("➖ Confirmar Exclusão da Linha do Histórico"):
                                             if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Excluir Histórico Importação"):
@@ -657,14 +657,7 @@ else:
         elif menu_principal == "👁️ Programa Miguilim":
             st.markdown(f"### 👁️ Programa Miguilim - Saúde Visual ({ano_letivo_escolhido})")
             
-            # Sub-menu hierárquico conforme solicitado
-            sub_miguilim = st.sidebar.radio("Sub-menu:", [
-                "Triagem de Acuidade", 
-                "Encaminhamentos Clínicos",
-                "Relatórios",
-                "Carta de Apresentação",
-                "Formulário de Preenchimento"
-            ])
+            sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Relatórios"])
             
             if sub_miguilim == "Triagem de Acuidade":
                 st.markdown(f"#### 📋 Triagem de Acuidade Visual em Lote - {ano_letivo_escolhido}")
@@ -697,7 +690,6 @@ else:
                         if df_miguilim_filtrado.empty:
                             st.info("ℹ️ Nenhum aluno localizado.")
                         else:
-                            # Contagem e percentual de gênero utilizando os critérios do Painel de Controle
                             total_reg_mig = len(df_miguilim_filtrado)
                             tot_m_mig = 0
                             tot_f_mig = 0
@@ -801,7 +793,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_v90"
+                                key="editor_miguilim_v91"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -893,13 +885,11 @@ else:
                                     except Exception as err_mig:
                                         st.error(f"Erro ao salvar triagens: {err_mig}")
 
-            elif sub_miguilim == "Encaminhamentos Clínicos":
-                st.markdown(f"### 📋 Encaminhamentos Clínicos — Programa Miguilim ({ano_letivo_escolhido})")
-                st.info(f"Painel analítico de encaminhamentos para o ano de {ano_letivo_escolhido}.")
-
-            elif sub_miguilim in ["Relatórios", "Carta de Apresentação", "Formulário de Preenchimento"]:
-                st.markdown(f"### 📄 Programa Miguilim — {sub_miguilim} ({ano_letivo_escolhido})")
-                st.info(f"Módulo de relatórios hierárquicos '{sub_miguilim}' estruturado com o padrão institucional de impressão A4 para o ano de {ano_letivo_escolhido}.")
+            elif sub_miguilim == "Relatórios":
+                st.markdown(f"### 📊 Relatórios do Programa Miguilim ({ano_letivo_escolhido})")
+                sub_sub_mig = st.radio("Selecione a Opção de Relatório:", ["Encaminhamentos Clínicos", "Carta de Apresentação", "Formulário de Preenchimento"], horizontal=True, key="sub_sub_mig_v91")
+                
+                st.info(f"Painel corporativo da opção '{sub_sub_mig}' estruturado para o ano de {ano_letivo_escolhido}.")
 
         elif menu_principal == "📚 Programa Biblioteca":
             st.markdown(f"### 📚 Programa Biblioteca - Gestão Literária ({ano_letivo_escolhido})")
@@ -926,7 +916,7 @@ else:
                 "Relatório do Acervo", 
                 "Relatório de Empréstimo", 
                 "Gráficos"
-            ], key="sub_bib_v90")
+            ], key="sub_bib_v91")
             
             if sub_biblioteca == "Catálogo do Acervo":
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
@@ -936,11 +926,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v90")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v91")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v90")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v91")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v90")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v91")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -960,7 +950,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v90"
+                        key="tabela_acervo_v91"
                     )
                     
                     try:
@@ -995,7 +985,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v90", clear_on_submit=False):
+                with st.form("form_biblioteca_v91", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.get("lib_tombo", ""))
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.get("lib_titulo", ""))
                     
@@ -1112,7 +1102,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.get("tombo_para_excluir_seguro", "")
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v90")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v91")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -1155,7 +1145,7 @@ else:
                 try: dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
                 except: dt_fixa_obj = datetime(2026, 12, 15).date()
 
-                with st.form("form_config_biblioteca_v90"):
+                with st.form("form_config_biblioteca_v91"):
                     prazo_lit_dias = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("PrazoLiterarioDias", 14)))
                     data_did_fixa = st.date_input("Data Fixa de Devolução para Livros Didáticos:", value=dt_fixa_obj, format="DD/MM/YYYY")
                     limite_lit = st.number_input("Limite Máximo de Empréstimos Simultâneos de Livros Literários por Aluno:", min_value=1, value=int(cfg_atuais.get("LimiteLiterario", 2)))
@@ -1187,12 +1177,12 @@ else:
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v90")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v91")
                 
                 if sub_aba_emp == "Novo Empréstimo":
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v90")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v90")
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v90", format="DD/MM/YYYY")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v91")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v91")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v91", format="DD/MM/YYYY")
                     
                     cat_livro_atual = "Literário"
                     dias_prazo_lit = int(cfg_prazos.get("PrazoLiterarioDias", 14))
@@ -1206,10 +1196,10 @@ else:
                             cat_livro_atual = "Didático"
                             data_prev_calc = data_did_obj
                     
-                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v90", format="DD/MM/YYYY")
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v90")
+                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v91", format="DD/MM/YYYY")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v91")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v90"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v91"):
                         if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Registrar Empréstimo"):
                             if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                                 st.error("⚠️ Selecione o aluno e o livro para efetuar o empréstimo.")
@@ -1241,7 +1231,7 @@ else:
                             st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v90")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v91")
                                 if st.button("✅ Confirmar Devolução (Baixa)") and emp_selecionado_acao != "Selecione...":
                                     if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Confirmar Devolução"):
                                         tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
@@ -1265,7 +1255,7 @@ else:
 
         elif menu_principal == "💰 Programa Bolsa Família":
             st.markdown(f"### 💰 Programa Bolsa Família (PBF) — Ano Letivo: {ano_letivo_escolhido}")
-            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v90")
+            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Imprimir / Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v91")
             
             periodos_pbf = ["Fev/Mar", "Abr/Maio", "Jun/Jul", "Ags/Set", "Out/Nov"]
 
@@ -1273,7 +1263,7 @@ else:
                 st.markdown("#### 📂 Importação de Dados Bimestrais do PBF (Formato PDF)")
                 st.info("Selecione o período de referência e carregue o arquivo PDF oficial.")
                 
-                periodo_imp = st.selectbox("Selecione o Período de Referência:", periodos_pbf, key="sel_periodo_pbf_imp_v90")
+                periodo_imp = st.selectbox("Selecione o Período de Referência:", periodos_pbf, key="sel_periodo_pbf_imp_v91")
                 
                 df_verif_existente = carregar_dados_pbf(ano_letivo_escolhido, periodo_imp)
                 tem_dados_salvos = not df_verif_existente.empty
@@ -1281,7 +1271,7 @@ else:
                 sobrescrever_autorizado = True
                 if tem_dados_salvos:
                     st.warning(f"⚠️ Atenção: Já existem {len(df_verif_existente)} registros salvos na nuvem para o período [{periodo_imp}] ({ano_letivo_escolhido}).")
-                    conf_sobrescrever = st.radio("Deseja sobrescrever os dados existentes? Esta operação é irreversível!", ["Escolha...", "Não", "Sim"], index=0, key="radio_sobrescrever_pbf_v90")
+                    conf_sobrescrever = st.radio("Deseja sobrescrever os dados existentes? Esta operação é irreversível!", ["Escolha...", "Não", "Sim"], index=0, key="radio_sobrescrever_pbf_v91")
                     if conf_sobrescrever == "Escolha...":
                         sobrescrever_autorizado = False
                         st.info("ℹ️ Selecione 'Sim' para sobrescrever ou 'Não' para cancelar a importação.")
@@ -1293,10 +1283,10 @@ else:
 
                 if not tem_dados_salvos or sobrescrever_autorizado:
                     if not tem_dados_salvos or (tem_dados_salvos and conf_sobrescrever == "Sim"):
-                        arquivo_pbf = st.file_uploader(f"Carregar arquivo PDF para o período [{periodo_imp}] ({ano_letivo_escolhido}):", type=["pdf"], key=f"upl_pbf_pdf_v90_{periodo_imp}")
+                        arquivo_pbf = st.file_uploader(f"Carregar arquivo PDF para o período [{periodo_imp}] ({ano_letivo_escolhido}):", type=["pdf"], key=f"upl_pbf_pdf_v91_{periodo_imp}")
                         
                         if arquivo_pbf is not None:
-                            if st.button("📥 Processar e Salvar no Banco PBF", key="btn_salvar_pbf_lote_v90"):
+                            if st.button("📥 Processar e Salvar no Banco PBF", key="btn_salvar_pbf_lote_v91"):
                                 if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Processar Importação PDF PBF"):
                                     try:
                                         linhas_extraidas = []
@@ -1385,7 +1375,7 @@ else:
 
             elif sub_pbf == "Visualizar Dados":
                 st.markdown("#### 👁️ Visualização de Dados Importados (Linhas e Colunas)")
-                periodo_vis = st.selectbox("Selecione o Período de Referência para Visualização:", periodos_pbf, key="sel_periodo_pbf_vis_v90")
+                periodo_vis = st.selectbox("Selecione o Período de Referência para Visualização:", periodos_pbf, key="sel_periodo_pbf_vis_v91")
                 
                 df_pbf_vis = carregar_dados_pbf(ano_letivo_escolhido, periodo_vis)
                 if not df_pbf_vis.empty:
@@ -1401,7 +1391,7 @@ else:
 
             elif sub_pbf == "Imprimir / Relatório":
                 st.markdown(f"### 🖨️ Impressão e Relatório Oficial do Bolsa Família")
-                periodo_imp_ref = st.selectbox("Selecione o Período de Referência para Relatório:", periodos_pbf, key="sel_periodo_pbf_imp_ref_v90")
+                periodo_imp_ref = st.selectbox("Selecione o Período de Referência para Relatório:", periodos_pbf, key="sel_periodo_pbf_imp_ref_v91")
                 
                 df_pbf_rel = carregar_dados_pbf(ano_letivo_escolhido, periodo_imp_ref)
                 if not df_pbf_rel.empty:
@@ -1466,7 +1456,7 @@ else:
                     
                     html_tabela_impressao = df_pbf_rel[['Aluno', 'Período/Turma']].to_html(index=False, classes='table table-bordered table-striped')
                     
-                    subtitulo_dinamico = f"Relação de Alunos Inscritos no Bolsa Família - Per.Ref.{periodo_imp_ref}-{ano_letivo_escolhido}"
+                    subtitulo_referencia = f"PERÍODO DE REFERÊNCIA: {periodo_imp_ref} - {ano_letivo_escolhido}"
 
                     html_botao_impressao = (
                         "<div>"
@@ -1475,28 +1465,36 @@ else:
                         "var htmlConteudo = '<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Relatório PBF</title>' +"
                         "'<style>' +"
                         "'@page { size: A4; margin: 20mm; @bottom-left { content: \"p.\" counter(page) \"/\" counter(pages); font-size: 11px; } }' +"
-                        "'body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; }' +"
+                        "'body { font-family: \"Times New Roman\", Times, serif; font-size: 12pt; line-height: 1.5; color: #000; margin: 0; padding: 0; }' +"
+                        "'.top-header-print { display: flex; justify-content: space-between; align-items: center; font-size: 10pt; font-family: Arial, sans-serif; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 15px; }' +"
                         "'.header-container { display: flex; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }' +"
                         "'.logo-escola { width: 70px; height: auto; margin-right: 20px; }' +"
                         "'.titulo-escola { flex-grow: 1; text-align: center; }' +"
-                        "'.titulo-escola h2 { margin: 0; font-size: 12pt; font-family: \"Times New Roman\", Times, serif; text-transform: uppercase; font-weight: bold; }' +"
-                        "'.subtitulo-escola { text-align: center; font-size: 11pt; font-family: Arial, sans-serif; font-weight: bold; margin-bottom: 20px; color: #333; }' +"
-                        "'table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 40px; }' +"
-                        "'th, td { border: 1px solid #999; padding: 8px 10px; text-align: left; font-size: 12px; }' +"
-                        "'th { background-color: #0e4166; color: white; text-transform: uppercase; font-weight: bold; }' +"
+                        "'.titulo-escola h2 { margin: 0; font-size: 14pt; font-family: \"Times New Roman\", Times, serif; text-transform: uppercase; font-weight: bold; }' +"
+                        "'.subtitulo-escola { text-align: center; font-size: 12pt; font-family: \"Times New Roman\", Times, serif; font-weight: bold; margin-bottom: 5px; color: #000; }' +"
+                        "'.subperiodo-escola { text-align: center; font-size: 11pt; font-family: \"Times New Roman\", Times, serif; font-weight: bold; margin-bottom: 20px; color: #000; }' +"
+                        "'table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 40px; font-family: \"Times New Roman\", Times, serif; font-size: 12pt; }' +"
+                        "'th, td { border: 1px solid #999; padding: 8px 10px; text-align: left; }' +"
+                        "'th { background-color: #d3d3d3; color: #000; text-transform: uppercase; font-weight: bold; }' +"
                         "'tr:nth-child(even) { background-color: #f2f2f2; }' +"
-                        "'.footer-container { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 11px; border-top: 1px solid #ccc; padding-top: 8px; color: #333; background: white; }' +"
+                        "'.footer-container { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 11pt; font-family: \"Times New Roman\", Times, serif; border-top: 1px solid #ccc; padding-top: 8px; color: #000; background: white; }' +"
                         "'</style></head><body>' +"
+                        "'<div class=\"top-header-print\">' +"
+                        "'<div>" + data_hora_atual_str + "</div>' +"
+                        "'<div style=\"font-weight: bold;\">Relatório PBF</div>' +"
+                        "'<div></div>' +"
+                        "'</div>' +"
                         "'<div class=\"header-container\">' +"
                         "'<img src=\"imagens/Logo da Escola.jpeg\" class=\"logo-escola\" onerror=\"this.style.display=\\'none\\'\"/>' +"
                         "'<div class=\"titulo-escola\">' +"
-                        "'<h2>RELATÓRIO DE ALUNOS INSCRITOS NO PROGRAMA DO BOLSA FAMÍLIA</h2>' +"
+                        "'<h2>ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</h2>' +"
                         "'</div></div>' +"
-                        "'<div class=\"subtitulo-escola\">" + subtitulo_dinamico + "</div>' +"
+                        "'<div class=\"subtitulo-escola\">RELATÓRIO DE ALUNOS INSCRITOS NO PROGRAMA DO BOLSA FAMÍLIA</div>' +"
+                        "'<div class=\"subperiodo-escola\">" + subtitulo_referencia + "</div>' +"
                         + repr(html_tabela_impressao) + " +"
                         "'<div class=\"footer-container\">' +"
-                        "'<div>Sistemas iPeC - v.1.5.090</div>' +"
-                        "'<div style=\"text-align: center; flex-grow: 1;\">Operador: " + operador_atual + " - " + data_hora_atual_str + "</div>' +"
+                        "'<div>© Sistemas iPeC - v.1.5.091</div>' +"
+                        "'<div style=\"text-align: center; flex-grow: 1;\">Operador: " + operador_atual + "</div>' +"
                         "'<div>p.1/1</div>' +"
                         "'</div></body></html>';"
                         "var blob = new Blob([htmlConteudo], { type: 'text/html;charset=utf-8' });"
@@ -1523,9 +1521,9 @@ else:
                 st.markdown("#### 🔄 Rotina de Atualização em Lote para o Cadastro de Alunos")
                 st.info("Esta rotina cruzará a lista de beneficiários importada com o cadastro de alunos do ano letivo vigente. Os alunos presentes na lista terão o campo PBF atualizado para 'Sim', e os demais para 'Não'.")
                 
-                periodo_lote_pbf = st.selectbox("Selecione o Período de Referência Base:", periodos_pbf, key="sel_periodo_pbf_lote_rotina_v90")
+                periodo_lote_pbf = st.selectbox("Selecione o Período de Referência Base:", periodos_pbf, key="sel_periodo_pbf_lote_rotina_v91")
                 
-                confirma_lote = st.radio("⚠️ Atenção: Os dados do cadastro desses alunos serão alterados. Deseja continuar?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_lote_pbf_v90")
+                confirma_lote = st.radio("⚠️ Atenção: Os dados do cadastro desses alunos serão alterados. Deseja continuar?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_lote_pbf_v91")
                 
                 if confirma_lote == "Sim":
                     if st.button("🚀 Executar Atualização em Lote do PBF no Cadastro"):
@@ -1577,10 +1575,10 @@ else:
         elif menu_principal == "🛠️ Suporte":
             st.markdown(f"### 🛠️ Painel de Suporte e Gestão de Usuários ({ano_letivo_escolhido})")
             if st.session_state["perfil_usuario"] == "Total":
-                sub_sup_adm = st.sidebar.radio("Sub-menu Sup:", ["Cadastrar Novo Usuário", "Logs de Auditoria em Tempo Real"], key="sub_sup_adm_v90")
+                sub_sup_adm = st.sidebar.radio("Sub-menu Sup:", ["Cadastrar Novo Usuário", "Logs de Auditoria em Tempo Real"], key="sub_sup_adm_v91")
                 if sub_sup_adm == "Cadastrar Novo Usuário":
                     st.markdown("#### 👤 Painel Administrativo: Cadastro de Novo Usuário")
-                    with st.form("form_cad_novo_usuario_v90"):
+                    with st.form("form_cad_novo_usuario_v91"):
                         novo_email_cad = st.text_input("E-mail do Novo Usuário (Login):")
                         nova_senha_cad = st.text_input("Senha Inicial Provisória:", type="password")
                         novo_perfil_cad = st.selectbox("Perfil de Acesso:", ["Consulta", "Total"])
