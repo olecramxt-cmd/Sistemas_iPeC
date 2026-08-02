@@ -654,7 +654,7 @@ else:
             st.info(f"Sub-área '{sub_relatorios}' pronta.")
 
         elif menu_principal == "👁️ Programa Miguilim":
-            st.markdown(f"### 👁️ Programa Miguilim - Saúde Visual e Auditiva ({ano_letivo_escolhido})")
+            st.markdown(f"### 👁️ Programa Miguilim - Saúde Visual ({ano_letivo_escolhido})")
             sub_miguilim = st.sidebar.radio("Sub-menu:", ["Triagem de Acuidade", "Encaminhamentos Clínicos"])
             
             if sub_miguilim == "Triagem de Acuidade":
