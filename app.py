@@ -2,11 +2,11 @@
 # QUADRO DE CONTROLE DE VERSÃO - SISTEMAS iPeC
 # ==============================================================================
 # © Prof. Esp. Marcelo Xavier Travassos - SISTEMAS iPeC.
-# Programa app.py. Versão do Código: v.1.5.100
-# Data de atualização: 02/08/2026 - 09:27
+# Programa app.py. Versão do Código: v.1.5.101
+# Data de atualização: 02/08/2026 - 09:33
 # Descrição das Alterações:
-#   - Substituição definitiva da impressão por janela do navegador pelo mecanismo de download limpo, eliminando qualquer rodapé técnico indesejado (v.1.5.100).
-#   - Preservação integral e absoluta de todos os programas blindados do SISTEMAS iPeC.
+#   - Restaura o padrão profissional e corporativo de impressão e visualização de relatórios oficiais nos moldes estabelecidos (v.1.5.101).
+#   - Preservação integral, estrita e absoluta de todos os módulos e programas blindados do SISTEMAS iPeC.
 # ==============================================================================
 
 import streamlit as st
@@ -77,7 +77,7 @@ except Exception: pass
 
 st.sidebar.markdown("""
     <div class="sidebar-logo-footer">
-        Versão: v.1.5.100 de 02/08/2026<br>
+        Versão: v.1.5.101 de 02/08/2026<br>
         © Prof. Colab. Marcelo Xavier Travassos
     </div>
 """, unsafe_allow_html=True)
@@ -165,7 +165,7 @@ else:
             else:
                 if sub_conformidade == "Relatórios":
                     st.markdown(f"#### 📄 Relatórios Individuais de Alunos — Ano: {ano_letivo_escolhido}")
-                    sub_sub_rel_painel = st.radio("Selecione o Relatório:", ["Ficha Individual"], horizontal=True, key="sub_sub_rel_painel_v100")
+                    sub_sub_rel_painel = st.radio("Selecione o Relatório:", ["Ficha Individual"], horizontal=True, key="sub_sub_rel_painel_v101")
                     
                     if sub_sub_rel_painel == "Ficha Individual":
                         lista_alunos_ficha = ["Selecione o Aluno..."]
@@ -174,7 +174,7 @@ else:
                             if val_id_s.isdigit():
                                 lista_alunos_ficha.append(f"{int(val_id_s)} - {r_al.get('Aluno', '')} (Mãe: {r_al.get('Mãe', '')})")
                         
-                        aluno_ficha_sel = st.selectbox("Selecione o Aluno para Emissão da Ficha Individual:", lista_alunos_ficha, key="sel_aluno_ficha_ind_v100")
+                        aluno_ficha_sel = st.selectbox("Selecione o Aluno para Emissão da Ficha Individual:", lista_alunos_ficha, key="sel_aluno_ficha_ind_v101")
                         
                         if aluno_ficha_sel and aluno_ficha_sel != "Selecione o Aluno...":
                             id_alvo_ficha = int(aluno_ficha_sel.split(" - ")[0])
@@ -201,35 +201,68 @@ else:
 
                             operador_atual = st.session_state.get('email_usuario', 'Sistema').split('@')[0]
                             
+                            logo_base64_str = ""
+                            try:
+                                caminho_logo = "imagens/Logo da Escola.jpeg"
+                                if os.path.exists(caminho_logo):
+                                    with open(caminho_logo, "rb") as img_file:
+                                        logo_base64_str = base64.b64encode(img_file.read()).decode("utf-8")
+                            except Exception:
+                                logo_base64_str = ""
+
+                            tag_img_logo = f'<img src="data:image/jpeg;base64,{logo_base64_str}" class="logo-escola"/>' if logo_base64_str else ''
+
                             html_ficha_conteudo = (
-                                "<div style='font-family: \"Times New Roman\", Times, serif; font-size: 12pt; color: #000; padding: 20px;'>"
-                                "<h2 style='text-align: center; text-transform: uppercase; font-size: 14pt;'>ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</h2>"
-                                "<h3 style='text-align: center; font-size: 12pt; margin-bottom: 20px;'>FICHA DE IDENTIFICAÇÃO DO ALUNO</h3>"
-                                "<table style='width: 100%; border-collapse: collapse; margin-top: 10px;'>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; width: 30%; background-color: #f2f2f2; font-weight: bold;'>Nome do Aluno</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Aluno', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Data de Nascimento</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Nascimento', '')} (Idade: {reg_ficha.get('Idade', '')})</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Filiação (Mãe)</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Mãe', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Filiação (Pai)</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Pai', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Sexo</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Sexo', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>CPF</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('CPF', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Certidão / Documento</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('CERTIDÃO', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Turma / Período</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Turma', '')} - {reg_ficha.get('Período de Ensino', '')} ({reg_ficha.get('Turno', '')})</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Endereço e Bairro</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Endereço', '')}, {reg_ficha.get('Bairro', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Telefone de Contato</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Telefone', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Programa Bolsa Família (PBF)</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('PBF', '')}</td></tr>"
-                                f"<tr><td style='border: 1px solid #999; padding: 8px; background-color: #f2f2f2; font-weight: bold;'>Situação / Status</td><td style='border: 1px solid #999; padding: 8px;'>{reg_ficha.get('Status', '')}</td></tr>"
+                                "<table style='width: 100%; border-collapse: collapse; margin-top: 10px; font-family: \"Times New Roman\", Times, serif; font-size: 11pt;'>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; width: 30%; background-color: #f2f2f2; font-weight: bold;'>Nome do Aluno</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Aluno', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Data de Nascimento</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Nascimento', '')} (Idade: {reg_ficha.get('Idade', '')})</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Filiação (Mãe)</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Mãe', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Filiação (Pai)</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Pai', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Sexo</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Sexo', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>CPF</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('CPF', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Certidão / Documento</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('CERTIDÃO', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Turma / Período</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Turma', '')} - {reg_ficha.get('Período de Ensino', '')} ({reg_ficha.get('Turno', '')})</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Endereço e Bairro</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Endereço', '')}, {reg_ficha.get('Bairro', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Telefone de Contato</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Telefone', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Programa Bolsa Família (PBF)</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('PBF', '')}</td></tr>"
+                                f"<tr><td style='border: 1px solid #999; padding: 6px; background-color: #f2f2f2; font-weight: bold;'>Situação / Status</td><td style='border: 1px solid #999; padding: 6px;'>{reg_ficha.get('Status', '')}</td></tr>"
                                 "</table>"
-                                f"<div style='margin-top: 40px; border-top: 1px solid #ccc; padding-top: 5px; display: flex; justify-content: space-between; font-size: 10pt;'><span>© Sistemas iPeC - v.1.5.100</span><span>Operador: {operador_atual}</span><span>p.1/1</span></div>"
-                                "</div>"
                             )
 
-                            st.download_button(
-                                label="📥 Baixar Ficha Individual (HTML Limpo)",
-                                data=html_ficha_conteudo,
-                                file_name=f"Ficha_Aluno_{id_alvo_ficha}.html",
-                                mime="text/html",
-                                key="btn_download_ficha_v100"
+                            html_botao_impressao_ficha = (
+                                "<div>"
+                                "<script>"
+                                "function abrirFichaDireta() {"
+                                "var win = window.open('', '_blank');"
+                                "if (!win) { alert('Permita pop-ups.'); return; }"
+                                "win.document.write('<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Ficha de Identificação do Aluno</title>');"
+                                "win.document.write('<style>');"
+                                "win.document.write('@page { size: A4; margin: 10mm; }');"
+                                "win.document.write('body { font-family: \"Times New Roman\", Times, serif; font-size: 11pt; line-height: 1.3; color: #000; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }');"
+                                "win.document.write('.header-container { display: flex; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10mm; }');"
+                                "win.document.write('.logo-escola { width: 60px; height: auto; margin-right: 15px; }');"
+                                "win.document.write('.titulo-escola { flex-grow: 1; text-align: center; }');"
+                                "win.document.write('.titulo-escola h2 { margin: 0; font-size: 13pt; font-family: \"Times New Roman\", Times, serif; text-transform: uppercase; font-weight: bold; }');"
+                                "win.document.write('.subtitulo-escola { text-align: center; font-size: 11pt; font-family: \"Times New Roman\", Times, serif; font-weight: bold; margin-bottom: 15px; color: #000; }');"
+                                "win.document.write('.footer-container { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 10pt; font-family: \"Times New Roman\", Times, serif; border-top: 1px solid #ccc; padding-top: 5px; color: #000; background: white; }');"
+                                "win.document.write('@media print { body { margin: 0; } .footer-container { position: fixed; bottom: 0; } }');"
+                                "win.document.write('</style></head><body>');"
+                                "win.document.write('<div class=\"header-container\">" + repr(tag_img_logo).replace("'", "\\'") + "<div class=\"titulo-escola\"><h2>ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</h2></div></div>');"
+                                "win.document.write('<div class=\"subtitulo-escola\">FICHA DE IDENTIFICAÇÃO DO ALUNO</div>');"
+                                "win.document.write(" + repr(html_ficha_conteudo) + ");"
+                                "win.document.write('<div class=\"footer-container\"><div style=\"width: 33%; text-align: left;\">© Sistemas iPeC - v.1.5.101</div><div style=\"width: 34%; text-align: center;\">Operador: " + operador_atual + "</div><div style=\"width: 33%; text-align: right;\">p.1/1</div></div>');"
+                                "win.document.write('</body></html>');"
+                                "win.document.close();"
+                                "win.focus();"
+                                "setTimeout(function() { win.print(); }, 800);"
+                                "}"
+                                "</script>"
+                                "<button onclick=\"abrirFichaDireta()\" style=\"background-color: #0e4166; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px;\">"
+                                "🖨️ Imprimir Ficha Individual"
+                                "</button>"
+                                "</div>"
                             )
+                            st.components.v1.html(html_botao_impressao_ficha, height=70)
 
                 elif sub_conformidade == "Cadastro de Alunos":
                     total_reg_alunos = len(df_db_ano)
@@ -256,27 +289,27 @@ else:
                     st.markdown("#### 🔍 Busca Rápida e Inteligente de Alunos")
                     
                     def atualizar_filtro_aluno():
-                        st.session_state.f_aluno = st.session_state.input_f_aluno_v100
+                        st.session_state.f_aluno = st.session_state.input_f_aluno_v101
                     def atualizar_filtro_mae():
-                        st.session_state.f_mae = st.session_state.input_f_mae_v100
+                        st.session_state.f_mae = st.session_state.input_f_mae_v101
                     def atualizar_filtro_turma():
-                        st.session_state.f_turma = st.session_state.input_f_turma_v100
+                        st.session_state.f_turma = st.session_state.input_f_turma_v101
                     def atualizar_filtro_turno():
-                        st.session_state.f_turno = st.session_state.input_f_turno_v100
+                        st.session_state.f_turno = st.session_state.input_f_turno_v101
                     def atualizar_filtro_status():
-                        st.session_state.f_status = st.session_state.input_f_status_v100
+                        st.session_state.f_status = st.session_state.input_f_status_v101
                     def atualizar_filtro_pbf():
-                        st.session_state.f_pbf = st.session_state.input_f_pbf_v100
+                        st.session_state.f_pbf = st.session_state.input_f_pbf_v101
 
                     filtro_cols = st.columns(2)
                     with filtro_cols[0]:
-                        st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno, key="input_f_aluno_v100", on_change=atualizar_filtro_aluno)
-                        st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae, key="input_f_mae_v100", on_change=atualizar_filtro_mae)
-                        st.text_input("Filtrar por Turma:", value=st.session_state.f_turma, key="input_f_turma_v100", on_change=atualizar_filtro_turma)
+                        st.text_input("Filtrar por Aluno:", value=st.session_state.f_aluno, key="input_f_aluno_v101", on_change=atualizar_filtro_aluno)
+                        st.text_input("Filtrar por Mãe:", value=st.session_state.f_mae, key="input_f_mae_v101", on_change=atualizar_filtro_mae)
+                        st.text_input("Filtrar por Turma:", value=st.session_state.f_turma, key="input_f_turma_v101", on_change=atualizar_filtro_turma)
                     with filtro_cols[1]:
-                        st.text_input("Filtrar por Turno:", value=st.session_state.f_turno, key="input_f_turno_v100", on_change=atualizar_filtro_turno)
-                        st.text_input("Filtrar por Status:", value=st.session_state.f_status, key="input_f_status_v100", on_change=atualizar_filtro_status)
-                        st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf, key="input_f_pbf_v100", on_change=atualizar_filtro_pbf)
+                        st.text_input("Filtrar por Turno:", value=st.session_state.f_turno, key="input_f_turno_v101", on_change=atualizar_filtro_turno)
+                        st.text_input("Filtrar por Status:", value=st.session_state.f_status, key="input_f_status_v101", on_change=atualizar_filtro_status)
+                        st.text_input("Filtrar por PBF (Sim/Não):", value=st.session_state.f_pbf, key="input_f_pbf_v101", on_change=atualizar_filtro_pbf)
 
                     df_filtrado = df_db_ano.copy()
                     if not df_filtrado.empty:
@@ -311,7 +344,7 @@ else:
                             return [''] * len(row)
 
                         df_estilizado = df_filtrado.style.apply(colorir_transferidos, axis=1)
-                        st.dataframe(df_estilizado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v100")
+                        st.dataframe(df_estilizado, use_container_width=True, hide_index=True, key="editor_dados_tabela_v101")
 
                         if st.session_state["perfil_usuario"] == "Total":
                             col_bt1, col_bt2, col_bt3 = st.columns([2, 2, 3])
@@ -386,7 +419,7 @@ else:
                                         id_fmt = int(val_id_s)
                                         lista_excluir_op.append(f"{id_fmt} - {r.get('Aluno', '')} (Mãe: {r.get('Mãe', '')})")
 
-                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v100")
+                                aluno_para_excluir = st.selectbox("Selecionar para Exclusão:", lista_excluir_op, key="sel_exc_painel_v101")
                                 if aluno_para_excluir != "Selecione...":
                                     id_exc = int(aluno_para_excluir.split(" - ")[0])
                                     if st.button("🗑️ Excluir Aluno Selecionado"):
@@ -417,7 +450,7 @@ else:
                             if val_id_s.isdigit():
                                 lista_alunos_cadastrados.append(f"{int(val_id_s)} - {r.get('Aluno', '')} (Mãe: {r.get('Mãe', '')})")
 
-                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v100")
+                        aluno_selecionado_busca = st.selectbox("Selecione o aluno para alteração individual:", lista_alunos_cadastrados, key="sel_aluno_atualizacao_individual_v101")
                         
                         if aluno_selecionado_busca and aluno_selecionado_busca != "Selecione o Aluno...":
                             try:
@@ -428,7 +461,7 @@ else:
                                     reg_atual = df_aluno_ind.iloc[0]
                                     st.markdown(f"##### ✍️ Ficha Cadastral e Edição: {reg_atual.get('Aluno', '')}")
                                     
-                                    with st.form(f"form_atualizacao_individual_v100_{id_alvo_ind}"):
+                                    with st.form(f"form_atualizacao_individual_v101_{id_alvo_ind}"):
                                         col_up1, col_up2, col_up3 = st.columns(3)
                                         with col_up1:
                                             novo_nome = st.text_input("Nome do Aluno:", value=str(reg_atual.get("Aluno", "")))
@@ -529,11 +562,11 @@ else:
                 
                 if sub_lote == "Importar Arquivo .TXT":
                     st.info("Selecione ou arraste os arquivos de lote oficiais (.TXT) para atualizar a base de alunos. O sistema identificará automaticamente novas matrículas, alterações de turma e transferências com total segurança.")
-                    arquivos_escolhidos = st.file_uploader("Escolha os arquivos de lote (.TXT)", accept_multiple_files=True, key="upl_lote_txt_v100")
+                    arquivos_escolhidos = st.file_uploader("Escolha os arquivos de lote (.TXT)", accept_multiple_files=True, key="upl_lote_txt_v101")
                     
                     if arquivos_escolhidos:
                         st.markdown("---")
-                        confirma_importacao = st.radio("Confirma importação em Lote?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_imp_lote_v100")
+                        confirma_importacao = st.radio("Confirma importação em Lote?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_imp_lote_v101")
                         
                         if confirma_importacao == "Escolha...":
                             st.info("ℹ️ Selecione 'Sim' para confirmar o processamento ou 'Não' para limpar a tela.")
@@ -685,13 +718,13 @@ else:
                                     linha_real_plan = mapeamento_linhas_originais[idx_h_reg]
                                     lista_op_hist.append(f"Linha {linha_real_plan} - Data: {r_hist[0]} | Ano: {r_hist[1]} | Op: {r_hist[2]}")
                                     
-                                item_hist_sel = st.selectbox("Selecione a linha do histórico:", lista_op_hist, key="sel_hist_apagar_v100")
+                                item_hist_sel = st.selectbox("Selecione a linha do histórico:", lista_op_hist, key="sel_hist_apagar_v101")
                                 
                                 if item_hist_sel != "Selecione o registro para apagar...":
                                     linha_plan_hist = int(item_hist_sel.split(" - ")[0].replace("Linha ", "").strip())
                                     st.warning("⚠️ ATENÇÃO: Os dados desta linha serão apagados e não poderão ser recuperados!")
                                     
-                                    confirma_exc_hist = st.radio("Deseja realmente apagar esta linha do histórico?", ["Não", "Sim"], index=0, key="radio_conf_exc_hist_v100")
+                                    confirma_exc_hist = st.radio("Deseja realmente apagar esta linha do histórico?", ["Não", "Sim"], index=0, key="radio_conf_exc_hist_v101")
                                     if confirma_exc_hist == "Sim":
                                         if st.button("➖ Confirmar Exclusão da Linha do Histórico"):
                                             if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Excluir Histórico Importação"):
@@ -848,7 +881,7 @@ else:
                                 column_config=conf_colunas,
                                 use_container_width=True,
                                 hide_index=True,
-                                key="editor_miguilim_v100"
+                                key="editor_miguilim_v101"
                             )
                             
                             if st.button("💾 Processar e Salvar Triagens em Lote"):
@@ -942,7 +975,7 @@ else:
 
             elif sub_miguilim == "Relatórios":
                 st.markdown(f"### 📊 Relatórios do Programa Miguilim ({ano_letivo_escolhido})")
-                sub_sub_mig = st.radio("Selecione a Opção de Relatório:", ["Encaminhamentos Clínicos", "Carta de Apresentação", "Formulário de Preenchimento"], horizontal=True, key="sub_sub_mig_v100")
+                sub_sub_mig = st.radio("Selecione a Opção de Relatório:", ["Encaminhamentos Clínicos", "Carta de Apresentação", "Formulário de Preenchimento"], horizontal=True, key="sub_sub_mig_v101")
                 
                 st.info(f"Painel corporativo da opção '{sub_sub_mig}' estruturado para o ano de {ano_letivo_escolhido}.")
 
@@ -971,7 +1004,7 @@ else:
                 "Relatório do Acervo", 
                 "Relatório de Empréstimo", 
                 "Gráficos"
-            ], key="sub_bib_v100")
+            ], key="sub_bib_v101")
             
             if sub_biblioteca == "Catálogo do Acervo":
                 st.markdown(f"#### 📖 Gestão do Acervo Bibliográfico ({ano_letivo_escolhido})")
@@ -981,11 +1014,11 @@ else:
                 st.markdown("##### 🔍 Pesquisa de Obras no Acervo")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v100")
+                    termo_titulo = st.text_input("Filtrar por Título da Obra:", key="f_tit_v101")
                 with col_p2:
-                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v100")
+                    termo_autor = st.text_input("Filtrar por Autor / Organizador:", key="f_aut_v101")
                 with col_p3:
-                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v100")
+                    filtro_cat = st.selectbox("Filtrar por Categoria:", ["Todas", "Didático", "Literário"], key="f_cat_v101")
 
                 df_acervo_filtrado = df_acervo_geral.copy()
                 if not df_acervo_filtrado.empty:
@@ -1005,7 +1038,7 @@ else:
                         hide_index=True, 
                         selection_mode="single-row", 
                         on_select="rerun",
-                        key="tabela_acervo_v100"
+                        key="tabela_acervo_v101"
                     )
                     
                     try:
@@ -1040,7 +1073,7 @@ else:
                 st.markdown("---")
                 st.markdown("##### ✍️ Cadastro de Livro e Alteração (Reativo ao Clique)")
                 
-                with st.form("form_biblioteca_v100", clear_on_submit=False):
+                with st.form("form_biblioteca_v101", clear_on_submit=False):
                     input_tombo = st.text_input("Código de Tombo / ISBN Base:", value=st.session_state.get("lib_tombo", ""))
                     input_titulo = st.text_input("Título da Obra:", value=st.session_state.get("lib_titulo", ""))
                     
@@ -1157,7 +1190,7 @@ else:
                 if st.session_state.get("acionou_exclusao_form", False):
                     tombo_alvo_exc = st.session_state.get("tombo_para_excluir_seguro", "")
                     st.warning(f"⚠️ ATENÇÃO: A exclusão do Título é uma função irreversível e definitiva no sistema (Tombo: {tombo_alvo_exc})!")
-                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v100")
+                    confirma_excluir_form = st.radio("Deseja realmente prosseguir com a exclusão deste livro?", ["Não", "Sim"], index=0, key="radio_conf_exc_v101")
                     
                     if confirma_excluir_form == "Sim":
                         if st.button("🔴 Confirmar Exclusão Definitiva"):
@@ -1200,7 +1233,7 @@ else:
                 try: dt_fixa_obj = datetime.strptime(dt_fixa_str, "%d/%m/%Y").date()
                 except: dt_fixa_obj = datetime(2026, 12, 15).date()
 
-                with st.form("form_config_biblioteca_v100"):
+                with st.form("form_config_biblioteca_v101"):
                     prazo_lit_dias = st.number_input("Prazo padrão para Livros Literários (em dias):", min_value=1, value=int(cfg_atuais.get("PrazoLiterarioDias", 14)))
                     data_did_fixa = st.date_input("Data Fixa de Devolução para Livros Didáticos:", value=dt_fixa_obj, format="DD/MM/YYYY")
                     limite_lit = st.number_input("Limite Máximo de Empréstimos Simultâneos de Livros Literários por Aluno:", min_value=1, value=int(cfg_atuais.get("LimiteLiterario", 2)))
@@ -1232,12 +1265,12 @@ else:
                 lista_livros_op_global = [f"Tombo: {r['Tombo']} - {r['Titulo']} [{r.get('Categoria','Literário')}]" for _, r in df_livros_ativos_global.iterrows()]
                 lista_alunos_op_global = [f"{r['Aluno']} (Turma: {r['Turma']})" for _, r in df_db_ano.iterrows()] if not df_db_ano.empty else []
 
-                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v100")
+                sub_aba_emp = st.radio("Gestão de Circulação:", ["Novo Empréstimo", "Consulta de Empréstimos por Aluno", "Empréstimos Ativos / Devoluções / Atrasos", "Reservas de Livros"], horizontal=True, key="sub_aba_emp_v101")
                 
                 if sub_aba_emp == "Novo Empréstimo":
-                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v100")
-                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v100")
-                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v100", format="DD/MM/YYYY")
+                    aluno_emp_sel = st.selectbox("Selecione o Leitor (Aluno):", ["Selecione..."] + lista_alunos_op_global, key="sel_leitor_v101")
+                    livro_emp_sel = st.selectbox("Selecione o Item do Acervo (Livro):", ["Selecione..."] + lista_livros_op_global, key="sel_livro_v101")
+                    data_emp = st.date_input("Data do Empréstimo:", value=hoje_dt, key="dt_emp_v101", format="DD/MM/YYYY")
                     
                     cat_livro_atual = "Literário"
                     dias_prazo_lit = int(cfg_prazos.get("PrazoLiterarioDias", 14))
@@ -1251,10 +1284,10 @@ else:
                             cat_livro_atual = "Didático"
                             data_prev_calc = data_did_obj
                     
-                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v100", format="DD/MM/YYYY")
-                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v100")
+                    data_prev = st.date_input("Devolver até:", value=data_prev_calc, key="dt_prev_v101", format="DD/MM/YYYY")
+                    obs_emp = st.text_input("Observações / Ocorrências:", key="obs_emp_v101")
                     
-                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v100"):
+                    if st.button("📥 Concluir e Registrar Empréstimo", key="btn_concluir_emp_v101"):
                         if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Registrar Empréstimo"):
                             if aluno_emp_sel == "Selecione..." or livro_emp_sel == "Selecione...":
                                 st.error("⚠️ Selecione o aluno e o livro para efetuar o empréstimo.")
@@ -1286,7 +1319,7 @@ else:
                             st.dataframe(df_emp_ano, use_container_width=True, hide_index=True)
                             lista_emp_ativos = [f"Tombo: {r['Tombo']} - Aluno: {r['Aluno']} (Devolver em: {r['DataPrevista']})" for _, r in df_emp_ano.iterrows() if str(r['Status']).strip() in ["Ativo", "Atrasado"]]
                             if lista_emp_ativos:
-                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v100")
+                                emp_selecionado_acao = st.selectbox("Selecione o empréstimo para dar Baixa (Devolução):", ["Selecione..."] + lista_emp_ativos, key="sel_baixa_v101")
                                 if st.button("✅ Confirmar Devolução (Baixa)") and emp_selecionado_acao != "Selecione...":
                                     if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Confirmar Devolução"):
                                         tombo_dev = emp_selecionado_acao.split(" - ")[0].replace("Tombo: ", "").strip()
@@ -1310,7 +1343,7 @@ else:
 
         elif menu_principal == "💰 Programa Bolsa Família":
             st.markdown(f"### 💰 Programa Bolsa Família (PBF) — Ano Letivo: {ano_letivo_escolhido}")
-            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v100")
+            sub_pbf = st.sidebar.radio("Sub-menu:", ["Importar Dados", "Visualizar Dados", "Relatório", "Atualização em Lote (PBF)"], key="sub_pbf_v101")
             
             periodos_pbf = ["Fev/Mar", "Abr/Maio", "Jun/Jul", "Ags/Set", "Out/Nov"]
 
@@ -1318,7 +1351,7 @@ else:
                 st.markdown("#### 📂 Importação de Dados Bimestrais do PBF (Formato PDF)")
                 st.info("Selecione o período de referência e carregue o arquivo PDF oficial.")
                 
-                periodo_imp = st.selectbox("Selecione o Período de Referência:", periodos_pbf, key="sel_periodo_pbf_imp_v100")
+                periodo_imp = st.selectbox("Selecione o Período de Referência:", periodos_pbf, key="sel_periodo_pbf_imp_v101")
                 
                 df_verif_existente = carregar_dados_pbf(ano_letivo_escolhido, periodo_imp)
                 tem_dados_salvos = not df_verif_existente.empty
@@ -1326,7 +1359,7 @@ else:
                 sobrescrever_autorizado = True
                 if tem_dados_salvos:
                     st.warning(f"⚠️ Atenção: Já existem {len(df_verif_existente)} registros salvos na nuvem para o período [{periodo_imp}] ({ano_letivo_escolhido}).")
-                    conf_sobrescrever = st.radio("Deseja sobrescrever os dados existentes? Esta operação é irreversível!", ["Escolha...", "Não", "Sim"], index=0, key="radio_sobrescrever_pbf_v100")
+                    conf_sobrescrever = st.radio("Deseja sobrescrever os dados existentes? Esta operação é irreversível!", ["Escolha...", "Não", "Sim"], index=0, key="radio_sobrescrever_pbf_v101")
                     if conf_sobrescrever == "Escolha...":
                         sobrescrever_autorizado = False
                         st.info("ℹ️ Selecione 'Sim' para sobrescrever ou 'Não' para cancelar a importação.")
@@ -1338,10 +1371,10 @@ else:
 
                 if not tem_dados_salvos or sobrescrever_autorizado:
                     if not tem_dados_salvos or (tem_dados_salvos and conf_sobrescrever == "Sim"):
-                        arquivo_pbf = st.file_uploader(f"Carregar arquivo PDF para o período [{periodo_imp}] ({ano_letivo_escolhido}):", type=["pdf"], key=f"upl_pbf_pdf_v100_{periodo_imp}")
+                        arquivo_pbf = st.file_uploader(f"Carregar arquivo PDF para o período [{periodo_imp}] ({ano_letivo_escolhido}):", type=["pdf"], key=f"upl_pbf_pdf_v101_{periodo_imp}")
                         
                         if arquivo_pbf is not None:
-                            if st.button("📥 Processar e Salvar no Banco PBF", key="btn_salvar_pbf_lote_v100"):
+                            if st.button("📥 Processar e Salvar no Banco PBF", key="btn_salvar_pbf_lote_v101"):
                                 if verificar_permissao_escrita(st.session_state["email_usuario"], st.session_state["perfil_usuario"], "Processar Importação PDF PBF"):
                                     try:
                                         linhas_extraidas = []
@@ -1430,7 +1463,7 @@ else:
 
             elif sub_pbf == "Visualizar Dados":
                 st.markdown("#### 👁️ Visualização de Dados Importados (Linhas e Colunas)")
-                periodo_vis = st.selectbox("Selecione o Período de Referência para Visualização:", periodos_pbf, key="sel_periodo_pbf_vis_v100")
+                periodo_vis = st.selectbox("Selecione o Período de Referência para Visualização:", periodos_pbf, key="sel_periodo_pbf_vis_v101")
                 
                 df_pbf_vis = carregar_dados_pbf(ano_letivo_escolhido, periodo_vis)
                 if not df_pbf_vis.empty:
@@ -1467,10 +1500,10 @@ else:
                     st.info(f"ℹ️ Nenhum dado importado para o período {periodo_vis} no ano de {ano_letivo_escolhido}.")
 
             elif sub_pbf == "Relatório":
-                st.markdown(f"### 🖨️ Relatório Oficial do Bolsa Família (Download Direto)")
-                periodo_imp_ref = st.selectbox("Selecione o Período de Referência para Relatório:", periodos_pbf, key="sel_periodo_pbf_imp_ref_v100")
+                st.markdown(f"### 🖨️ Relatório Oficial do Bolsa Família")
+                periodo_imp_ref = st.selectbox("Selecione o Período de Referência para Relatório:", periodos_pbf, key="sel_periodo_pbf_imp_ref_v101")
                 
-                tipo_rel_pbf = st.radio("Selecione o Tipo de Relatório:", ["Por Turma", "Geral"], horizontal=True, key="radio_tipo_rel_pbf_v100")
+                tipo_rel_pbf = st.radio("Selecione o Tipo de Relatório:", ["Por Turma", "Geral"], horizontal=True, key="radio_tipo_rel_pbf_v101")
                 
                 st.markdown("##### 📋 Prévia dos Dados da Turma")
                 
@@ -1519,45 +1552,92 @@ else:
 
                     if tipo_rel_pbf == "Por Turma":
                         turmas_disponiveis_pbf = sorted(list(df_pbf_rel["Período/Turma"].dropna().unique()))
-                        turma_escolhida_filtro = st.selectbox("Selecione a Turma / Período para o Relatório:", ["Todas"] + turmas_disponiveis_pbf, key="sel_turma_pbf_filtro_v100")
+                        turma_escolhida_filtro = st.selectbox("Selecione a Turma / Período para o Relatório:", ["Todas"] + turmas_disponiveis_pbf, key="sel_turma_pbf_filtro_v101")
                         if turma_escolhida_filtro != "Todas":
                             df_pbf_rel = df_pbf_rel[df_pbf_rel["Período/Turma"] == turma_escolhida_filtro].copy()
 
                     df_exibicao_previa = df_pbf_rel[['Aluno', 'Período/Turma']].copy()
                     st.dataframe(df_exibicao_previa, use_container_width=True, hide_index=True)
 
+                    total_reg = len(df_pbf_rel)
+                    tot_masc = len(df_pbf_rel[df_pbf_rel["Sexo"] == "Masculino"])
+                    tot_fem = len(df_pbf_rel[df_pbf_rel["Sexo"] == "Feminino"])
+                    pct_masc = (tot_masc / total_reg * 100) if total_reg > 0 else 0
+                    pct_fem = (tot_fem / total_reg * 100) if total_reg > 0 else 0
+
+                    df_pbf_rel = df_pbf_rel.rename(columns={
+                        "AnoLetivo": "Ano Letivo",
+                        "Periodo": "Período",
+                        "DataImportacao": "Data/Importação"
+                    })
+
                     operador_atual = st.session_state.get('email_usuario', 'Sistema').split('@')[0]
+                    
+                    html_tabela_impressao = df_pbf_rel[['Aluno', 'Período/Turma']].to_html(index=False, classes='table table-bordered table-striped')
+                    
                     subtitulo_referencia = f"PERÍODO DE REFERÊNCIA: {periodo_imp_ref} - {ano_letivo_escolhido}"
 
-                    html_tabela_pbf_str = df_pbf_rel[['Aluno', 'Período/Turma']].to_html(index=False, classes='table table-bordered table-striped')
-                    
-                    html_relatorio_pbf_completo = (
-                        "<div style='font-family: \"Times New Roman\", Times, serif; font-size: 12pt; color: #000; padding: 20px;'>"
-                        "<h2 style='text-align: center; text-transform: uppercase; font-size: 14pt;'>ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</h2>"
-                        "<h3 style='text-align: center; font-size: 12pt; margin-bottom: 5px;'>RELATÓRIO DE ALUNOS INSCRITOS NO PROGRAMA DO BOLSA FAMÍLIA</h3>"
-                        f"<div style='text-align: center; font-size: 11pt; font-weight: bold; margin-bottom: 20px;'>{subtitulo_referencia}</div>"
-                        f"{html_tabela_pbf_str}"
-                        f"<div style='margin-top: 40px; border-top: 1px solid #ccc; padding-top: 5px; display: flex; justify-content: space-between; font-size: 10pt;'><span>© Sistemas iPeC - v.1.5.100</span><span>Operador: {operador_atual}</span><span>p.1/1</span></div>"
+                    logo_base64_str = ""
+                    try:
+                        caminho_logo = "imagens/Logo da Escola.jpeg"
+                        if os.path.exists(caminho_logo):
+                            with open(caminho_logo, "rb") as img_file:
+                                logo_base64_str = base64.b64encode(img_file.read()).decode("utf-8")
+                    except Exception:
+                        logo_base64_str = ""
+
+                    tag_img_logo = f'<img src="data:image/jpeg;base64,{logo_base64_str}" class="logo-escola"/>' if logo_base64_str else ''
+
+                    html_botao_impressao = (
+                        "<div>"
+                        "<script>"
+                        "function abrirPBFDireto() {"
+                        "var win = window.open('', '_blank');"
+                        "if (!win) { alert('Permita pop-ups.'); return; }"
+                        "win.document.write('<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Relatório PBF</title>');"
+                        "win.document.write('<style>');"
+                        "win.document.write('@page { size: A4; margin: 10mm; }');"
+                        "win.document.write('body { font-family: \"Times New Roman\", Times, serif; font-size: 11pt; line-height: 1.3; color: #000; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }');"
+                        "win.document.write('.header-container { display: flex; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10mm; }');"
+                        "win.document.write('.logo-escola { width: 60px; height: auto; margin-right: 15px; }');"
+                        "win.document.write('.titulo-escola { flex-grow: 1; text-align: center; }');"
+                        "win.document.write('.titulo-escola h2 { margin: 0; font-size: 13pt; font-family: \"Times New Roman\", Times, serif; text-transform: uppercase; font-weight: bold; }');"
+                        "win.document.write('.subtitulo-escola { text-align: center; font-size: 11pt; font-family: \"Times New Roman\", Times, serif; font-weight: bold; margin-bottom: 5px; color: #000; }');"
+                        "win.document.write('.subperiodo-escola { text-align: center; font-size: 10pt; font-family: \"Times New Roman\", Times, serif; font-weight: bold; margin-bottom: 15px; color: #000; }');"
+                        "win.document.write('table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 30px; font-family: \"Times New Roman\", Times, serif; font-size: 11pt; }');"
+                        "win.document.write('th, td { border: 1px solid #999; padding: 6px 8px; text-align: left; }');"
+                        "win.document.write('th { background-color: #d3d3d3; color: #000; text-transform: uppercase; font-weight: bold; }');"
+                        "win.document.write('tr:nth-child(even) { background-color: #f2f2f2; }');"
+                        "win.document.write('.footer-container { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 10pt; font-family: \"Times New Roman\", Times, serif; border-top: 1px solid #ccc; padding-top: 5px; color: #000; background: white; }');"
+                        "win.document.write('@media print { body { margin: 0; } .footer-container { position: fixed; bottom: 0; } }');"
+                        "win.document.write('</style></head><body>');"
+                        "win.document.write('<div class=\"header-container\">" + repr(tag_img_logo).replace("'", "\\'") + "<div class=\"titulo-escola\"><h2>ESCOLA MUNICIPAL PROFª GLÓRIA MOREIRA</h2></div></div>');"
+                        "win.document.write('<div class=\"subtitulo-escola\">RELATÓRIO DE ALUNOS INSCRITOS NO PROGRAMA DO BOLSA FAMÍLIA</div>');"
+                        "win.document.write('<div class=\"subperiodo-escola\">" + subtitulo_referencia + "</div>');"
+                        "win.document.write(" + repr(html_tabela_impressao) + ");"
+                        "win.document.write('<div class=\"footer-container\"><div style=\"width: 33%; text-align: left;\">© Sistemas iPeC - v.1.5.101</div><div style=\"width: 34%; text-align: center;\">Operador: " + operador_atual + "</div><div style=\"width: 33%; text-align: right;\">p.1/1</div></div>');"
+                        "win.document.write('</body></html>');"
+                        "win.document.close();"
+                        "win.focus();"
+                        "setTimeout(function() { win.print(); }, 800);"
+                        "}"
+                        "</script>"
+                        "<button onclick=\"abrirPBFDireto()\" style=\"background-color: #0e4166; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px;\">"
+                        "🖨️ Imprimir Relatório"
+                        "</button>"
                         "</div>"
                     )
-
-                    st.download_button(
-                        label="📥 Baixar Relatório PBF (HTML Limpo)",
-                        data=html_relatorio_pbf_completo,
-                        file_name=f"Relatorio_PBF_{periodo_imp_ref}_{ano_letivo_escolhido}.html",
-                        mime="text/html",
-                        key="btn_download_pbf_v100"
-                    )
+                    st.components.v1.html(html_botao_impressao, height=70)
                 else:
-                    st.warning(f"⚠️ Não há dados disponíveis para relatório no período {periodo_imp_ref}.")
+                    st.warning(f"⚠️ Não há dados disponíveis para impressão no período {periodo_imp_ref}.")
 
             elif sub_pbf == "Atualização em Lote (PBF)":
                 st.markdown("#### 🔄 Rotina de Atualização em Lote para o Cadastro de Alunos")
                 st.info("Esta rotina cruzará a lista de beneficiários importada com o cadastro de alunos do ano letivo vigente. Os alunos presentes na lista terão o campo PBF atualizado para 'Sim', e os demais para 'Não'.")
                 
-                periodo_lote_pbf = st.selectbox("Selecione o Período de Referência Base:", periodos_pbf, key="sel_periodo_pbf_lote_rotina_v100")
+                periodo_lote_pbf = st.selectbox("Selecione o Período de Referência Base:", periodos_pbf, key="sel_periodo_pbf_lote_rotina_v101")
                 
-                confirma_lote = st.radio("⚠️ Atenção: Os dados do cadastro desses alunos serão alterados. Deseja continuar?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_lote_pbf_v100")
+                confirma_lote = st.radio("⚠️ Atenção: Os dados do cadastro desses alunos serão alterados. Deseja continuar?", ["Escolha...", "Não", "Sim"], index=0, key="radio_confirma_lote_pbf_v101")
                 
                 if confirma_lote == "Sim":
                     if st.button("🚀 Executar Atualização em Lote do PBF no Cadastro"):
@@ -1609,10 +1689,10 @@ else:
         elif menu_principal == "🛠️ Suporte":
             st.markdown(f"### 🛠️ Painel de Suporte e Gestão de Usuários ({ano_letivo_escolhido})")
             if st.session_state["perfil_usuario"] == "Total":
-                sub_sup_adm = st.sidebar.radio("Sub-menu Sup:", ["Cadastrar Novo Usuário", "Logs de Auditoria em Tempo Real"], key="sub_sup_adm_v100")
+                sub_sup_adm = st.sidebar.radio("Sub-menu Sup:", ["Cadastrar Novo Usuário", "Logs de Auditoria em Tempo Real"], key="sub_sup_adm_v101")
                 if sub_sup_adm == "Cadastrar Novo Usuário":
                     st.markdown("#### 👤 Painel Administrativo: Cadastro de Novo Usuário")
-                    with st.form("form_cad_novo_usuario_v100"):
+                    with st.form("form_cad_novo_usuario_v101"):
                         novo_email_cad = st.text_input("E-mail do Novo Usuário (Login):")
                         nova_senha_cad = st.text_input("Senha Inicial Provisória:", type="password")
                         novo_perfil_cad = st.selectbox("Perfil de Acesso:", ["Consulta", "Total"])
@@ -1628,7 +1708,7 @@ else:
                                     except Exception:
                                         aba_c = doc_u.add_worksheet(title="credenciais_ipec", rows="100", cols="4")
                                         aba_c.append_row(["Usuario", "Senha", "Perfil", "Foto"])
-                                    aba_c.append_row([novo_email_cad.strip(), nova_senha_cad.strip(), novo_perfil_cad.strip(), novo_foto_cad.strip()])
+                                    aba_c.append_row([novo_email_cad.strip(), nova_senha_cad.strip(), novo_perfil_cad.strip(), nova_foto_cad.strip()])
                                     registrar_log_auditoria(st.session_state["email_usuario"], st.session_state["perfil_usuario"], f"Cadastrou usuário: {novo_email_cad}")
                                     st.success(f"🎉 Usuário '{novo_email_cad}' cadastrado com sucesso!")
                                     st.balloons()
